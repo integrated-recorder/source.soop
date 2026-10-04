@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dltkddnr04/integrated-recorder-adapter-sdk-go/adapter"
-	soopadapter "github.com/dltkddnr04/integrated-recorder-adapter-soop/internal/soop"
+	"github.com/integrated-recorder/adapter-sdk-go/adapter"
+	soopadapter "github.com/integrated-recorder/source.soop/internal/soop"
 )
 
 func main() {

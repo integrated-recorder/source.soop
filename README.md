@@ -33,7 +33,7 @@ The Core scheduler controls how often `watch` runs. The adapter performs one che
 
 ## References
 
-- [Adapter SDK v0.1.0 and Protocol v1](https://github.com/dltkddnr04/integrated-recorder-adapter-sdk-go/tree/v0.1.0)
+- [Adapter SDK v0.2.0 and Protocol v1](https://github.com/integrated-recorder/adapter-sdk-go/tree/v0.2.0)
 - [Historical AfreecaTV Auto Recorder](https://github.com/dltkddnr04/AfreecaTV-Auto-Recorder/blob/main/main.py) and its [stream status fixture](https://github.com/dltkddnr04/AfreecaTV-Auto-Recorder/blob/main/test/stream_status_detection.py)
 - Streamlink's [current SOOP plugin](https://github.com/streamlink/streamlink/blob/master/src/streamlink/plugins/soop.py) and [plugin tests](https://github.com/streamlink/streamlink/blob/master/tests/plugins/test_soop.py)
 

@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/dltkddnr04/integrated-recorder-adapter-sdk-go/adapter"
+	"github.com/integrated-recorder/adapter-sdk-go/adapter"
 )
 
 const (

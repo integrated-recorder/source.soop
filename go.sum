@@ -1,2 +1,2 @@
-github.com/dltkddnr04/integrated-recorder-adapter-sdk-go v0.1.0 h1:0WDB0Y0Fmi8FWZPsNf1eVihTKv35/qWpzHUnDHhjIec=
-github.com/dltkddnr04/integrated-recorder-adapter-sdk-go v0.1.0/go.mod h1:COlGhyiyLf3BDr2ND6Qd1jsV35FSFmucBc06zInpqCs=
+github.com/integrated-recorder/adapter-sdk-go v0.2.0 h1:JYi/wsShJuSAwDY1HURwn2g0EZpf8HGpsQ71VrAd64Y=
+github.com/integrated-recorder/adapter-sdk-go v0.2.0/go.mod h1:qVZgAhXBzE77OGEpUfZRqIPtPj2jrY+726QaS4oBXhk=
