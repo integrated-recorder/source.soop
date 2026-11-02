@@ -25,7 +25,28 @@ class Config:
     referer: str | None = field(default=None, repr=False)
     user_agent: str | None = field(default=None, repr=False)
 
+    startup_retries: int = 0
+    startup_window: float = 2.0
+    startup_memory: int = 32 << 20
+    startup_timeout: float = 15.0
+    startup_total_timeout: float = 45.0
+
     def validate(self):
+        if (
+            type(self.startup_retries) is not int
+            or not 0 <= self.startup_retries <= 2
+            or type(self.startup_window) not in (int, float)
+            or not 0.5 <= self.startup_window <= 8
+            or type(self.startup_memory) is not int
+            or not 188 <= self.startup_memory <= 32 << 20
+            or any(
+                type(v) not in (int, float) or not 0 < v <= 45
+                for v in (self.startup_timeout, self.startup_total_timeout)
+            )
+        ):
+            raise GridError("startup_configuration_invalid")
+        if self.startup_retries and self.capture_dir:
+            raise GridError("startup_capture_unsupported")
         if (
             not identifier(self.broadcaster)
             or len(self.broadcaster) > 25

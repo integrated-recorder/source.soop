@@ -15,6 +15,7 @@ from streamlink.stream.stream import Stream, StreamIO
 
 from .auth import HTTP
 from .bootstrap import bootstrap
+from .startup import receive_startup
 from .center import discover_parent
 from .gateway import obtain_certificate
 from .diagnostics import Diagnostics, safe_error, stop_reason
@@ -165,25 +166,38 @@ class BoundedBuffer:
             return discarded
 
 
-def receive(config, network, emit, report, stats):
+def _receive_attempt(config, network, emit, report, stats):
     session = credentials = sink = None
     primary = None
     try:
         session = bootstrap(config, report, http_factory=lambda: HTTP(network.stop))
+        stats["bootstrap_bno"] = session.bno
         credentials = obtain_certificate(network, session, report)
         session.clear_gateway_auth()
         parents, node_key = discover_parent(network, session.center, credentials, report)
         sink = MediaSink(emit, config.capture_dir, synchronize_startup=True)
         stats.update(sink.stats)
         sink.stats = stats  # Heartbeats can observe counters while reception is running.
+        duration = config.duration
+        acquisition_deadline = getattr(network, "acquisition_deadline", None)
+        if acquisition_deadline is not None:
+            duration = acquisition_deadline - time.monotonic()
+            if duration <= 0:
+                raise GridError("startup_timeout")
+
+        def progress(event):
+            if config.startup_retries and event == "parent_last_media_received":
+                sink.update_startup_readiness()
+            report(event)
+
         receive_media(
             network,
             parents,
             session.bno,
             node_key,
             sink,
-            report,
-            config.duration,
+            progress,
+            duration,
             config.max_bytes,
             rediscover=lambda: discover_parent(network, session.center, credentials, report),
         )
@@ -210,6 +224,29 @@ def receive(config, network, emit, report, stats):
     # evaluate playable/track completeness after that drain has succeeded.
     if primary is None and sink is not None:
         validate_media_output(sink.stats)
+
+
+def receive(config, network, emit, report, stats):
+    if not config.startup_retries:
+        return _receive_attempt(config, network, emit, report, stats)
+    try:
+        config.validate()
+    except BaseException:
+        config.clear()
+        raise
+    return receive_startup(
+        config,
+        network,
+        emit,
+        report,
+        stats,
+        _receive_attempt,
+        retries=config.startup_retries,
+        window=config.startup_window,
+        capacity=config.startup_memory,
+        attempt_timeout=config.startup_timeout,
+        total_timeout=config.startup_total_timeout,
+    )
 
 
 class SoopGridReader(StreamIO):

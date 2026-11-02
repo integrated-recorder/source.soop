@@ -52,6 +52,20 @@ def official_hls_streams(session, url, account, password, stream_password, purge
     help="Transport: Grid, official SOOP HLS, or Grid-first with initial HLS fallback.",
 )
 @pluginargument(
+    "grid-startup-retries",
+    type=int,
+    default=0,
+    argument_name="soop-grid-startup-retries",
+    help="Opt-in full startup session retries (0..2); no retries after first output.",
+)
+@pluginargument(
+    "grid-startup-window",
+    type=float,
+    default=2.0,
+    argument_name="soop-grid-startup-window",
+    help="Startup validation window in seconds (0.5..8), with retries enabled.",
+)
+@pluginargument(
     "grid-account",
     sensitive=True,
     argument_name="soop-grid-account",
@@ -165,6 +179,10 @@ class SoopGridPlugin(Plugin):
             stream_password=stream_password,
             require_adult=bool(self.get_option("grid-require-adult")),
             duration=self.get_option("grid-duration"),
+            startup_retries=self.get_option("grid-startup-retries") or 0,
+            startup_window=self.get_option("grid-startup-window")
+            if self.get_option("grid-startup-window") is not None
+            else 2.0,
             max_bytes=self.get_option("grid-max-bytes"),
             capture_dir=os.environ.get("SOOP_GRID_CAPTURE_DIR") or None,
             diagnostics_dir=self.get_option("grid-diagnostics")

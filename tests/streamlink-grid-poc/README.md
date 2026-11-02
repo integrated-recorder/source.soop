@@ -94,3 +94,11 @@ streamlink 'https://play.sooplive.com/CHANNEL_ID/BNO' original -o recording.ts
 현재 시간축 변경의 근거·검증 범위와 미지원 조건은 [Grid composition 적용 결과](docs/GRID_COMPOSITION_TIMING.md)에 있습니다. 새 모델의 장시간 실방송 및 지각적 A/V 동기는 미검증입니다.
 
 생산 H.264 clock은 명시적인 Grid composition만 사용합니다. 구형 HRD/no-reorder 시간축 비교는 [오프라인 감사 도구](docs/LEGACY_HRD_AUDIT.md)로 분리하며 배포 번들에는 포함하지 않습니다. POC–PTS 실시간 검증은 유지합니다.
+
+## 초기 Cache staging 및 제한적 재시도 (실험적, 기본 비활성)
+
+`--soop-grid-startup-retries 1` 또는 `2`로 최초 출력 전 전체 인증 세션 재시도를 활성화할 수 있습니다. `--soop-grid-startup-window 2`는 기본 검증 창이며 0.5~8초를 허용합니다. 새 기능은 기존 `30ea7bd2…` Stable Candidate의 장시간 검증 범위에 포함되지 않습니다.
+
+재시도는 초기 Cache의 `frame_sequence_gap_or_reset`에만 적용합니다. 이미 출력한 세션, identity 충돌, 권한·codec 오류는 재시도하지 않습니다. 실패 시도는 무손실 복구가 아니라 출력 전 시작 세션 포기입니다. 메모리 32MiB, 시도당 15초·전체 startup 45초, 최대 추가 2회로 제한합니다. opt-in에서는 duration과 입력 바이트 예산이 실패한 시도를 포함하며, raw capture와 병용하면 명시적으로 거부합니다. 자세한 계약·검증 한계는 [STARTUP_RETRY.md](docs/STARTUP_RETRY.md)를 참고하십시오.
+
+현재 실방송 표본에서는 자연 발생 Gap 이후 재시도로 성공한 사례를 확보하지 못했습니다. 기본 활성화 및 Stable 승격은 보류합니다.

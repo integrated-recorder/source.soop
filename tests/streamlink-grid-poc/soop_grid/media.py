@@ -511,27 +511,7 @@ class MediaSink:
         self.write("frames.jsonl", (json.dumps(record, sort_keys=True) + "\n").encode())
         return chunk
 
-    def close(self):
-        if self.closed:
-            return
-        self.closed = True
-        self.stats["startup_unoutput_frames"] = len(self.startup_frames)
-        self.startup_frames.clear()
-        self.startup_bytes = 0
-        failed = False
-        for f in self.files.values():
-            try:
-                f.close()
-            except OSError:
-                failed = True
-        self.files.clear()
-        self.stats["audio_preroll_unoutput_access_units"] = sum((item[2] for item in self.pending_audio))
-        self.pending_audio.clear()
-        self.pending_audio_bytes = 0
-        self.stats["payload_sha256"] = self.payload_hash.hexdigest()
-        self.stats["video_output_sha256"] = self.video_output_hash.hexdigest()
-        self.stats["audio_output_sha256"] = self.audio_output_hash.hexdigest()
-        self.stats["playable_video_frames"] = self.stats["video_output_frames"]
+    def _output_steps(self):
         video_pts = tuple(sorted(set(self.video_output_pts_window)))
         video_steps = sorted(
             right - left for left, right in zip(video_pts, video_pts[1:], strict=False) if right > left
@@ -539,6 +519,67 @@ class MediaSink:
         video_step = video_steps[len(video_steps) // 2] if video_steps else 0
         audio_group_steps = sorted(self.audio_output_group_duration_window)
         audio_group_step = audio_group_steps[len(audio_group_steps) // 2] if audio_group_steps else 0
+        return video_step, audio_group_step
+
+    def _preroll_start_matches(self, video_start, audio_start, edge):
+        preroll_start = self.first_discarded_vcl_timestamp
+        preroll_end = self.last_discarded_vcl_timestamp
+        origin = self.video_clock.origin_dts
+        return (
+            self.video_clock.preroll_frames > 0
+            and preroll_start is not None
+            and preroll_end is not None
+            and self.first_output_video_dts is not None
+            and origin is not None
+            and audio_start < video_start
+            and audio_start >= self.video_clock._rescale(preroll_start - origin) + 90000 - edge
+            and 0
+            <= self.first_output_video_dts - (self.video_clock._rescale(preroll_end - origin) + 90000)
+            <= edge
+        )
+
+    def update_startup_readiness(self):
+        """Check a decodable common prefix; final endpoint alignment is checked at close."""
+        video_ready = bool(
+            self.stats["video_output_frames"] > 0
+            and self.first_output_video_dts is not None
+            and self.video_clock.epoch_poc is not None
+            and self.video_clock.sps
+            and self.video_clock.pps
+        )
+        audio_ready = self.audio_config is not None and self.stats["audio_output_access_units"] > 0
+        self.stats.update(
+            startup_video_ready=int(video_ready),
+            startup_audio_ready=int(audio_ready),
+            startup_start_boundary_valid=0,
+            startup_av_ready=0,
+        )
+        video_step, audio_step = self._output_steps()
+        if not video_step or not audio_step:
+            return False
+        edge = max(video_step, audio_step)
+        video_start = self.stats.get("video_output_first_pts_90k", 0)
+        audio_start = self.stats.get("audio_output_first_pts_90k", 0)
+        common_start = max(video_start, audio_start)
+        common_end = min(
+            self.stats.get("video_output_end_pts_90k", 0), self.stats.get("audio_output_end_pts_90k", 0)
+        )
+        start_valid = abs(video_start - audio_start) <= edge or self._preroll_start_matches(
+            video_start, audio_start, edge
+        )
+        self.stats.update(
+            startup_start_boundary_valid=int(start_valid),
+            startup_start_offset_90k=audio_start - video_start,
+            startup_boundary_edge_90k=edge,
+            startup_common_span_90k=max(0, common_end - common_start),
+        )
+        ready = video_ready and audio_ready and start_valid and common_end > common_start
+        self.stats["startup_av_ready"] = int(ready)
+        return bool(ready)
+
+    def update_coverage(self):
+        """Refresh the existing boundary check without closing or emitting media."""
+        video_step, audio_group_step = self._output_steps()
         video_duration = (
             self.stats.get("video_output_end_pts_90k", 0)
             - self.stats.get("video_output_first_pts_90k", 0)
@@ -573,21 +614,8 @@ class MediaSink:
             self.stats["av_output_coverage_edge_90k"] = edge
             self.stats["av_output_start_offset_90k"] = audio_start - video_start
             self.stats["av_output_end_offset_90k"] = audio_end - video_end
-            preroll_start = self.first_discarded_vcl_timestamp
-            preroll_end = self.last_discarded_vcl_timestamp
-            origin = self.video_clock.origin_dts
-            explained_preroll = (
-                self.video_clock.preroll_frames > 0
-                and preroll_start is not None
-                and preroll_end is not None
-                and self.first_output_video_dts is not None
-                and origin is not None
-                and audio_start < video_start
-                and audio_start >= self.video_clock._rescale(preroll_start - origin) + 90000 - edge
-                and 0
-                <= self.first_output_video_dts - (self.video_clock._rescale(preroll_end - origin) + 90000)
-                <= edge
-                and abs(video_window_end - audio_end) <= edge
+            explained_preroll = self._preroll_start_matches(video_start, audio_start, edge) and (
+                abs(video_window_end - audio_end) <= edge
             )
             self.stats["av_start_preroll_explained"] = int(explained_preroll)
             start_unexplained = abs(video_start - audio_start) > edge and not explained_preroll
@@ -597,6 +625,29 @@ class MediaSink:
                 else "consistent"
             )
         self.stats["av_track_span_status"] = span_status
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+        self.stats["startup_unoutput_frames"] = len(self.startup_frames)
+        self.startup_frames.clear()
+        self.startup_bytes = 0
+        failed = False
+        for f in self.files.values():
+            try:
+                f.close()
+            except OSError:
+                failed = True
+        self.files.clear()
+        self.stats["audio_preroll_unoutput_access_units"] = sum((item[2] for item in self.pending_audio))
+        self.pending_audio.clear()
+        self.pending_audio_bytes = 0
+        self.stats["payload_sha256"] = self.payload_hash.hexdigest()
+        self.stats["video_output_sha256"] = self.video_output_hash.hexdigest()
+        self.stats["audio_output_sha256"] = self.audio_output_hash.hexdigest()
+        self.stats["playable_video_frames"] = self.stats["video_output_frames"]
+        self.update_coverage()
         if self.mux.first_pts is not None:
             self.stats["media_timeline_seconds"] = (self.mux.max_pts - self.mux.min_pts) / 90000
         if self.owns_directory:

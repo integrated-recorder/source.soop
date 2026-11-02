@@ -62,6 +62,10 @@ EVENTS = frozenset(
         "reader_eof",
         "reader_error",
         "reader_shutdown_timeout",
+        "startup_attempt_started",
+        "startup_attempt_aborted",
+        "startup_ready",
+        "startup_committed",
         "receiver_started",
         "stream_output_incomplete",
         "stream_output_discarded",
@@ -72,6 +76,10 @@ EVENTS = frozenset(
 
 NUMERIC_FIELDS = frozenset(
     """
+startup_video_ready startup_audio_ready startup_start_boundary_valid startup_av_ready
+startup_start_offset_90k startup_boundary_edge_90k startup_common_span_90k
+startup_deadline_reached startup_attempts startup_retries startup_staged_bytes startup_aborted_bytes startup_committed_bytes
+startup_peak_bytes startup_commit_attempt startup_first_output_ms startup_total_input_bytes
 media_packets payload_bytes wire_bytes parent_wire_bytes video_frames audio_frames sequence_discontinuities
  mux_output_bytes stream_emit_bytes stream_reader_bytes stream_output_discarded_bytes
 stream_buffer_accepted_bytes stream_buffer_discarded_bytes stream_buffer_unaccepted_bytes stream_output_drain_complete stream_output_bytes_drained reader_eof_observed
@@ -466,6 +474,13 @@ class Diagnostics:
 # Explicit source-defined codes. Unknown exception strings are never exported.
 ERROR_CODES = frozenset(
     [
+        "startup_configuration_invalid",
+        "startup_capture_unsupported",
+        "startup_staging_limit",
+        "startup_already_committed",
+        "startup_timeout",
+        "startup_byte_limit",
+        "startup_unverified",
         "aac_configuration_changed",
         "aac_profile_unsupported",
         "aac_raw_data_blocks_unsupported",

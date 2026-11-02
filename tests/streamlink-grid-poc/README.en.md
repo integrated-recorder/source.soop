@@ -88,3 +88,11 @@ The plugin and generated distribution artifact are licensed **AGPL-3.0-only**. S
 See [Grid composition timing validation](docs/GRID_COMPOSITION_TIMING.md) for the current model. New-model live endurance and perceptual A/V sync remain unverified.
 
 The production H.264 clock requires explicit Grid composition. Historical HRD/no-reorder timing comparisons live in the [offline audit tool](docs/LEGACY_HRD_AUDIT.md), excluded from the distributed bundle. Real-time POC–PTS validation remains enabled.
+
+## Bounded startup retry (experimental, disabled by default)
+
+Enable with `--soop-grid-startup-retries 1` or `2`; `--soop-grid-startup-window 2` selects a validation window from 0.5 to 8 seconds. This feature is outside the long-run validation of the historical `30ea7bd2…` Stable Candidate bundle.
+
+Only an initial Cache `frame_sequence_gap_or_reset` before publication is eligible. Identity, authorization and codec errors remain terminal. Committed recordings never restart sessions. This abandons a failed unpublished starting session; it does not recover missing media. Staging is capped at 32MiB, each startup attempt at 15 seconds, total startup at 45 seconds and extra attempts at two. Opt-in duration/input-byte budgets include failed attempts. Raw capture with retry is explicitly unsupported. See [STARTUP_RETRY.md](docs/STARTUP_RETRY.md).
+
+No naturally failing live session subsequently succeeded through retry in the current small sample. Default enablement and Stable promotion remain withheld.

@@ -481,7 +481,7 @@ def _sg_crypto_service6(guid, timestamp, counter):
     return _sg_crypto_wire_hash(_sg_crypto_pad16(second)) + _sg_crypto_ctr(_sg_crypto_SERVICE_KEY, _sg_crypto_SERVICE_IV, second)
 
 
-# Module: diagnostics; source SHA-256: e5a0b432f7aa1a7d3593f7460df3d4e39baec131903379289e2a2116ff7b331a
+# Module: diagnostics; source SHA-256: d9df976d124323a74f7b0be911a742c0e4e1c2280fe6fa973b5834d5bfbbb7a3
 import errno as _sg_diagnostics_errno
 import json as _sg_diagnostics_json
 import logging as _sg_diagnostics_logging
@@ -493,8 +493,8 @@ import time as _sg_diagnostics_time
 _sg_diagnostics_Cancelled = _sg_protocol_Cancelled
 _sg_diagnostics_GridError = _sg_protocol_GridError
 _sg_diagnostics__log = _sg_diagnostics_logging.getLogger('streamlink.plugins.soop_grid')
-_sg_diagnostics_EVENTS = frozenset(['account_session_confirmed', 'center_join_accepted', 'center_rediscovery_failed', 'center_rediscovery_completed', 'cleanup_failed_after_primary_error', 'gateway_certificate_received', 'gateway_login_accepted', 'grid_duration_limit_reached', 'grid_frame_gap_detected', 'grid_frame_gap_recovered', 'grid_frame_gap_unrecoverable', 'grid_live_resumed', 'live_push_transition_requested', 'grid_media_byte_limit_reached', 'heartbeat', 'media_packet_rejected', 'native_tk_ftk_metadata_received', 'new_node_key_obtained', 'parent_c748_media_received', 'parent_candidate_failed', 'parent_candidate_selected', 'parent_connected', 'parent_connection_lost', 'parent_failure_detected', 'parent_handshake_completed', 'parent_last_media_received', 'parent_tcp_connect_started', 'parent_tcp_connected', 'parent_discovery_received', 'parent_failover_exhausted', 'parent_failover_started', 'parent_failover_succeeded', 'parent_rediscovery_started', 'recovery_completed', 'recovery_started', 'recovery_failed', 'cache_request_sent', 'cache_first_media_received', 'overlap_frame_verified', 'first_new_frame_accepted', 'public_watch_ticket_received', 'reader_closed', 'reader_eof', 'reader_error', 'reader_shutdown_timeout', 'receiver_started', 'stream_output_incomplete', 'stream_output_discarded', 'unknown_event', 'worker_finished'])
-_sg_diagnostics_NUMERIC_FIELDS = frozenset('\nmedia_packets payload_bytes wire_bytes parent_wire_bytes video_frames audio_frames sequence_discontinuities\n mux_output_bytes stream_emit_bytes stream_reader_bytes stream_output_discarded_bytes\nstream_buffer_accepted_bytes stream_buffer_discarded_bytes stream_buffer_unaccepted_bytes stream_output_drain_complete stream_output_bytes_drained reader_eof_observed\nparent_connections failover_attempts failover_successes rediscoveries duplicate_frames_excluded\ngap_events recovered_ranges unrecoverable_ranges parent_connection_attempts parent_packets\nlast_normal_frame last_video_dts_90k last_video_pts_90k active_parents last_control_command\ncache_request_count last_cache_request_start last_media_monotonic\nfailure_detection_ms candidate_selection_ms center_rediscovery_ms parent_tcp_connect_ms\nparent_handshake_ms cache_first_byte_ms overlap_verification_ms first_new_frame_ms\ntotal_recovery_ms cache_frames_received cache_frames_replayed overlap_duplicates_discarded\nmissing_frames frame_identity_conflicts recovery_wire_bytes recovery_media_bytes\nrecovery_success recovery_failures recovery_failure_attempts catchup_duration_ms catchup_throughput_bytes_per_sec\nfailover_backoff_ms_saved\nrejected_body_bytes rejected_header_bytes rejected_extension_bytes rejected_payload_bytes\nrejected_packet_preservation_failed\ncenter_rediscovery_failed\nextended_media_packets media_extension_bytes\nh264_poc_type h264_fixed_vui_timing last_video_poc\nh264_current_poc_type h264_current_fixed_vui h264_current_idr h264_current_mmco5\nh264_low_delay_hrd\nh264_hrd_present h264_sei_timing_present h264_current_grid_delta_100ns h264_current_poc\nh264_cpb_removal_delay h264_dpb_output_delay h264_hrd_poc_order_conflicts\nh264_current_dts_90k h264_current_candidate_pts_90k h264_previous_output_epoch_floor_90k\nh264_conflicting_reference_poc h264_conflicting_reference_pts_90k\nh264_clock_tick_100ns_numerator h264_clock_tick_100ns_denominator\nh264_initial_timing_probe_incomplete\nh264_rejected_cpb_removal_delay h264_previous_cpb_removal_delay h264_rejected_cpb_delta\nh264_rejected_grid_delta_100ns h264_rejected_cpb_delta_100ns h264_rejected_cpb_delay_width\nh264_rejected_clock_tolerance_100ns h264_rejected_cpb_epoch_ticks\nh264_rejected_cpb_epoch_delta_100ns h264_rejected_grid_epoch_delta_100ns\naudio_adts_frames audio_access_units audio_core_samples audio_output_access_units audio_output_core_samples\naudio_preroll_unoutput_access_units audio_chunk_clock_delta_100ns audio_max_chunk_clock_delta_100ns\naudio_chunk_overlap_100ns audio_max_chunk_overlap_100ns audio_clock_drift_100ns\nvideo_preroll_frames video_preroll_bytes\nvideo_parameter_prefix_bytes\nvideo_output_frames playable_video_frames\nvideo_output_first_pts_90k video_output_end_pts_90k audio_output_first_pts_90k audio_output_end_pts_90k\naudio_output_last_packet_duration_90k av_output_coverage_delta_90k av_output_coverage_edge_90k\nav_output_start_offset_90k av_output_end_offset_90k\n'.split())
+_sg_diagnostics_EVENTS = frozenset(['account_session_confirmed', 'center_join_accepted', 'center_rediscovery_failed', 'center_rediscovery_completed', 'cleanup_failed_after_primary_error', 'gateway_certificate_received', 'gateway_login_accepted', 'grid_duration_limit_reached', 'grid_frame_gap_detected', 'grid_frame_gap_recovered', 'grid_frame_gap_unrecoverable', 'grid_live_resumed', 'live_push_transition_requested', 'grid_media_byte_limit_reached', 'heartbeat', 'media_packet_rejected', 'native_tk_ftk_metadata_received', 'new_node_key_obtained', 'parent_c748_media_received', 'parent_candidate_failed', 'parent_candidate_selected', 'parent_connected', 'parent_connection_lost', 'parent_failure_detected', 'parent_handshake_completed', 'parent_last_media_received', 'parent_tcp_connect_started', 'parent_tcp_connected', 'parent_discovery_received', 'parent_failover_exhausted', 'parent_failover_started', 'parent_failover_succeeded', 'parent_rediscovery_started', 'recovery_completed', 'recovery_started', 'recovery_failed', 'cache_request_sent', 'cache_first_media_received', 'overlap_frame_verified', 'first_new_frame_accepted', 'public_watch_ticket_received', 'reader_closed', 'reader_eof', 'reader_error', 'reader_shutdown_timeout', 'startup_attempt_started', 'startup_attempt_aborted', 'startup_ready', 'startup_committed', 'receiver_started', 'stream_output_incomplete', 'stream_output_discarded', 'unknown_event', 'worker_finished'])
+_sg_diagnostics_NUMERIC_FIELDS = frozenset('\nstartup_video_ready startup_audio_ready startup_start_boundary_valid startup_av_ready\nstartup_start_offset_90k startup_boundary_edge_90k startup_common_span_90k\nstartup_deadline_reached startup_attempts startup_retries startup_staged_bytes startup_aborted_bytes startup_committed_bytes\nstartup_peak_bytes startup_commit_attempt startup_first_output_ms startup_total_input_bytes\nmedia_packets payload_bytes wire_bytes parent_wire_bytes video_frames audio_frames sequence_discontinuities\n mux_output_bytes stream_emit_bytes stream_reader_bytes stream_output_discarded_bytes\nstream_buffer_accepted_bytes stream_buffer_discarded_bytes stream_buffer_unaccepted_bytes stream_output_drain_complete stream_output_bytes_drained reader_eof_observed\nparent_connections failover_attempts failover_successes rediscoveries duplicate_frames_excluded\ngap_events recovered_ranges unrecoverable_ranges parent_connection_attempts parent_packets\nlast_normal_frame last_video_dts_90k last_video_pts_90k active_parents last_control_command\ncache_request_count last_cache_request_start last_media_monotonic\nfailure_detection_ms candidate_selection_ms center_rediscovery_ms parent_tcp_connect_ms\nparent_handshake_ms cache_first_byte_ms overlap_verification_ms first_new_frame_ms\ntotal_recovery_ms cache_frames_received cache_frames_replayed overlap_duplicates_discarded\nmissing_frames frame_identity_conflicts recovery_wire_bytes recovery_media_bytes\nrecovery_success recovery_failures recovery_failure_attempts catchup_duration_ms catchup_throughput_bytes_per_sec\nfailover_backoff_ms_saved\nrejected_body_bytes rejected_header_bytes rejected_extension_bytes rejected_payload_bytes\nrejected_packet_preservation_failed\ncenter_rediscovery_failed\nextended_media_packets media_extension_bytes\nh264_poc_type h264_fixed_vui_timing last_video_poc\nh264_current_poc_type h264_current_fixed_vui h264_current_idr h264_current_mmco5\nh264_low_delay_hrd\nh264_hrd_present h264_sei_timing_present h264_current_grid_delta_100ns h264_current_poc\nh264_cpb_removal_delay h264_dpb_output_delay h264_hrd_poc_order_conflicts\nh264_current_dts_90k h264_current_candidate_pts_90k h264_previous_output_epoch_floor_90k\nh264_conflicting_reference_poc h264_conflicting_reference_pts_90k\nh264_clock_tick_100ns_numerator h264_clock_tick_100ns_denominator\nh264_initial_timing_probe_incomplete\nh264_rejected_cpb_removal_delay h264_previous_cpb_removal_delay h264_rejected_cpb_delta\nh264_rejected_grid_delta_100ns h264_rejected_cpb_delta_100ns h264_rejected_cpb_delay_width\nh264_rejected_clock_tolerance_100ns h264_rejected_cpb_epoch_ticks\nh264_rejected_cpb_epoch_delta_100ns h264_rejected_grid_epoch_delta_100ns\naudio_adts_frames audio_access_units audio_core_samples audio_output_access_units audio_output_core_samples\naudio_preroll_unoutput_access_units audio_chunk_clock_delta_100ns audio_max_chunk_clock_delta_100ns\naudio_chunk_overlap_100ns audio_max_chunk_overlap_100ns audio_clock_drift_100ns\nvideo_preroll_frames video_preroll_bytes\nvideo_parameter_prefix_bytes\nvideo_output_frames playable_video_frames\nvideo_output_first_pts_90k video_output_end_pts_90k audio_output_first_pts_90k audio_output_end_pts_90k\naudio_output_last_packet_duration_90k av_output_coverage_delta_90k av_output_coverage_edge_90k\nav_output_start_offset_90k av_output_end_offset_90k\n'.split())
 
 def _sg_diagnostics_safe_error(error):
     code = str(error) if isinstance(error, _sg_diagnostics_GridError) else 'receiver_internal_failure'
@@ -734,7 +734,7 @@ class _sg_diagnostics_Diagnostics:
                 except OSError:
                     self._io_failure()
                 self.file = None
-_sg_diagnostics_ERROR_CODES = frozenset(['aac_configuration_changed', 'aac_profile_unsupported', 'aac_raw_data_blocks_unsupported', 'adts_channel_config_unsupported', 'adts_chunk_limit', 'adts_crc_layout_invalid', 'adts_frame_length_invalid', 'adts_frame_limit', 'adts_input_invalid', 'adts_profile_unsupported', 'audio_preroll_limit', 'audio_timestamp_regression', 'audio_timestamp_cumulative_drift', 'audio_chunk_clock_mismatch', 'center_discovery_sequence_invalid', 'h264_access_unit_boundary_invalid', 'h264_hrd_clock_unconfirmed', 'h264_hrd_clock_changed', 'h264_hrd_grid_clock_conflict', 'h264_hrd_delay_limit', 'h264_hrd_initial_delay_invalid', 'h264_hrd_parameters_ambiguous', 'h264_hrd_timing_missing', 'h264_hrd_low_delay_timing_unsupported', 'h264_vui_hrd_flags_invalid', 'h264_frame_num_gap', 'h264_frame_num_invalid', 'h264_poc2_nonreference_sequence_invalid', 'h264_sei_payload_invalid', 'h264_nal_count_limit', 'h264_parameter_set_limit', 'h264_parameter_set_trailing_bits_invalid', 'media_pts_dts_invalid', 'h264_start_boundary_unavailable', 'h264_vcl_missing', 'h264_idr_picture_id_limit', 'h264_mmco5_timing_unsupported', 'h264_pic_struct_unsupported', 'h264_picture_order_conflict', 'h264_sei_message_limit', 'h264_sei_parameter_set_mismatch', 'h264_sei_after_vcl', 'h264_sei_buffering_period_order_invalid', 'h264_sei_buffering_period_missing', 'h264_sei_buffering_period_unexpected', 'h264_sei_timing_duplicate', 'h264_sei_timing_limit', 'h264_sei_trailing_bits_invalid', 'h264_sei_truncated', 'http_deadline_reached', 'user_agent_invalid', 'aac_pes_limit', 'account_credentials_required', 'account_input_invalid', 'account_login_denied_or_verification_required', 'account_session_unconfirmed', 'adts_header_invalid', 'adts_sample_rate_invalid', 'adult_check_unconfirmed', 'audio_prefix_unconfirmed', 'bootstrap_schema_invalid', 'broadcast_number_bounds', 'broadcast_target_invalid', 'buffer_backpressure_timeout', 'buffer_output_unit_invalid', 'cache_frame_bounds', 'cache_request_limit', 'capture_byte_limit_bounds', 'capture_close_failed', 'capture_deadline_reached', 'duration_limit_output_incomplete', 'stream_output_incomplete', 'duration_limit_output_incomplete', 'capture_duration_bounds', 'capture_limits_invalid', 'center_access_denied', 'center_body_limit', 'center_init_unexpected', 'center_rediscovery_failed', 'center_rediscovery_failed', 'center_session_missing', 'certificate_length_invalid', 'channel_live_number_unavailable', 'control_checksum_invalid', 'diagnostic_thread_start_failed', 'diagnostic_write_failed', 'first_party_http_failed', 'first_party_http_rejected', 'first_party_json_invalid', 'frame_identity_conflict', 'frame_sequence_gap_or_reset', 'frame_timestamp_regression', 'gateway_body_limit', 'gateway_certificate_denied', 'gateway_certificate_fields_invalid', 'gateway_cookie_missing_or_invalid', 'gateway_login_denied', 'gateway_login_fields_invalid', 'gateway_login_response_layout', 'gateway_login_unterminated_field', 'gateway_negative_reply', 'gateway_ticket_missing_or_invalid', 'grid_video_dts_not_increasing', 'grid_composition_offset_unsupported', 'guid_invalid', 'h264_chroma_unsupported', 'h264_codec_configuration_changed', 'h264_bit_depth_unsupported', 'h264_dimensions_invalid', 'h264_emulation_prevention_invalid', 'h264_field_bounds', 'h264_golomb_limit', 'h264_header_truncated', 'h264_hrd_limit', 'h264_idr_reference_invalid', 'h264_interlaced_unsupported', 'h264_level_dpb_invalid', 'h264_profile_unsupported', 'h264_reference_count_invalid', 'h264_dpb_bound_invalid', 'h264_weighted_bipred_reserved', 'h264_memory_management_operation_invalid', 'h264_memory_management_operation_limit', 'h264_multiple_pictures_per_grid_chunk', 'h264_nal_header_invalid', 'h264_parameter_set_missing', 'h264_poc_cycle_limit', 'h264_poc_fields_missing', 'h264_poc_mode_unsupported', 'h264_poc_regression_out_of_bound', 'h264_poc_width_invalid', 'h264_pps_id_limit', 'h264_pps_chroma_qp_offset_invalid', 'h264_pps_qp_offset_invalid', 'h264_pps_scaling_layout_mismatch', 'h264_pps_scaling_layout_unconfirmed', 'h264_pts_before_dts', 'h264_reference_count_limit', 'h264_ref_list_modification_invalid', 'h264_ref_list_modification_limit', 'h264_reorder_bound_invalid', 'h264_reorder_bound_unconfirmed', 'h264_reorder_limit', 'h264_reorder_timing_unconfirmed', 'h264_reserved_sps_bits_nonzero', 'h264_separate_colour_plane_unsupported', 'h264_slice_count_limit', 'h264_slice_groups_unsupported', 'h264_slice_nal_type_invalid', 'h264_slice_parameter_set_mismatch', 'h264_slice_type_invalid', 'h264_sps_id_limit', 'h264_switching_slice_unsupported', 'h264_timing_changed', 'h264_timing_unconfirmed', 'h264_vcl_partition_or_extension_unsupported', 'h264_vui_timing_invalid', 'http_destination_invalid', 'http_response_limit', 'incoming_body_limit', 'invalid_server_endpoint', 'issued_certificate_invalid', 'issued_seed_required', 'issued_ticket_required', 'join_field_bounds', 'live_metadata_denied_or_offline', 'live_target_changed', 'media_dts_bounds', 'media_dts_not_monotonic', 'media_header_short', 'media_kind_unconfirmed', 'media_layout_unconfirmed', 'media_pcr_gap_limit', 'media_pcr_not_increasing', 'media_pts_bounds', 'media_timestamp_bounds', 'media_startup_limit', 'h264_grid_poc_type_unverified', 'h264_grid_mmco5_unverified', 'network_read_failed', 'network_read_timeout', 'network_write_failed', 'no_playable_grid_video', 'no_playable_grid_audio', 'media_track_coverage_incomplete', 'media_track_coverage_unverified', 'no_usable_server_parent', 'parent_access_denied', 'parent_body_limit', 'parent_discovery_missing', 'parent_header_invalid', 'parent_list_invalid', 'parent_list_length', 'parent_list_short', 'parent_list_trailing_data', 'parent_media_stalled', 'parent_packet_limit', 'parent_quality_changed', 'parent_rediscovery_empty', 'parent_retry_limit', 'password_state_unknown', 'peer_closed_or_truncated', 'private_capture_create_failed', 'public_policy_restricted_or_unknown', 'public_watch_access_denied', 'public_watch_schema_invalid', 'reader_closed', 'reader_timeout', 'reader_shutdown_timeout', 'receiver_closed', 'receiver_internal_failure', 'receiver_thread_start_failed', 'recovery_candidates_exhausted', 'recovery_deadline_exhausted', 'recovery_overlap_unavailable', 'scoped_cookie_invalid', 'sps_chroma', 'sps_cycle_limit', 'sps_dimensions_invalid', 'sps_golomb_limit', 'sps_poc_invalid', 'sps_truncated', 'stream_password_encoding_invalid', 'stream_password_state_mismatch', 'tcp_connect_failed', 'video_prefix_unconfirmed', 'watch_target_changed'])
+_sg_diagnostics_ERROR_CODES = frozenset(['startup_configuration_invalid', 'startup_capture_unsupported', 'startup_staging_limit', 'startup_already_committed', 'startup_timeout', 'startup_byte_limit', 'startup_unverified', 'aac_configuration_changed', 'aac_profile_unsupported', 'aac_raw_data_blocks_unsupported', 'adts_channel_config_unsupported', 'adts_chunk_limit', 'adts_crc_layout_invalid', 'adts_frame_length_invalid', 'adts_frame_limit', 'adts_input_invalid', 'adts_profile_unsupported', 'audio_preroll_limit', 'audio_timestamp_regression', 'audio_timestamp_cumulative_drift', 'audio_chunk_clock_mismatch', 'center_discovery_sequence_invalid', 'h264_access_unit_boundary_invalid', 'h264_hrd_clock_unconfirmed', 'h264_hrd_clock_changed', 'h264_hrd_grid_clock_conflict', 'h264_hrd_delay_limit', 'h264_hrd_initial_delay_invalid', 'h264_hrd_parameters_ambiguous', 'h264_hrd_timing_missing', 'h264_hrd_low_delay_timing_unsupported', 'h264_vui_hrd_flags_invalid', 'h264_frame_num_gap', 'h264_frame_num_invalid', 'h264_poc2_nonreference_sequence_invalid', 'h264_sei_payload_invalid', 'h264_nal_count_limit', 'h264_parameter_set_limit', 'h264_parameter_set_trailing_bits_invalid', 'media_pts_dts_invalid', 'h264_start_boundary_unavailable', 'h264_vcl_missing', 'h264_idr_picture_id_limit', 'h264_mmco5_timing_unsupported', 'h264_pic_struct_unsupported', 'h264_picture_order_conflict', 'h264_sei_message_limit', 'h264_sei_parameter_set_mismatch', 'h264_sei_after_vcl', 'h264_sei_buffering_period_order_invalid', 'h264_sei_buffering_period_missing', 'h264_sei_buffering_period_unexpected', 'h264_sei_timing_duplicate', 'h264_sei_timing_limit', 'h264_sei_trailing_bits_invalid', 'h264_sei_truncated', 'http_deadline_reached', 'user_agent_invalid', 'aac_pes_limit', 'account_credentials_required', 'account_input_invalid', 'account_login_denied_or_verification_required', 'account_session_unconfirmed', 'adts_header_invalid', 'adts_sample_rate_invalid', 'adult_check_unconfirmed', 'audio_prefix_unconfirmed', 'bootstrap_schema_invalid', 'broadcast_number_bounds', 'broadcast_target_invalid', 'buffer_backpressure_timeout', 'buffer_output_unit_invalid', 'cache_frame_bounds', 'cache_request_limit', 'capture_byte_limit_bounds', 'capture_close_failed', 'capture_deadline_reached', 'duration_limit_output_incomplete', 'stream_output_incomplete', 'duration_limit_output_incomplete', 'capture_duration_bounds', 'capture_limits_invalid', 'center_access_denied', 'center_body_limit', 'center_init_unexpected', 'center_rediscovery_failed', 'center_rediscovery_failed', 'center_session_missing', 'certificate_length_invalid', 'channel_live_number_unavailable', 'control_checksum_invalid', 'diagnostic_thread_start_failed', 'diagnostic_write_failed', 'first_party_http_failed', 'first_party_http_rejected', 'first_party_json_invalid', 'frame_identity_conflict', 'frame_sequence_gap_or_reset', 'frame_timestamp_regression', 'gateway_body_limit', 'gateway_certificate_denied', 'gateway_certificate_fields_invalid', 'gateway_cookie_missing_or_invalid', 'gateway_login_denied', 'gateway_login_fields_invalid', 'gateway_login_response_layout', 'gateway_login_unterminated_field', 'gateway_negative_reply', 'gateway_ticket_missing_or_invalid', 'grid_video_dts_not_increasing', 'grid_composition_offset_unsupported', 'guid_invalid', 'h264_chroma_unsupported', 'h264_codec_configuration_changed', 'h264_bit_depth_unsupported', 'h264_dimensions_invalid', 'h264_emulation_prevention_invalid', 'h264_field_bounds', 'h264_golomb_limit', 'h264_header_truncated', 'h264_hrd_limit', 'h264_idr_reference_invalid', 'h264_interlaced_unsupported', 'h264_level_dpb_invalid', 'h264_profile_unsupported', 'h264_reference_count_invalid', 'h264_dpb_bound_invalid', 'h264_weighted_bipred_reserved', 'h264_memory_management_operation_invalid', 'h264_memory_management_operation_limit', 'h264_multiple_pictures_per_grid_chunk', 'h264_nal_header_invalid', 'h264_parameter_set_missing', 'h264_poc_cycle_limit', 'h264_poc_fields_missing', 'h264_poc_mode_unsupported', 'h264_poc_regression_out_of_bound', 'h264_poc_width_invalid', 'h264_pps_id_limit', 'h264_pps_chroma_qp_offset_invalid', 'h264_pps_qp_offset_invalid', 'h264_pps_scaling_layout_mismatch', 'h264_pps_scaling_layout_unconfirmed', 'h264_pts_before_dts', 'h264_reference_count_limit', 'h264_ref_list_modification_invalid', 'h264_ref_list_modification_limit', 'h264_reorder_bound_invalid', 'h264_reorder_bound_unconfirmed', 'h264_reorder_limit', 'h264_reorder_timing_unconfirmed', 'h264_reserved_sps_bits_nonzero', 'h264_separate_colour_plane_unsupported', 'h264_slice_count_limit', 'h264_slice_groups_unsupported', 'h264_slice_nal_type_invalid', 'h264_slice_parameter_set_mismatch', 'h264_slice_type_invalid', 'h264_sps_id_limit', 'h264_switching_slice_unsupported', 'h264_timing_changed', 'h264_timing_unconfirmed', 'h264_vcl_partition_or_extension_unsupported', 'h264_vui_timing_invalid', 'http_destination_invalid', 'http_response_limit', 'incoming_body_limit', 'invalid_server_endpoint', 'issued_certificate_invalid', 'issued_seed_required', 'issued_ticket_required', 'join_field_bounds', 'live_metadata_denied_or_offline', 'live_target_changed', 'media_dts_bounds', 'media_dts_not_monotonic', 'media_header_short', 'media_kind_unconfirmed', 'media_layout_unconfirmed', 'media_pcr_gap_limit', 'media_pcr_not_increasing', 'media_pts_bounds', 'media_timestamp_bounds', 'media_startup_limit', 'h264_grid_poc_type_unverified', 'h264_grid_mmco5_unverified', 'network_read_failed', 'network_read_timeout', 'network_write_failed', 'no_playable_grid_video', 'no_playable_grid_audio', 'media_track_coverage_incomplete', 'media_track_coverage_unverified', 'no_usable_server_parent', 'parent_access_denied', 'parent_body_limit', 'parent_discovery_missing', 'parent_header_invalid', 'parent_list_invalid', 'parent_list_length', 'parent_list_short', 'parent_list_trailing_data', 'parent_media_stalled', 'parent_packet_limit', 'parent_quality_changed', 'parent_rediscovery_empty', 'parent_retry_limit', 'password_state_unknown', 'peer_closed_or_truncated', 'private_capture_create_failed', 'public_policy_restricted_or_unknown', 'public_watch_access_denied', 'public_watch_schema_invalid', 'reader_closed', 'reader_timeout', 'reader_shutdown_timeout', 'receiver_closed', 'receiver_internal_failure', 'receiver_thread_start_failed', 'recovery_candidates_exhausted', 'recovery_deadline_exhausted', 'recovery_overlap_unavailable', 'scoped_cookie_invalid', 'sps_chroma', 'sps_cycle_limit', 'sps_dimensions_invalid', 'sps_golomb_limit', 'sps_poc_invalid', 'sps_truncated', 'stream_password_encoding_invalid', 'stream_password_state_mismatch', 'tcp_connect_failed', 'video_prefix_unconfirmed', 'watch_target_changed'])
 
 
 # Module: recovery; source SHA-256: 411ea0ce667b6d38b08ed007a111a3a4b5d9588e86c2717eef0712c211eaf9d5
@@ -815,7 +815,210 @@ class _sg_recovery_Continuity:
             self.report('parent_failover_succeeded')
 
 
-# Module: bootstrap; source SHA-256: 4786f3be4662bc64e802eb579ad3dfbd4d8cf02421b501f443064ed861e966b6
+# Module: startup; source SHA-256: afcfc1965c1f397ca4551aee5b329e514b57526373acef31240beab7a4c3b9c2
+import threading as _sg_startup_threading
+import time as _sg_startup_time
+from dataclasses import replace as _sg_startup_replace
+_sg_startup_GridError = _sg_protocol_GridError
+_sg_startup_Cancelled = _sg_protocol_Cancelled
+_sg_startup_Network = _sg_protocol_Network
+
+class _sg_startup_AttemptStop:
+
+    def __init__(self, owner, deadline):
+        self.owner = owner
+        self.deadline = deadline
+        self.local = _sg_startup_threading.Event()
+
+    def is_set(self):
+        return self.local.is_set() or self.owner.is_set() or (self.deadline is not None and _sg_startup_time.monotonic() >= self.deadline)
+
+    def set(self):
+        self.local.set()
+
+    def wait(self, timeout=None):
+        end = None if timeout is None else _sg_startup_time.monotonic() + timeout
+        while not self.is_set():
+            if end is not None and _sg_startup_time.monotonic() >= end:
+                return False
+            self.local.wait(min(0.05, max(0, end - _sg_startup_time.monotonic())) if end else 0.05)
+        return True
+
+class _sg_startup_AttemptNetwork(_sg_startup_Network):
+
+    def __init__(self, owner, deadline):
+        super().__init__()
+        self.owner = owner
+        self.stop = _sg_startup_AttemptStop(owner.stop, deadline)
+        self.budget_deadline = deadline
+
+    def connect(self, address):
+        sock = super().connect(address)
+        with self.owner._lock:
+            cancelled = self.owner.stop.is_set()
+            if not cancelled:
+                self.owner._sockets.add(sock)
+        if cancelled:
+            self.release(sock)
+            raise _sg_startup_Cancelled('receiver_closed')
+        return sock
+
+    def release(self, sock):
+        with self.owner._lock:
+            self.owner._sockets.discard(sock)
+        super().release(sock)
+
+    def close(self):
+        self.stop.set()
+        with self._lock:
+            sockets = list(self._sockets)
+        for sock in sockets:
+            self.release(sock)
+
+class _sg_startup_StartupStage:
+
+    def __init__(self, emit, stop, stats, capacity):
+        self.emit = emit
+        self.stop = stop
+        self.stats = stats
+        self.capacity = capacity
+        self.data = bytearray()
+        self.state = 'COLLECTING'
+
+    def write(self, data):
+        if self.stop.is_set():
+            raise _sg_startup_Cancelled('receiver_closed')
+        if self.state == 'ABORTED':
+            self.stats['startup_aborted_bytes'] += len(data)
+            return
+        if self.state == 'COMMITTED':
+            self.emit(data)
+            return
+        if len(self.data) + len(data) > self.capacity:
+            raise _sg_startup_GridError('startup_staging_limit')
+        self.data.extend(data)
+        self.stats['startup_staged_bytes'] += len(data)
+        self.stats['startup_peak_bytes'] = max(self.stats['startup_peak_bytes'], len(self.data))
+
+    def commit(self):
+        if self.state != 'COLLECTING' or self.stop.is_set():
+            raise _sg_startup_Cancelled('receiver_closed')
+        self.state = 'READY'
+        self.state = 'COMMITTED'
+        self.stats['startup_committed_bytes'] += len(self.data)
+        self.emit(self.data)
+        self.data.clear()
+
+    def abort(self):
+        if self.state == 'COMMITTED':
+            raise _sg_startup_GridError('startup_already_committed')
+        self.stats['startup_aborted_bytes'] += len(self.data)
+        self.data.clear()
+        self.state = 'ABORTED'
+
+def _sg_startup_receive_startup(config, owner, emit, report, stats, attempt, *, retries=2, window=2, capacity=32 << 20, attempt_timeout=15, total_timeout=45):
+    started = _sg_startup_time.monotonic()
+    duration_deadline = None if config.duration is None else started + config.duration
+    startup_deadline = started + total_timeout
+    byte_budget = config.max_bytes
+    input_bytes = 0
+    pin_bno = config.bno
+    mirrored = set()
+    stats.update(startup_attempts=0, startup_retries=0, startup_staged_bytes=0, startup_aborted_bytes=0, startup_committed_bytes=0, startup_peak_bytes=0, startup_commit_attempt=0, startup_deadline_reached=0, stream_emit_bytes=0)
+    try:
+        for number in range(1, retries + 2):
+            if owner.stop.is_set():
+                raise _sg_startup_Cancelled('receiver_closed')
+            now = _sg_startup_time.monotonic()
+            deadline = min(startup_deadline, now + attempt_timeout, duration_deadline if duration_deadline is not None else float('inf'))
+            if now >= deadline:
+                raise _sg_startup_GridError('startup_timeout')
+            if byte_budget is not None and input_bytes >= byte_budget:
+                raise _sg_startup_GridError('startup_byte_limit')
+            for key in mirrored:
+                stats.pop(key, None)
+            mirrored.clear()
+            child = _sg_startup_AttemptNetwork(owner, deadline)
+            child.acquisition_deadline = duration_deadline
+            local = {}
+            copied = _sg_startup_replace(config, bno=pin_bno, duration=None if duration_deadline is None else duration_deadline - now, max_bytes=None if byte_budget is None else byte_budget - input_bytes)
+            stats['startup_attempts'] = number
+            stats['startup_retries'] = number - 1
+            report('startup_attempt_started')
+            cache = False
+            first_media = None
+            committed = False
+
+            def forward(data):
+                emit(data)
+                stats['stream_emit_bytes'] += len(data)
+            stage = _sg_startup_StartupStage(forward, owner.stop, stats, capacity)
+
+            def event(name, local=local, deadline=deadline, used_bytes=input_bytes, stage=stage, number=number, child=child):
+                nonlocal cache, first_media, committed
+                if name == 'cache_request_sent':
+                    cache = True
+                if name in ('live_push_transition_requested', 'recovery_started', 'parent_failover_started'):
+                    cache = False
+                mirrored.update((k for k in local if k != 'stream_emit_bytes'))
+                stats.update({k: v for k, v in local.items() if k != 'stream_emit_bytes'})
+                if name == 'parent_last_media_received':
+                    if not committed and _sg_startup_time.monotonic() >= deadline:
+                        raise _sg_startup_GridError('startup_timeout')
+                    if byte_budget is not None and used_bytes + local.get('parent_wire_bytes', 0) > byte_budget:
+                        raise _sg_startup_GridError('startup_byte_limit')
+                    if first_media is None:
+                        first_media = _sg_startup_time.monotonic()
+                    common_start = max(local.get('video_output_first_pts_90k', 0), local.get('audio_output_first_pts_90k', 0))
+                    common_end = min(local.get('video_output_end_pts_90k', 0), local.get('audio_output_end_pts_90k', 0))
+                    if not committed and stage.data and (_sg_startup_time.monotonic() - first_media >= window) and (common_end - common_start >= window * 90000) and (local.get('video_output_frames', 0) > 0) and (local.get('audio_output_access_units', 0) > 0) and (local.get('startup_av_ready') == 1):
+                        if owner.stop.is_set():
+                            raise _sg_startup_Cancelled('receiver_closed')
+                        committed = True
+                        stats['startup_commit_attempt'] = number
+                        stats['startup_first_output_ms'] = (_sg_startup_time.monotonic() - started) * 1000
+                        config.clear()
+                        child.stop.deadline = None
+                        child.budget_deadline = None
+                        report('startup_ready')
+                        stage.commit()
+                        report('startup_committed')
+                report(name)
+            try:
+                attempt(copied, child, stage.write, event, local)
+                if not committed:
+                    raise _sg_startup_GridError('startup_unverified')
+                return
+            except BaseException as exc:
+                if committed or stage.state == 'COMMITTED':
+                    if stage.state != 'COMMITTED':
+                        stage.abort()
+                    raise
+                stage.abort()
+                expired = _sg_startup_time.monotonic() >= deadline
+                stats['startup_deadline_reached'] = int(expired)
+                report('startup_attempt_aborted')
+                if owner.stop.is_set():
+                    raise _sg_startup_Cancelled('receiver_closed') from None
+                if expired:
+                    if isinstance(exc, _sg_startup_GridError) and str(exc) in ('receiver_closed', 'capture_deadline_reached', 'startup_unverified', 'startup_timeout'):
+                        raise _sg_startup_GridError('startup_timeout') from None
+                    raise
+                if not isinstance(exc, _sg_startup_GridError) or str(exc) != 'frame_sequence_gap_or_reset' or (not cache) or local.get('failover_attempts', 0) or (local.get('parent_connections', 0) != 1) or (number > retries):
+                    raise
+            finally:
+                input_bytes += local.get('parent_wire_bytes', local.get('wire_bytes', 0))
+                stats['startup_total_input_bytes'] = input_bytes
+                pin_bno = pin_bno or (str(local['bootstrap_bno']) if local.get('bootstrap_bno') else None)
+                mirrored.update((k for k in local if k != 'stream_emit_bytes'))
+                stats.update({k: v for k, v in local.items() if k != 'stream_emit_bytes'})
+                copied.clear()
+                child.close()
+    finally:
+        config.clear()
+
+
+# Module: bootstrap; source SHA-256: d1eb92dc6a8b5c3d03bd1aadea79f64fc3b369fa63b10e908f55d7dda9d65c16
 import re as _sg_bootstrap_re
 import math as _sg_bootstrap_math
 from dataclasses import dataclass as _sg_bootstrap_dataclass, field as _sg_bootstrap_field
@@ -841,8 +1044,17 @@ class _sg_bootstrap_Config:
     diagnostics_dir: str | None = _sg_bootstrap_field(default=None, repr=False)
     referer: str | None = _sg_bootstrap_field(default=None, repr=False)
     user_agent: str | None = _sg_bootstrap_field(default=None, repr=False)
+    startup_retries: int = 0
+    startup_window: float = 2.0
+    startup_memory: int = 32 << 20
+    startup_timeout: float = 15.0
+    startup_total_timeout: float = 45.0
 
     def validate(self):
+        if type(self.startup_retries) is not int or not 0 <= self.startup_retries <= 2 or type(self.startup_window) not in (int, float) or (not 0.5 <= self.startup_window <= 8) or (type(self.startup_memory) is not int) or (not 188 <= self.startup_memory <= 32 << 20) or any((type(v) not in (int, float) or not 0 < v <= 45 for v in (self.startup_timeout, self.startup_total_timeout))):
+            raise _sg_bootstrap_GridError('startup_configuration_invalid')
+        if self.startup_retries and self.capture_dir:
+            raise _sg_bootstrap_GridError('startup_capture_unsupported')
         if not _sg_bootstrap_identifier(self.broadcaster) or len(self.broadcaster) > 25 or (self.bno is not None and (not isinstance(self.bno, str) or not _sg_bootstrap_re.fullmatch('[0-9]{1,10}', self.bno))):
             raise _sg_bootstrap_GridError('broadcast_target_invalid')
         self.broadcaster = self.broadcaster.lower()
@@ -2122,7 +2334,7 @@ class _sg_h264clock_H264Clock:
         return self._rescale(timestamp_100ns - self.origin_dts) + 90000
 
 
-# Module: media; source SHA-256: a3506e81613cba9f379379d8b0a8fdbc063f82dc7e6274e4cd15d687ed8f44ea
+# Module: media; source SHA-256: b5af11cf1cdb74ebef1c30ba896ac764027e8e06e5d5ad5ef7a10868f7dc6d7e
 import hashlib as _sg_media_hashlib
 import json as _sg_media_json
 import os as _sg_media_os
@@ -2533,6 +2745,67 @@ class _sg_media_MediaSink:
         self.write('frames.jsonl', (_sg_media_json.dumps(record, sort_keys=True) + '\n').encode())
         return chunk
 
+    def _output_steps(self):
+        video_pts = tuple(sorted(set(self.video_output_pts_window)))
+        video_steps = sorted((right - left for left, right in zip(video_pts, video_pts[1:], strict=False) if right > left))
+        video_step = video_steps[len(video_steps) // 2] if video_steps else 0
+        audio_group_steps = sorted(self.audio_output_group_duration_window)
+        audio_group_step = audio_group_steps[len(audio_group_steps) // 2] if audio_group_steps else 0
+        return (video_step, audio_group_step)
+
+    def _preroll_start_matches(self, video_start, audio_start, edge):
+        preroll_start = self.first_discarded_vcl_timestamp
+        preroll_end = self.last_discarded_vcl_timestamp
+        origin = self.video_clock.origin_dts
+        return self.video_clock.preroll_frames > 0 and preroll_start is not None and (preroll_end is not None) and (self.first_output_video_dts is not None) and (origin is not None) and (audio_start < video_start) and (audio_start >= self.video_clock._rescale(preroll_start - origin) + 90000 - edge) and (0 <= self.first_output_video_dts - (self.video_clock._rescale(preroll_end - origin) + 90000) <= edge)
+
+    def update_startup_readiness(self):
+        """Check a decodable common prefix; final endpoint alignment is checked at close."""
+        video_ready = bool(self.stats['video_output_frames'] > 0 and self.first_output_video_dts is not None and (self.video_clock.epoch_poc is not None) and self.video_clock.sps and self.video_clock.pps)
+        audio_ready = self.audio_config is not None and self.stats['audio_output_access_units'] > 0
+        self.stats.update(startup_video_ready=int(video_ready), startup_audio_ready=int(audio_ready), startup_start_boundary_valid=0, startup_av_ready=0)
+        video_step, audio_step = self._output_steps()
+        if not video_step or not audio_step:
+            return False
+        edge = max(video_step, audio_step)
+        video_start = self.stats.get('video_output_first_pts_90k', 0)
+        audio_start = self.stats.get('audio_output_first_pts_90k', 0)
+        common_start = max(video_start, audio_start)
+        common_end = min(self.stats.get('video_output_end_pts_90k', 0), self.stats.get('audio_output_end_pts_90k', 0))
+        start_valid = abs(video_start - audio_start) <= edge or self._preroll_start_matches(video_start, audio_start, edge)
+        self.stats.update(startup_start_boundary_valid=int(start_valid), startup_start_offset_90k=audio_start - video_start, startup_boundary_edge_90k=edge, startup_common_span_90k=max(0, common_end - common_start))
+        ready = video_ready and audio_ready and start_valid and (common_end > common_start)
+        self.stats['startup_av_ready'] = int(ready)
+        return bool(ready)
+
+    def update_coverage(self):
+        """Refresh the existing boundary check without closing or emitting media."""
+        video_step, audio_group_step = self._output_steps()
+        video_duration = self.stats.get('video_output_end_pts_90k', 0) - self.stats.get('video_output_first_pts_90k', 0) + video_step
+        audio_duration = self.stats.get('audio_output_end_pts_90k', 0) - self.stats.get('audio_output_first_pts_90k', 0)
+        if not self.stats['video_output_frames'] or not self.stats['audio_output_access_units']:
+            span_status = 'incomplete'
+        elif not video_step or not self.stats.get('audio_output_last_packet_duration_90k'):
+            span_status = 'unverified'
+        else:
+            video_start = self.stats.get('video_output_first_pts_90k', 0)
+            video_end = self.stats.get('video_output_end_pts_90k', 0)
+            audio_start = self.stats.get('audio_output_first_pts_90k', 0)
+            audio_end = self.stats.get('audio_output_end_pts_90k', 0)
+            video_window_end = video_end + video_step
+            windows_overlap = video_start <= audio_end and audio_start <= video_window_end
+            edge = max(video_step, audio_group_step)
+            delta = video_duration - audio_duration
+            self.stats['av_output_coverage_delta_90k'] = delta
+            self.stats['av_output_coverage_edge_90k'] = edge
+            self.stats['av_output_start_offset_90k'] = audio_start - video_start
+            self.stats['av_output_end_offset_90k'] = audio_end - video_end
+            explained_preroll = self._preroll_start_matches(video_start, audio_start, edge) and abs(video_window_end - audio_end) <= edge
+            self.stats['av_start_preroll_explained'] = int(explained_preroll)
+            start_unexplained = abs(video_start - audio_start) > edge and (not explained_preroll)
+            span_status = 'incomplete' if not windows_overlap or start_unexplained or (abs(delta) > edge and (not explained_preroll)) else 'consistent'
+        self.stats['av_track_span_status'] = span_status
+
     def close(self):
         if self.closed:
             return
@@ -2554,38 +2827,7 @@ class _sg_media_MediaSink:
         self.stats['video_output_sha256'] = self.video_output_hash.hexdigest()
         self.stats['audio_output_sha256'] = self.audio_output_hash.hexdigest()
         self.stats['playable_video_frames'] = self.stats['video_output_frames']
-        video_pts = tuple(sorted(set(self.video_output_pts_window)))
-        video_steps = sorted((right - left for left, right in zip(video_pts, video_pts[1:], strict=False) if right > left))
-        video_step = video_steps[len(video_steps) // 2] if video_steps else 0
-        audio_group_steps = sorted(self.audio_output_group_duration_window)
-        audio_group_step = audio_group_steps[len(audio_group_steps) // 2] if audio_group_steps else 0
-        video_duration = self.stats.get('video_output_end_pts_90k', 0) - self.stats.get('video_output_first_pts_90k', 0) + video_step
-        audio_duration = self.stats.get('audio_output_end_pts_90k', 0) - self.stats.get('audio_output_first_pts_90k', 0)
-        if not self.stats['video_output_frames'] or not self.stats['audio_output_access_units']:
-            span_status = 'incomplete'
-        elif not video_step or not self.stats.get('audio_output_last_packet_duration_90k'):
-            span_status = 'unverified'
-        else:
-            video_start = self.stats.get('video_output_first_pts_90k', 0)
-            video_end = self.stats.get('video_output_end_pts_90k', 0)
-            audio_start = self.stats.get('audio_output_first_pts_90k', 0)
-            audio_end = self.stats.get('audio_output_end_pts_90k', 0)
-            video_window_end = video_end + video_step
-            windows_overlap = video_start <= audio_end and audio_start <= video_window_end
-            edge = max(video_step, audio_group_step)
-            delta = video_duration - audio_duration
-            self.stats['av_output_coverage_delta_90k'] = delta
-            self.stats['av_output_coverage_edge_90k'] = edge
-            self.stats['av_output_start_offset_90k'] = audio_start - video_start
-            self.stats['av_output_end_offset_90k'] = audio_end - video_end
-            preroll_start = self.first_discarded_vcl_timestamp
-            preroll_end = self.last_discarded_vcl_timestamp
-            origin = self.video_clock.origin_dts
-            explained_preroll = self.video_clock.preroll_frames > 0 and preroll_start is not None and (preroll_end is not None) and (self.first_output_video_dts is not None) and (origin is not None) and (audio_start < video_start) and (audio_start >= self.video_clock._rescale(preroll_start - origin) + 90000 - edge) and (0 <= self.first_output_video_dts - (self.video_clock._rescale(preroll_end - origin) + 90000) <= edge) and (abs(video_window_end - audio_end) <= edge)
-            self.stats['av_start_preroll_explained'] = int(explained_preroll)
-            start_unexplained = abs(video_start - audio_start) > edge and (not explained_preroll)
-            span_status = 'incomplete' if not windows_overlap or start_unexplained or (abs(delta) > edge and (not explained_preroll)) else 'consistent'
-        self.stats['av_track_span_status'] = span_status
+        self.update_coverage()
         if self.mux.first_pts is not None:
             self.stats['media_timeline_seconds'] = (self.mux.max_pts - self.mux.min_pts) / 90000
         if self.owns_directory:
@@ -3215,7 +3457,7 @@ def _sg_gateway_obtain_certificate(network, session, report):
         network.release(sock)
 
 
-# Module: stream; source SHA-256: dd092a50d1a5c34bbf1c227a09a0444938308d446611ea219d068817d4e97f06
+# Module: stream; source SHA-256: 08ca6a91e91b0ad89e40849e0d105ec54ddacc4e6f3368763b44d2319eb76959
 import threading as _sg_stream_threading
 import time as _sg_stream_time
 import logging as _sg_stream_logging
@@ -3227,6 +3469,7 @@ from streamlink.exceptions import StreamError as _sg_stream_StreamError
 from streamlink.stream.stream import Stream as _sg_stream_Stream, StreamIO as _sg_stream_StreamIO
 _sg_stream_HTTP = _sg_auth_HTTP
 _sg_stream_bootstrap = _sg_bootstrap_bootstrap
+_sg_stream_receive_startup = _sg_startup_receive_startup
 _sg_stream_discover_parent = _sg_center_discover_parent
 _sg_stream_obtain_certificate = _sg_gateway_obtain_certificate
 _sg_stream_Diagnostics = _sg_diagnostics_Diagnostics
@@ -3354,18 +3597,30 @@ class _sg_stream_BoundedBuffer:
             self.condition.notify_all()
             return discarded
 
-def _sg_stream_receive(config, network, emit, report, stats):
+def _sg_stream__receive_attempt(config, network, emit, report, stats):
     session = credentials = sink = None
     primary = None
     try:
         session = _sg_stream_bootstrap(config, report, http_factory=lambda: _sg_stream_HTTP(network.stop))
+        stats['bootstrap_bno'] = session.bno
         credentials = _sg_stream_obtain_certificate(network, session, report)
         session.clear_gateway_auth()
         parents, node_key = _sg_stream_discover_parent(network, session.center, credentials, report)
         sink = _sg_stream_MediaSink(emit, config.capture_dir, synchronize_startup=True)
         stats.update(sink.stats)
         sink.stats = stats
-        _sg_stream_receive_media(network, parents, session.bno, node_key, sink, report, config.duration, config.max_bytes, rediscover=lambda: _sg_stream_discover_parent(network, session.center, credentials, report))
+        duration = config.duration
+        acquisition_deadline = getattr(network, 'acquisition_deadline', None)
+        if acquisition_deadline is not None:
+            duration = acquisition_deadline - _sg_stream_time.monotonic()
+            if duration <= 0:
+                raise _sg_stream_GridError('startup_timeout')
+
+        def progress(event):
+            if config.startup_retries and event == 'parent_last_media_received':
+                sink.update_startup_readiness()
+            report(event)
+        _sg_stream_receive_media(network, parents, session.bno, node_key, sink, progress, duration, config.max_bytes, rediscover=lambda: _sg_stream_discover_parent(network, session.center, credentials, report))
     except BaseException as error:
         primary = error
         raise
@@ -3387,6 +3642,16 @@ def _sg_stream_receive(config, network, emit, report, stats):
             network.close()
     if primary is None and sink is not None:
         _sg_stream_validate_media_output(sink.stats)
+
+def _sg_stream_receive(config, network, emit, report, stats):
+    if not config.startup_retries:
+        return _sg_stream__receive_attempt(config, network, emit, report, stats)
+    try:
+        config.validate()
+    except BaseException:
+        config.clear()
+        raise
+    return _sg_stream_receive_startup(config, network, emit, report, stats, _sg_stream__receive_attempt, retries=config.startup_retries, window=config.startup_window, capacity=config.startup_memory, attempt_timeout=config.startup_timeout, total_timeout=config.startup_total_timeout)
 
 class _sg_stream_SoopGridReader(_sg_stream_StreamIO):
 
@@ -3662,7 +3927,7 @@ class _sg_stream_SoopAutoStream(_sg_stream_Stream):
                 self.fallback.clear()
 
 
-# Module: plugin; source SHA-256: f2afbc1404ebd97013bbc18f50e977bb5af8bd520ff4341a0be5c973740a2e2a
+# Module: plugin; source SHA-256: e15f8ff363d6d02f365b6ef683dd217c0c5fd219ed58103b4e36282d8a39e693
 import os as _sg_plugin_os
 import re as _sg_plugin_re
 import logging as _sg_plugin_logging
@@ -3682,6 +3947,8 @@ def _sg_plugin_official_hls_streams(session, url, account, password, stream_pass
 
 @_sg_plugin_pluginmatcher(_sg_plugin_re.compile('https?://play\\.(?:sooplive\\.com|sooplive\\.co\\.kr|afreecatv\\.com)/(?P<channel>[A-Za-z0-9_-]+)(?:/(?P<bno>\\d+))?/?(?:[?#].*)?$'), priority=30)
 @_sg_plugin_pluginargument('transport', choices=('auto', 'grid', 'hls'), default='auto', argument_name='soop-grid-transport', help='Transport: Grid, official SOOP HLS, or Grid-first with initial HLS fallback.')
+@_sg_plugin_pluginargument('grid-startup-retries', type=int, default=0, argument_name='soop-grid-startup-retries', help='Opt-in full startup session retries (0..2); no retries after first output.')
+@_sg_plugin_pluginargument('grid-startup-window', type=float, default=2.0, argument_name='soop-grid-startup-window', help='Startup validation window in seconds (0.5..8), with retries enabled.')
 @_sg_plugin_pluginargument('grid-account', sensitive=True, argument_name='soop-grid-account', help='Legacy alias for --soop-grid-username.')
 @_sg_plugin_pluginargument('grid-username', sensitive=True, argument_name='soop-grid-username', help='SOOP account ID for Native Grid and HLS fallback.')
 @_sg_plugin_pluginargument('grid-password', sensitive=True, argument_name='soop-grid-password', help='SOOP account password for Native Grid and HLS fallback.')
@@ -3727,7 +3994,7 @@ class _sg_plugin_SoopGridPlugin(_sg_plugin_Plugin):
             return
         if stream_password and (not account):
             raise _sg_plugin_PluginError('grid_stream_password_requires_account; use --soop-grid-transport hls')
-        config = _sg_plugin_Config(broadcaster=self.match['channel'], bno=self.match['bno'], account=account, account_password=account_password, stream_password=stream_password, require_adult=bool(self.get_option('grid-require-adult')), duration=self.get_option('grid-duration'), max_bytes=self.get_option('grid-max-bytes'), capture_dir=_sg_plugin_os.environ.get('SOOP_GRID_CAPTURE_DIR') or None, diagnostics_dir=self.get_option('grid-diagnostics') or _sg_plugin_os.environ.get('SOOP_GRID_DIAGNOSTICS_DIR') or None, referer='https://play.sooplive.com/' + self.match['channel'] + ('/' + self.match['bno'] if self.match['bno'] else ''), user_agent=self.session.http.headers.get('User-Agent'))
+        config = _sg_plugin_Config(broadcaster=self.match['channel'], bno=self.match['bno'], account=account, account_password=account_password, stream_password=stream_password, require_adult=bool(self.get_option('grid-require-adult')), duration=self.get_option('grid-duration'), startup_retries=self.get_option('grid-startup-retries') or 0, startup_window=self.get_option('grid-startup-window') if self.get_option('grid-startup-window') is not None else 2.0, max_bytes=self.get_option('grid-max-bytes'), capture_dir=_sg_plugin_os.environ.get('SOOP_GRID_CAPTURE_DIR') or None, diagnostics_dir=self.get_option('grid-diagnostics') or _sg_plugin_os.environ.get('SOOP_GRID_DIAGNOSTICS_DIR') or None, referer='https://play.sooplive.com/' + self.match['channel'] + ('/' + self.match['bno'] if self.match['bno'] else ''), user_agent=self.session.http.headers.get('User-Agent'))
         try:
             config.validate()
         except _sg_plugin_GridError as exc:
@@ -3745,4 +4012,4 @@ _sg_plugin___plugin__ = _sg_plugin_SoopGridPlugin
 __plugin__ = _sg_plugin___plugin__
 
 
-__grid_names__ = {'aac': {'dataclass': '_sg_aac_dataclass', 'Fraction': '_sg_aac_Fraction', 'GridError': '_sg_aac_GridError', 'MAX_ADTS_BYTES': '_sg_aac_MAX_ADTS_BYTES', 'MAX_ADTS_FRAMES': '_sg_aac_MAX_ADTS_FRAMES', 'SAMPLE_RATES': '_sg_aac_SAMPLE_RATES', 'CHANNEL_COUNTS': '_sg_aac_CHANNEL_COUNTS', 'AACConfig': '_sg_aac_AACConfig', 'ADTSFrame': '_sg_aac_ADTSFrame', 'ADTSResult': '_sg_aac_ADTSResult', 'parse_adts': '_sg_aac_parse_adts'}, 'auth': {'json': '_sg_auth_json', 're': '_sg_auth_re', 'time': '_sg_auth_time', 'SimpleCookie': '_sg_auth_SimpleCookie', 'urlsplit': '_sg_auth_urlsplit', 'requests': '_sg_auth_requests', 'GridError': '_sg_auth_GridError', 'PLAY': '_sg_auth_PLAY', 'LIVE': '_sg_auth_LIVE', 'UA': '_sg_auth_UA', 'ALLOWED': '_sg_auth_ALLOWED', 'identifier': '_sg_auth_identifier', 'destination': '_sg_auth_destination', 'HTTP': '_sg_auth_HTTP'}, 'bootstrap': {'re': '_sg_bootstrap_re', 'math': '_sg_bootstrap_math', 'dataclass': '_sg_bootstrap_dataclass', 'field': '_sg_bootstrap_field', 'HTTP': '_sg_bootstrap_HTTP', 'LIVE': '_sg_bootstrap_LIVE', 'PLAY': '_sg_bootstrap_PLAY', 'destination': '_sg_bootstrap_destination', 'identifier': '_sg_bootstrap_identifier', 'GridError': '_sg_bootstrap_GridError', 'endpoint': '_sg_bootstrap_endpoint', 'Config': '_sg_bootstrap_Config', 'Session': '_sg_bootstrap_Session', 'affirmative_no': '_sg_bootstrap_affirmative_no', 'server_endpoint': '_sg_bootstrap_server_endpoint', 'bootstrap': '_sg_bootstrap_bootstrap'}, 'center': {'hmac': '_sg_center_hmac', 'json': '_sg_center_json', 're': '_sg_center_re', 'struct': '_sg_center_struct', 'time': '_sg_center_time', 'dataclass': '_sg_center_dataclass', 'field': '_sg_center_field', 'AUTH_IV': '_sg_center_AUTH_IV', 'AUTH_KEY': '_sg_center_AUTH_KEY', 'PREFIX': '_sg_center_PREFIX', 'SALT': '_sg_center_SALT', 'ctr': '_sg_center_ctr', 'mixed_header': '_sg_center_mixed_header', 'pad16': '_sg_center_pad16', 'wire_hash': '_sg_center_wire_hash', 'GridError': '_sg_center_GridError', 'center_packet': '_sg_center_center_packet', 'read_frame': '_sg_center_read_frame', 'ADJUST': '_sg_center_ADJUST', 'JOINLOG': '_sg_center_JOINLOG', 'valid_seed': '_sg_center_valid_seed', 'Credentials': '_sg_center_Credentials', 'auth_body': '_sg_center_auth_body', 'join_body': '_sg_center_join_body', 'json_body': '_sg_center_json_body', 'discover_parent': '_sg_center_discover_parent'}, 'crypto': {'struct': '_sg_crypto_struct', 'AES': '_sg_crypto_AES', 'MASK': '_sg_crypto_MASK', 'leftWords': '_sg_crypto_leftWords', 'rightWords': '_sg_crypto_rightWords', 'leftShifts': '_sg_crypto_leftShifts', 'rightShifts': '_sg_crypto_rightShifts', '_boolean': '_sg_crypto__boolean', '_block': '_sg_crypto__block', 'wire_hash': '_sg_crypto_wire_hash', 'pad16': '_sg_crypto_pad16', 'ctr': '_sg_crypto_ctr', 'PREFIX': '_sg_crypto_PREFIX', 'SALT': '_sg_crypto_SALT', 'SERVICE_KEY': '_sg_crypto_SERVICE_KEY', 'SERVICE_IV': '_sg_crypto_SERVICE_IV', 'AUTH_KEY': '_sg_crypto_AUTH_KEY', 'AUTH_IV': '_sg_crypto_AUTH_IV', 'mixed_header': '_sg_crypto_mixed_header', 'service6': '_sg_crypto_service6'}, 'diagnostics': {'errno': '_sg_diagnostics_errno', 'json': '_sg_diagnostics_json', 'logging': '_sg_diagnostics_logging', 'math': '_sg_diagnostics_math', 'os': '_sg_diagnostics_os', 'Path': '_sg_diagnostics_Path', 'threading': '_sg_diagnostics_threading', 'time': '_sg_diagnostics_time', 'Cancelled': '_sg_diagnostics_Cancelled', 'GridError': '_sg_diagnostics_GridError', '_log': '_sg_diagnostics__log', 'EVENTS': '_sg_diagnostics_EVENTS', 'NUMERIC_FIELDS': '_sg_diagnostics_NUMERIC_FIELDS', 'safe_error': '_sg_diagnostics_safe_error', 'STOP_REASONS': '_sg_diagnostics_STOP_REASONS', 'MAX_EVENT_LOG_BYTES': '_sg_diagnostics_MAX_EVENT_LOG_BYTES', 'EVENTS_PER_FLUSH': '_sg_diagnostics_EVENTS_PER_FLUSH', 'FLUSH_INTERVAL_SECONDS': '_sg_diagnostics_FLUSH_INTERVAL_SECONDS', 'HEARTBEAT_INTERVAL_SECONDS': '_sg_diagnostics_HEARTBEAT_INTERVAL_SECONDS', 'REPEATED_MEDIA_EVENT_INTERVAL_SECONDS': '_sg_diagnostics_REPEATED_MEDIA_EVENT_INTERVAL_SECONDS', 'TRACE_FUNCTIONS': '_sg_diagnostics_TRACE_FUNCTIONS', 'safe_sites': '_sg_diagnostics_safe_sites', 'stop_reason': '_sg_diagnostics_stop_reason', 'Diagnostics': '_sg_diagnostics_Diagnostics', 'ERROR_CODES': '_sg_diagnostics_ERROR_CODES'}, 'gateway': {'secrets': '_sg_gateway_secrets', 're': '_sg_gateway_re', 'struct': '_sg_gateway_struct', 'time': '_sg_gateway_time', 'service6': '_sg_gateway_service6', 'identifier': '_sg_gateway_identifier', 'GridError': '_sg_gateway_GridError', 'gateway_packet': '_sg_gateway_gateway_packet', 'read_frame': '_sg_gateway_read_frame', 'login_packet': '_sg_gateway_login_packet', 'certificate_packet': '_sg_gateway_certificate_packet', 'validate_login': '_sg_gateway_validate_login', 'obtain_certificate': '_sg_gateway_obtain_certificate'}, 'h264clock': {'deque': '_sg_h264clock_deque', 'dataclass': '_sg_h264clock_dataclass', 'Fraction': '_sg_h264clock_Fraction', 'nals': '_sg_h264clock_nals', 'GridError': '_sg_h264clock_GridError', 'Reader': '_sg_h264clock_Reader', 'rbsp': '_sg_h264clock_rbsp', 'skip_scaling_list': '_sg_h264clock_skip_scaling_list', 'skip_hrd': '_sg_h264clock_skip_hrd', '_MAX_DPB_MBS': '_sg_h264clock__MAX_DPB_MBS', '_SUPPORTED_PROFILES': '_sg_h264clock__SUPPORTED_PROFILES', '_HIGH_PROFILES': '_sg_h264clock__HIGH_PROFILES', 'max_dpb_frames': '_sg_h264clock_max_dpb_frames', 'inferred_reorder': '_sg_h264clock_inferred_reorder', 'parse_sps': '_sg_h264clock_parse_sps', 'parse_vui': '_sg_h264clock_parse_vui', 'parse_sei': '_sg_h264clock_parse_sei', '_validate_sei_buffering_period_order': '_sg_h264clock__validate_sei_buffering_period_order', '_sei_alignment': '_sg_h264clock__sei_alignment', '_validate_pps_qp_offsets': '_sg_h264clock__validate_pps_qp_offsets', '_parse_pps_scaling_candidate': '_sg_h264clock__parse_pps_scaling_candidate', 'parse_pps': '_sg_h264clock_parse_pps', '_skip_ref_pic_list_modification': '_sg_h264clock__skip_ref_pic_list_modification', '_skip_weight_list': '_sg_h264clock__skip_weight_list', '_skip_pred_weight_table': '_sg_h264clock__skip_pred_weight_table', '_parse_dec_ref_pic_marking': '_sg_h264clock__parse_dec_ref_pic_marking', 'SliceHeader': '_sg_h264clock_SliceHeader', 'parse_slice': '_sg_h264clock_parse_slice', '_slice_pps_id': '_sg_h264clock__slice_pps_id', 'H264Clock': '_sg_h264clock_H264Clock'}, 'media': {'hashlib': '_sg_media_hashlib', 'json': '_sg_media_json', 'os': '_sg_media_os', 'struct': '_sg_media_struct', 'deque': '_sg_media_deque', 'dataclass': '_sg_media_dataclass', 'field': '_sg_media_field', 'Fraction': '_sg_media_Fraction', 'Path': '_sg_media_Path', 'H264Clock': '_sg_media_H264Clock', 'parse_adts': '_sg_media_parse_adts', 'TSMux': '_sg_media_TSMux', 'nals': '_sg_media_nals', 'GridError': '_sg_media_GridError', 'Chunk': '_sg_media_Chunk', 'layout_facts': '_sg_media_layout_facts', 'parse_media': '_sg_media_parse_media', 'Bits': '_sg_media_Bits', 'sps_info': '_sg_media_sps_info', 'adts_info': '_sg_media_adts_info', 'MediaSink': '_sg_media_MediaSink'}, 'mpegts': {'struct': '_sg_mpegts_struct', 'Fraction': '_sg_mpegts_Fraction', 'parse_adts': '_sg_mpegts_parse_adts', 'GridError': '_sg_mpegts_GridError', 'PCR_INTERVAL_90K': '_sg_mpegts_PCR_INTERVAL_90K', 'nals': '_sg_mpegts_nals', 'has_nal': '_sg_mpegts_has_nal', 'crc_mpeg': '_sg_mpegts_crc_mpeg', 'pts_bytes': '_sg_mpegts_pts_bytes', 'TSMux': '_sg_mpegts_TSMux'}, 'parent': {'json': '_sg_parent_json', 'math': '_sg_parent_math', 'struct': '_sg_parent_struct', 'time': '_sg_parent_time', 'dataclass': '_sg_parent_dataclass', 'layout_facts': '_sg_parent_layout_facts', 'parse_media': '_sg_parent_parse_media', 'Continuity': '_sg_parent_Continuity', 'Cancelled': '_sg_parent_Cancelled', 'GridError': '_sg_parent_GridError', 'endpoint': '_sg_parent_endpoint', 'parent_packet': '_sg_parent_parent_packet', 'read_frame': '_sg_parent_read_frame', 'MEDIA_STALL_TIMEOUT': '_sg_parent_MEDIA_STALL_TIMEOUT', 'FAILOVER_BACKOFF_SECONDS': '_sg_parent_FAILOVER_BACKOFF_SECONDS', 'MAX_PARENT_ATTEMPTS_PER_OUTAGE': '_sg_parent_MAX_PARENT_ATTEMPTS_PER_OUTAGE', 'MAX_CENTER_REDISCOVERIES_PER_OUTAGE': '_sg_parent_MAX_CENTER_REDISCOVERIES_PER_OUTAGE', 'Parent': '_sg_parent_Parent', 'parse_parents': '_sg_parent_parse_parents', 'TRANSIENT': '_sg_parent_TRANSIENT', '_is_media_validation_error': '_sg_parent__is_media_validation_error', 'receive_media': '_sg_parent_receive_media'}, 'protocol': {'ipaddress': '_sg_protocol_ipaddress', 'socket': '_sg_protocol_socket', 'struct': '_sg_protocol_struct', 'threading': '_sg_protocol_threading', 'time': '_sg_protocol_time', 'dataclass': '_sg_protocol_dataclass', 'field': '_sg_protocol_field', 'GridError': '_sg_protocol_GridError', 'Cancelled': '_sg_protocol_Cancelled', 'endpoint': '_sg_protocol_endpoint', 'Frame': '_sg_protocol_Frame', 'gateway_packet': '_sg_protocol_gateway_packet', 'center_packet': '_sg_protocol_center_packet', 'parent_packet': '_sg_protocol_parent_packet', 'read_exact': '_sg_protocol_read_exact', 'read_frame': '_sg_protocol_read_frame', 'Network': '_sg_protocol_Network'}, 'recovery': {'hashlib': '_sg_recovery_hashlib', 'OrderedDict': '_sg_recovery_OrderedDict', 'GridError': '_sg_recovery_GridError', 'Continuity': '_sg_recovery_Continuity'}, 'stream': {'threading': '_sg_stream_threading', 'time': '_sg_stream_time', 'logging': '_sg_stream_logging', 'math': '_sg_stream_math', 're': '_sg_stream_re', 'deque': '_sg_stream_deque', 'urlsplit': '_sg_stream_urlsplit', 'StreamError': '_sg_stream_StreamError', 'Stream': '_sg_stream_Stream', 'StreamIO': '_sg_stream_StreamIO', 'HTTP': '_sg_stream_HTTP', 'bootstrap': '_sg_stream_bootstrap', 'discover_parent': '_sg_stream_discover_parent', 'obtain_certificate': '_sg_stream_obtain_certificate', 'Diagnostics': '_sg_stream_Diagnostics', 'safe_error': '_sg_stream_safe_error', 'stop_reason': '_sg_stream_stop_reason', 'MediaSink': '_sg_stream_MediaSink', 'receive_media': '_sg_stream_receive_media', 'Cancelled': '_sg_stream_Cancelled', 'GridError': '_sg_stream_GridError', 'Network': '_sg_stream_Network', '_log': '_sg_stream__log', '_INITIAL_TRANSPORT_FAILURES': '_sg_stream__INITIAL_TRANSPORT_FAILURES', 'validate_media_output': '_sg_stream_validate_media_output', 'BoundedBuffer': '_sg_stream_BoundedBuffer', 'receive': '_sg_stream_receive', 'SoopGridReader': '_sg_stream_SoopGridReader', 'SoopGridStream': '_sg_stream_SoopGridStream', 'official_hls_plugin': '_sg_stream_official_hls_plugin', 'OfficialHLSFallback': '_sg_stream_OfficialHLSFallback', 'SoopAutoStream': '_sg_stream_SoopAutoStream'}, 'plugin': {'os': '_sg_plugin_os', 're': '_sg_plugin_re', 'logging': '_sg_plugin_logging', 'PluginError': '_sg_plugin_PluginError', 'Plugin': '_sg_plugin_Plugin', 'pluginargument': '_sg_plugin_pluginargument', 'pluginmatcher': '_sg_plugin_pluginmatcher', 'Config': '_sg_plugin_Config', 'GridError': '_sg_plugin_GridError', 'OfficialHLSFallback': '_sg_plugin_OfficialHLSFallback', 'SoopAutoStream': '_sg_plugin_SoopAutoStream', 'SoopGridStream': '_sg_plugin_SoopGridStream', 'official_hls_plugin': '_sg_plugin_official_hls_plugin', 'log': '_sg_plugin_log', 'official_hls_streams': '_sg_plugin_official_hls_streams', 'SoopGridPlugin': '_sg_plugin_SoopGridPlugin', '__plugin__': '_sg_plugin___plugin__'}}
+__grid_names__ = {'aac': {'dataclass': '_sg_aac_dataclass', 'Fraction': '_sg_aac_Fraction', 'GridError': '_sg_aac_GridError', 'MAX_ADTS_BYTES': '_sg_aac_MAX_ADTS_BYTES', 'MAX_ADTS_FRAMES': '_sg_aac_MAX_ADTS_FRAMES', 'SAMPLE_RATES': '_sg_aac_SAMPLE_RATES', 'CHANNEL_COUNTS': '_sg_aac_CHANNEL_COUNTS', 'AACConfig': '_sg_aac_AACConfig', 'ADTSFrame': '_sg_aac_ADTSFrame', 'ADTSResult': '_sg_aac_ADTSResult', 'parse_adts': '_sg_aac_parse_adts'}, 'auth': {'json': '_sg_auth_json', 're': '_sg_auth_re', 'time': '_sg_auth_time', 'SimpleCookie': '_sg_auth_SimpleCookie', 'urlsplit': '_sg_auth_urlsplit', 'requests': '_sg_auth_requests', 'GridError': '_sg_auth_GridError', 'PLAY': '_sg_auth_PLAY', 'LIVE': '_sg_auth_LIVE', 'UA': '_sg_auth_UA', 'ALLOWED': '_sg_auth_ALLOWED', 'identifier': '_sg_auth_identifier', 'destination': '_sg_auth_destination', 'HTTP': '_sg_auth_HTTP'}, 'bootstrap': {'re': '_sg_bootstrap_re', 'math': '_sg_bootstrap_math', 'dataclass': '_sg_bootstrap_dataclass', 'field': '_sg_bootstrap_field', 'HTTP': '_sg_bootstrap_HTTP', 'LIVE': '_sg_bootstrap_LIVE', 'PLAY': '_sg_bootstrap_PLAY', 'destination': '_sg_bootstrap_destination', 'identifier': '_sg_bootstrap_identifier', 'GridError': '_sg_bootstrap_GridError', 'endpoint': '_sg_bootstrap_endpoint', 'Config': '_sg_bootstrap_Config', 'Session': '_sg_bootstrap_Session', 'affirmative_no': '_sg_bootstrap_affirmative_no', 'server_endpoint': '_sg_bootstrap_server_endpoint', 'bootstrap': '_sg_bootstrap_bootstrap'}, 'center': {'hmac': '_sg_center_hmac', 'json': '_sg_center_json', 're': '_sg_center_re', 'struct': '_sg_center_struct', 'time': '_sg_center_time', 'dataclass': '_sg_center_dataclass', 'field': '_sg_center_field', 'AUTH_IV': '_sg_center_AUTH_IV', 'AUTH_KEY': '_sg_center_AUTH_KEY', 'PREFIX': '_sg_center_PREFIX', 'SALT': '_sg_center_SALT', 'ctr': '_sg_center_ctr', 'mixed_header': '_sg_center_mixed_header', 'pad16': '_sg_center_pad16', 'wire_hash': '_sg_center_wire_hash', 'GridError': '_sg_center_GridError', 'center_packet': '_sg_center_center_packet', 'read_frame': '_sg_center_read_frame', 'ADJUST': '_sg_center_ADJUST', 'JOINLOG': '_sg_center_JOINLOG', 'valid_seed': '_sg_center_valid_seed', 'Credentials': '_sg_center_Credentials', 'auth_body': '_sg_center_auth_body', 'join_body': '_sg_center_join_body', 'json_body': '_sg_center_json_body', 'discover_parent': '_sg_center_discover_parent'}, 'crypto': {'struct': '_sg_crypto_struct', 'AES': '_sg_crypto_AES', 'MASK': '_sg_crypto_MASK', 'leftWords': '_sg_crypto_leftWords', 'rightWords': '_sg_crypto_rightWords', 'leftShifts': '_sg_crypto_leftShifts', 'rightShifts': '_sg_crypto_rightShifts', '_boolean': '_sg_crypto__boolean', '_block': '_sg_crypto__block', 'wire_hash': '_sg_crypto_wire_hash', 'pad16': '_sg_crypto_pad16', 'ctr': '_sg_crypto_ctr', 'PREFIX': '_sg_crypto_PREFIX', 'SALT': '_sg_crypto_SALT', 'SERVICE_KEY': '_sg_crypto_SERVICE_KEY', 'SERVICE_IV': '_sg_crypto_SERVICE_IV', 'AUTH_KEY': '_sg_crypto_AUTH_KEY', 'AUTH_IV': '_sg_crypto_AUTH_IV', 'mixed_header': '_sg_crypto_mixed_header', 'service6': '_sg_crypto_service6'}, 'diagnostics': {'errno': '_sg_diagnostics_errno', 'json': '_sg_diagnostics_json', 'logging': '_sg_diagnostics_logging', 'math': '_sg_diagnostics_math', 'os': '_sg_diagnostics_os', 'Path': '_sg_diagnostics_Path', 'threading': '_sg_diagnostics_threading', 'time': '_sg_diagnostics_time', 'Cancelled': '_sg_diagnostics_Cancelled', 'GridError': '_sg_diagnostics_GridError', '_log': '_sg_diagnostics__log', 'EVENTS': '_sg_diagnostics_EVENTS', 'NUMERIC_FIELDS': '_sg_diagnostics_NUMERIC_FIELDS', 'safe_error': '_sg_diagnostics_safe_error', 'STOP_REASONS': '_sg_diagnostics_STOP_REASONS', 'MAX_EVENT_LOG_BYTES': '_sg_diagnostics_MAX_EVENT_LOG_BYTES', 'EVENTS_PER_FLUSH': '_sg_diagnostics_EVENTS_PER_FLUSH', 'FLUSH_INTERVAL_SECONDS': '_sg_diagnostics_FLUSH_INTERVAL_SECONDS', 'HEARTBEAT_INTERVAL_SECONDS': '_sg_diagnostics_HEARTBEAT_INTERVAL_SECONDS', 'REPEATED_MEDIA_EVENT_INTERVAL_SECONDS': '_sg_diagnostics_REPEATED_MEDIA_EVENT_INTERVAL_SECONDS', 'TRACE_FUNCTIONS': '_sg_diagnostics_TRACE_FUNCTIONS', 'safe_sites': '_sg_diagnostics_safe_sites', 'stop_reason': '_sg_diagnostics_stop_reason', 'Diagnostics': '_sg_diagnostics_Diagnostics', 'ERROR_CODES': '_sg_diagnostics_ERROR_CODES'}, 'gateway': {'secrets': '_sg_gateway_secrets', 're': '_sg_gateway_re', 'struct': '_sg_gateway_struct', 'time': '_sg_gateway_time', 'service6': '_sg_gateway_service6', 'identifier': '_sg_gateway_identifier', 'GridError': '_sg_gateway_GridError', 'gateway_packet': '_sg_gateway_gateway_packet', 'read_frame': '_sg_gateway_read_frame', 'login_packet': '_sg_gateway_login_packet', 'certificate_packet': '_sg_gateway_certificate_packet', 'validate_login': '_sg_gateway_validate_login', 'obtain_certificate': '_sg_gateway_obtain_certificate'}, 'h264clock': {'deque': '_sg_h264clock_deque', 'dataclass': '_sg_h264clock_dataclass', 'Fraction': '_sg_h264clock_Fraction', 'nals': '_sg_h264clock_nals', 'GridError': '_sg_h264clock_GridError', 'Reader': '_sg_h264clock_Reader', 'rbsp': '_sg_h264clock_rbsp', 'skip_scaling_list': '_sg_h264clock_skip_scaling_list', 'skip_hrd': '_sg_h264clock_skip_hrd', '_MAX_DPB_MBS': '_sg_h264clock__MAX_DPB_MBS', '_SUPPORTED_PROFILES': '_sg_h264clock__SUPPORTED_PROFILES', '_HIGH_PROFILES': '_sg_h264clock__HIGH_PROFILES', 'max_dpb_frames': '_sg_h264clock_max_dpb_frames', 'inferred_reorder': '_sg_h264clock_inferred_reorder', 'parse_sps': '_sg_h264clock_parse_sps', 'parse_vui': '_sg_h264clock_parse_vui', 'parse_sei': '_sg_h264clock_parse_sei', '_validate_sei_buffering_period_order': '_sg_h264clock__validate_sei_buffering_period_order', '_sei_alignment': '_sg_h264clock__sei_alignment', '_validate_pps_qp_offsets': '_sg_h264clock__validate_pps_qp_offsets', '_parse_pps_scaling_candidate': '_sg_h264clock__parse_pps_scaling_candidate', 'parse_pps': '_sg_h264clock_parse_pps', '_skip_ref_pic_list_modification': '_sg_h264clock__skip_ref_pic_list_modification', '_skip_weight_list': '_sg_h264clock__skip_weight_list', '_skip_pred_weight_table': '_sg_h264clock__skip_pred_weight_table', '_parse_dec_ref_pic_marking': '_sg_h264clock__parse_dec_ref_pic_marking', 'SliceHeader': '_sg_h264clock_SliceHeader', 'parse_slice': '_sg_h264clock_parse_slice', '_slice_pps_id': '_sg_h264clock__slice_pps_id', 'H264Clock': '_sg_h264clock_H264Clock'}, 'media': {'hashlib': '_sg_media_hashlib', 'json': '_sg_media_json', 'os': '_sg_media_os', 'struct': '_sg_media_struct', 'deque': '_sg_media_deque', 'dataclass': '_sg_media_dataclass', 'field': '_sg_media_field', 'Fraction': '_sg_media_Fraction', 'Path': '_sg_media_Path', 'H264Clock': '_sg_media_H264Clock', 'parse_adts': '_sg_media_parse_adts', 'TSMux': '_sg_media_TSMux', 'nals': '_sg_media_nals', 'GridError': '_sg_media_GridError', 'Chunk': '_sg_media_Chunk', 'layout_facts': '_sg_media_layout_facts', 'parse_media': '_sg_media_parse_media', 'Bits': '_sg_media_Bits', 'sps_info': '_sg_media_sps_info', 'adts_info': '_sg_media_adts_info', 'MediaSink': '_sg_media_MediaSink'}, 'mpegts': {'struct': '_sg_mpegts_struct', 'Fraction': '_sg_mpegts_Fraction', 'parse_adts': '_sg_mpegts_parse_adts', 'GridError': '_sg_mpegts_GridError', 'PCR_INTERVAL_90K': '_sg_mpegts_PCR_INTERVAL_90K', 'nals': '_sg_mpegts_nals', 'has_nal': '_sg_mpegts_has_nal', 'crc_mpeg': '_sg_mpegts_crc_mpeg', 'pts_bytes': '_sg_mpegts_pts_bytes', 'TSMux': '_sg_mpegts_TSMux'}, 'parent': {'json': '_sg_parent_json', 'math': '_sg_parent_math', 'struct': '_sg_parent_struct', 'time': '_sg_parent_time', 'dataclass': '_sg_parent_dataclass', 'layout_facts': '_sg_parent_layout_facts', 'parse_media': '_sg_parent_parse_media', 'Continuity': '_sg_parent_Continuity', 'Cancelled': '_sg_parent_Cancelled', 'GridError': '_sg_parent_GridError', 'endpoint': '_sg_parent_endpoint', 'parent_packet': '_sg_parent_parent_packet', 'read_frame': '_sg_parent_read_frame', 'MEDIA_STALL_TIMEOUT': '_sg_parent_MEDIA_STALL_TIMEOUT', 'FAILOVER_BACKOFF_SECONDS': '_sg_parent_FAILOVER_BACKOFF_SECONDS', 'MAX_PARENT_ATTEMPTS_PER_OUTAGE': '_sg_parent_MAX_PARENT_ATTEMPTS_PER_OUTAGE', 'MAX_CENTER_REDISCOVERIES_PER_OUTAGE': '_sg_parent_MAX_CENTER_REDISCOVERIES_PER_OUTAGE', 'Parent': '_sg_parent_Parent', 'parse_parents': '_sg_parent_parse_parents', 'TRANSIENT': '_sg_parent_TRANSIENT', '_is_media_validation_error': '_sg_parent__is_media_validation_error', 'receive_media': '_sg_parent_receive_media'}, 'protocol': {'ipaddress': '_sg_protocol_ipaddress', 'socket': '_sg_protocol_socket', 'struct': '_sg_protocol_struct', 'threading': '_sg_protocol_threading', 'time': '_sg_protocol_time', 'dataclass': '_sg_protocol_dataclass', 'field': '_sg_protocol_field', 'GridError': '_sg_protocol_GridError', 'Cancelled': '_sg_protocol_Cancelled', 'endpoint': '_sg_protocol_endpoint', 'Frame': '_sg_protocol_Frame', 'gateway_packet': '_sg_protocol_gateway_packet', 'center_packet': '_sg_protocol_center_packet', 'parent_packet': '_sg_protocol_parent_packet', 'read_exact': '_sg_protocol_read_exact', 'read_frame': '_sg_protocol_read_frame', 'Network': '_sg_protocol_Network'}, 'recovery': {'hashlib': '_sg_recovery_hashlib', 'OrderedDict': '_sg_recovery_OrderedDict', 'GridError': '_sg_recovery_GridError', 'Continuity': '_sg_recovery_Continuity'}, 'startup': {'threading': '_sg_startup_threading', 'time': '_sg_startup_time', 'replace': '_sg_startup_replace', 'GridError': '_sg_startup_GridError', 'Cancelled': '_sg_startup_Cancelled', 'Network': '_sg_startup_Network', 'AttemptStop': '_sg_startup_AttemptStop', 'AttemptNetwork': '_sg_startup_AttemptNetwork', 'StartupStage': '_sg_startup_StartupStage', 'receive_startup': '_sg_startup_receive_startup'}, 'stream': {'threading': '_sg_stream_threading', 'time': '_sg_stream_time', 'logging': '_sg_stream_logging', 'math': '_sg_stream_math', 're': '_sg_stream_re', 'deque': '_sg_stream_deque', 'urlsplit': '_sg_stream_urlsplit', 'StreamError': '_sg_stream_StreamError', 'Stream': '_sg_stream_Stream', 'StreamIO': '_sg_stream_StreamIO', 'HTTP': '_sg_stream_HTTP', 'bootstrap': '_sg_stream_bootstrap', 'receive_startup': '_sg_stream_receive_startup', 'discover_parent': '_sg_stream_discover_parent', 'obtain_certificate': '_sg_stream_obtain_certificate', 'Diagnostics': '_sg_stream_Diagnostics', 'safe_error': '_sg_stream_safe_error', 'stop_reason': '_sg_stream_stop_reason', 'MediaSink': '_sg_stream_MediaSink', 'receive_media': '_sg_stream_receive_media', 'Cancelled': '_sg_stream_Cancelled', 'GridError': '_sg_stream_GridError', 'Network': '_sg_stream_Network', '_log': '_sg_stream__log', '_INITIAL_TRANSPORT_FAILURES': '_sg_stream__INITIAL_TRANSPORT_FAILURES', 'validate_media_output': '_sg_stream_validate_media_output', 'BoundedBuffer': '_sg_stream_BoundedBuffer', '_receive_attempt': '_sg_stream__receive_attempt', 'receive': '_sg_stream_receive', 'SoopGridReader': '_sg_stream_SoopGridReader', 'SoopGridStream': '_sg_stream_SoopGridStream', 'official_hls_plugin': '_sg_stream_official_hls_plugin', 'OfficialHLSFallback': '_sg_stream_OfficialHLSFallback', 'SoopAutoStream': '_sg_stream_SoopAutoStream'}, 'plugin': {'os': '_sg_plugin_os', 're': '_sg_plugin_re', 'logging': '_sg_plugin_logging', 'PluginError': '_sg_plugin_PluginError', 'Plugin': '_sg_plugin_Plugin', 'pluginargument': '_sg_plugin_pluginargument', 'pluginmatcher': '_sg_plugin_pluginmatcher', 'Config': '_sg_plugin_Config', 'GridError': '_sg_plugin_GridError', 'OfficialHLSFallback': '_sg_plugin_OfficialHLSFallback', 'SoopAutoStream': '_sg_plugin_SoopAutoStream', 'SoopGridStream': '_sg_plugin_SoopGridStream', 'official_hls_plugin': '_sg_plugin_official_hls_plugin', 'log': '_sg_plugin_log', 'official_hls_streams': '_sg_plugin_official_hls_streams', 'SoopGridPlugin': '_sg_plugin_SoopGridPlugin', '__plugin__': '_sg_plugin___plugin__'}}

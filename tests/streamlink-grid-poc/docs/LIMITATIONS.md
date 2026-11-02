@@ -114,3 +114,9 @@ of this PoC.
 Production requires explicit Grid composition and cannot fall back to HRD or no-reorder PTS estimation. Historical timing comparisons are isolated in the [offline audit tool](LEGACY_HRD_AUDIT.md). SPS/VUI/SEI syntax and POC–PTS checks remain in production. Existing restrictions on POC type 1, Grid MMCO5, interlace, low-delay HRD, nonzero pic_struct and negative composition remain unchanged.
 
 The prior 600.447-second Grid-only run remains LIVE PARTIAL: 18,057 video pictures (no B pictures), 25,905 AAC AUs at 44.1 kHz, full TS decode/structure checks and complete output drain. Raw Grid wire was not retained; source-to-PES identity and perceptual lip-sync were not established for that run. No new live session is part of this refactor.
+
+## Experimental startup retry
+
+Startup retry is opt-in (default 0). It is not seamless gap recovery, does not waive continuity/identity checks and cannot restart after publication. A bounded validated startup prefix does not prove that a later Cache or Live gap cannot occur. Historical 2h/failover passes apply to their recorded artifact, not the new bundle. Raw capture plus retry is currently rejected. Existing A/V coverage failures remain terminal; no threshold relaxation was made. See [STARTUP_RETRY.md](STARTUP_RETRY.md).
+
+Startup readiness and final output coverage are evaluated separately. This does not exempt the output from final coverage validation, establish a safe future-frame watermark, or relax start offsets/sequence identity. Technical regression success is distinct from real-world retry effectiveness.
