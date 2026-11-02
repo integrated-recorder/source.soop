@@ -1497,7 +1497,7 @@ class _sg_mpegts_TSMux:
         return out + self._pes(video, pts, payload, pcr=pts if video else None)
 
 
-# Module: h264clock; source SHA-256: cbbe8fbae6809ab1858e11beb4cb979a76cf743be7436a8994da2ec5a4ae0ddb
+# Module: h264clock; source SHA-256: da086c588e6096cf28ba526920ab3162595be89693f6c0b6606d25066d859310
 from collections import deque as _sg_h264clock_deque
 from copy import copy as _sg_h264clock_copy
 from dataclasses import dataclass as _sg_h264clock_dataclass
@@ -2379,11 +2379,11 @@ class _sg_h264clock_H264Clock:
                     probe = _sg_h264clock_copy(self)
                     error.safe_facts['h264_current_poc'] = probe._picture_order(header, sps)
                 raise
-            if sps['poc_type'] == 2 and (not header.nal_ref_idc) and self.previous_nonreference:
-                raise _sg_h264clock_GridError('h264_poc2_nonreference_sequence_invalid')
         self._validate_timing_subset(header, sps)
         poc = self._picture_order(header, sps)
         self.last_observation['h264_current_poc'] = poc
+        if sps['poc_type'] == 2 and (not header.nal_ref_idc) and self.previous_nonreference and (poc == self.last_poc):
+            raise _sg_h264clock_GridError('h264_poc2_nonreference_sequence_invalid')
         first_picture = self.origin_dts is None
         if header.idr:
             if self.origin_dts is None:

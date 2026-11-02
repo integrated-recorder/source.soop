@@ -81,6 +81,7 @@ def sps(
     low_delay=False,
     nal_hrd=None,
     vcl_hrd=False,
+    gaps_allowed=False,
 ):
     nal_hrd = hrd if nal_hrd is None else nal_hrd
     has_hrd = nal_hrd or vcl_hrd
@@ -106,7 +107,7 @@ def sps(
         b.ue(1)
         b.se(cycle)
     b.ue(max_refs)
-    b.put(0)
+    b.put(int(gaps_allowed))
     b.ue(9)
     b.ue(5)
     b.put(1)
@@ -223,7 +224,19 @@ def test_pps_eight_by_eight_scaling_layout_can_precede_sps():
     assert clock.pps[0]["scaling_lists"] == 8
 
 
-def picture(frame=0, poc=0, *, mode=0, idr=False, idr_id=0, mmco=False, kind=0, first_mb=0, pps_id=0):
+def picture(
+    frame=0,
+    poc=0,
+    *,
+    mode=0,
+    idr=False,
+    idr_id=0,
+    mmco=False,
+    kind=0,
+    first_mb=0,
+    pps_id=0,
+    ref_idc=2,
+):
     b = Bits()
     b.ue(first_mb)
     b.ue(2 if idr else kind)
@@ -243,12 +256,12 @@ def picture(frame=0, poc=0, *, mode=0, idr=False, idr_id=0, mmco=False, kind=0, 
     if idr:
         b.put(0)
         b.put(0)
-    else:
+    elif ref_idc:
         b.put(int(mmco))
         if mmco:
             b.ue(5)
             b.ue(0)
-    return b.finish(0x65 if idr else 0x41)
+    return b.finish((0x65 if idr else 0x01) | (0x60 if idr else ref_idc << 5))
 
 
 @pytest.mark.parametrize("mode,cycle", [(0, 2), (1, 4)])
@@ -262,8 +275,7 @@ def test_fixed_vui_and_poc_order_alone_do_not_time_reordered_pictures(mode, cycl
 def test_type2_nonreference_picture_has_a_whole_output_interval():
     clock = LegacyH264Clock()
     first = clock.inspect(annex(sps(mode=2, reorder=0), pps(), picture(mode=2, idr=True)), 50_000_000)
-    unit = picture(1, mode=2)
-    second = clock.inspect(annex(bytes([0x01]) + unit[1:]), 50_333_333)
+    second = clock.inspect(annex(picture(1, mode=2, ref_idc=0)), 50_333_333)
     # POC 0 then 1 are consecutive output pictures, not half-frame samples.
     assert second["pts"] - first["pts"] == 3000
 
@@ -1029,17 +1041,40 @@ def test_malformed_picture_timing_alignment_cannot_supply_pts():
         H264Clock().inspect(annex(seq, pps(), sei_message(1, b"\x08"), picture(idr=True)), 50_000_000, 0)
 
 
-def test_poc2_normatively_forbidden_consecutive_nonreference_pictures():
+def test_poc2_gap_flag_false_rejects_missing_reference_frame_num():
     clock = H264Clock()
     clock.inspect(annex(sps(mode=2, fixed=False, reorder=0), pps(), picture(mode=2, idr=True)), 50_000_000, 0)
     for frame in (1, 2):
-        unit = picture(frame, mode=2)
-        payload = annex(bytes((0x01,)) + unit[1:])
+        payload = annex(picture(frame, mode=2, ref_idc=0))
         if frame == 1:
             clock.inspect(payload, 50_333_333, 0)
         else:
-            with pytest.raises(GridError):
+            # This fixture uses gaps_allowed=0, so the frame_num gap is the
+            # rejection reason before the POC type-2 duplicate rule applies.
+            with pytest.raises(GridError, match="h264_frame_num_gap"):
                 clock.inspect(payload, 50_666_666, 0)
+
+
+def test_poc2_consecutive_nonreference_pictures_with_distinct_poc_are_allowed():
+    clock = H264Clock()
+    seq = sps(mode=2, fixed=False, reorder=0, gaps_allowed=True)
+    clock.inspect(annex(seq, pps(), picture(mode=2, idr=True)), 50_000_000, 0)
+    observed = []
+    for index, frame_num in enumerate((1, 2), start=1):
+        payload = annex(picture(frame_num, mode=2, ref_idc=0))
+        timing = clock.inspect(payload, 50_000_000 + index * 333_333, 0)
+        observed.append(timing["poc"])
+    assert observed == [1, 3]
+
+
+def test_poc2_consecutive_nonreference_pictures_with_duplicate_poc_are_rejected():
+    clock = H264Clock()
+    seq = sps(mode=2, fixed=False, reorder=0, gaps_allowed=True)
+    clock.inspect(annex(seq, pps(), picture(mode=2, idr=True)), 50_000_000, 0)
+    payload = annex(picture(1, mode=2, ref_idc=0))
+    clock.inspect(payload, 50_333_333, 0)
+    with pytest.raises(GridError, match="h264_poc2_nonreference_sequence_invalid"):
+        clock.inspect(payload, 50_666_666, 0)
 
 
 def test_poc2_reference_frame_num_gap_is_not_silently_accepted():

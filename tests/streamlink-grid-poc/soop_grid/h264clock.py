@@ -1179,11 +1179,20 @@ class H264Clock:
                     probe = copy(self)
                     error.safe_facts["h264_current_poc"] = probe._picture_order(header, sps)
                 raise
-            if sps["poc_type"] == 2 and not header.nal_ref_idc and self.previous_nonreference:
-                raise GridError("h264_poc2_nonreference_sequence_invalid")
         self._validate_timing_subset(header, sps)
         poc = self._picture_order(header, sps)
         self.last_observation["h264_current_poc"] = poc
+        # H.264 8.2.1.3 NOTE 2 disallows consecutive non-reference pictures
+        # only when they produce duplicate POC values. Consecutive pictures
+        # with distinct frame_num can be valid when gaps are permitted; do not
+        # reject that sequence merely because both have nal_ref_idc == 0.
+        if (
+            sps["poc_type"] == 2
+            and not header.nal_ref_idc
+            and self.previous_nonreference
+            and poc == self.last_poc
+        ):
+            raise GridError("h264_poc2_nonreference_sequence_invalid")
 
         first_picture = self.origin_dts is None
         if header.idr:
