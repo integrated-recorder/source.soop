@@ -9,6 +9,7 @@ from .aac import parse_adts
 from .protocol import GridError
 
 PCR_INTERVAL_90K = 9_000  # 100 ms, expressed in the 90 kHz media clock.
+PCR_MAX_RECOVERY_GAP_90K = 180_000  # Bound interpolation to 2 seconds.
 
 
 def nals(data, max_units=None):
@@ -112,15 +113,47 @@ class TSMux:
 
     def _validate_pcr_time(self, dts):
         if self.last_pcr_dts is None:
-            return
+            return ()
         delta = dts - self.last_pcr_dts
         if delta <= 0:
             raise GridError("media_pcr_not_increasing")
-        # The muxer has no wall-clock-paced scheduler. It cannot safely invent
-        # PCR samples for an interval that elapsed before this PES was produced.
-        # Fail closed rather than emit a burst of backdated PCR-only packets.
-        if delta > PCR_INTERVAL_90K:
+        if delta > PCR_MAX_RECOVERY_GAP_90K:
             raise GridError("media_pcr_gap_limit")
+        # DTS is the muxer's existing program-time clock. Insert bounded
+        # intermediate samples on that same clock before the next video PES;
+        # do not modify elementary payload or PES timestamps.
+        return tuple(
+            self.last_pcr_dts + step * PCR_INTERVAL_90K
+            for step in range(1, (delta - 1) // PCR_INTERVAL_90K + 1)
+        )
+
+    def _pcr_only_packet(self, pcr):
+        """Serialize one adaptation-only PCR sample on the declared PCR PID."""
+        pid = 0x100
+        packet = bytearray(b"\xff" * 188)
+        next_cc = self.cc.get(pid, 0)
+        packet[:6] = bytes(
+            (
+                0x47,
+                (pid >> 8) & 0x1F,
+                pid & 0xFF,
+                0x20 | ((next_cc - 1) & 0x0F),  # adaptation-only packets do not advance CC
+                183,
+                0x10,
+            )
+        )
+        base = pcr & ((1 << 33) - 1)
+        packet[6:12] = bytes(
+            (
+                (base >> 25) & 0xFF,
+                (base >> 17) & 0xFF,
+                (base >> 9) & 0xFF,
+                (base >> 1) & 0xFF,
+                ((base << 7) & 0xFF) | 0x7E,
+                0,
+            )
+        )
+        return bytes(packet)
 
     def section(self, pid, data):
         return self.packetize(pid, b"\0" + data + struct.pack(">I", crc_mpeg(data)))
@@ -142,13 +175,12 @@ class TSMux:
             raise GridError("media_pts_dts_invalid")
         if video and dts is not None and self.last_dts is not None and dts <= self.last_dts:
             raise GridError("media_dts_not_monotonic")
-        if video and dts is not None:
-            self._validate_pcr_time(dts)
+        pcr_recovery = self._validate_pcr_time(dts) if video and dts is not None else ()
         header_len = 10 if video and dts is not None else 5
         length = 0 if video else len(payload) + 3 + header_len
         if length > 65535:
             raise GridError("aac_pes_limit")
-        out = b""
+        out = b"".join(self._pcr_only_packet(pcr) for pcr in pcr_recovery)
         if video:
             self.last_dts = dts
             if self.video_frames and self.video_frames % 60 == 0:

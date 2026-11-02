@@ -4,7 +4,7 @@ import pytest
 
 from conftest import synthetic_sps
 from soop_grid.media import adts_info, sps_info
-from soop_grid.mpegts import TSMux, crc_mpeg, pts_bytes
+from soop_grid.mpegts import PCR_INTERVAL_90K, PCR_MAX_RECOVERY_GAP_90K, TSMux, crc_mpeg, pts_bytes
 from soop_grid.protocol import GridError
 
 
@@ -94,14 +94,175 @@ def test_video_pcr_interval_at_100ms_boundary_is_encoded_correctly():
     assert pcrs[1] - pcrs[0] == 9_000 * 300
 
 
-def test_mux_rejects_pcr_gap_over_100ms_before_mutating_state():
+def _read_pcr_samples(data):
+    samples = []
+    for offset in range(0, len(data), 188):
+        packet = data[offset : offset + 188]
+        pid = ((packet[1] & 31) << 8) | packet[2]
+        control = (packet[3] >> 4) & 3
+        if pid != 0x100 or control not in (2, 3) or packet[4] < 7 or not packet[5] & 0x10:
+            continue
+        base = (packet[6] << 25) | (packet[7] << 17) | (packet[8] << 9) | (packet[9] << 1) | (packet[10] >> 7)
+        extension = ((packet[10] & 1) << 8) | packet[11]
+        samples.append((base * 300 + extension, packet))
+    return samples
+
+
+def _assert_transport_continuity(data):
+    last_payload_cc = {}
+    for offset in range(0, len(data), 188):
+        packet = data[offset : offset + 188]
+        assert len(packet) == 188 and packet[0] == 0x47
+        pid = ((packet[1] & 31) << 8) | packet[2]
+        control = (packet[3] >> 4) & 3
+        assert control in (1, 2, 3)
+        cc = packet[3] & 15
+        if control == 2:
+            if pid in last_payload_cc:
+                assert cc == last_payload_cc[pid]
+        elif pid in last_payload_cc:
+            assert cc == (last_payload_cc[pid] + 1) & 15
+        if control in (1, 3):
+            last_payload_cc[pid] = cc
+
+
+@pytest.mark.parametrize(
+    ("delta", "expected_intermediate"),
+    [(9_001, 1), (20_790, 2), (45_000, 4), (180_000, 19)],
+)
+def test_mux_inserts_bounded_pcr_only_samples_for_dts_gaps(delta, expected_intermediate):
+    mux = TSMux()
+    mux.started = True
+    mux.add_video(0, 0, b"first")
+    output = mux.add_video(delta, delta, b"second")
+    samples = _read_pcr_samples(output)
+    assert len(samples) == expected_intermediate + 1
+    values = [sample[0] // 300 for sample in samples]
+    assert values == [*range(PCR_INTERVAL_90K, delta, PCR_INTERVAL_90K), delta]
+    assert all(0 < b - a <= PCR_INTERVAL_90K for a, b in zip(values, values[1:], strict=False))
+    intermediate = [sample[1] for sample in samples[:-1]]
+    assert all(((packet[3] >> 4) & 3) == 2 for packet in intermediate)
+    assert all(packet[4] == 183 and packet[5] == 0x10 for packet in intermediate)
+    # Adaptation-only packets keep the previous payload CC for this PID.
+    assert all((packet[3] & 15) == 0 for packet in intermediate)
+    assert mux.last_pcr_dts == delta
+
+
+def test_mux_rejects_pcr_gap_over_recovery_bound_before_mutating_state():
     mux = TSMux()
     mux.started = True
     mux.add_video(0, 0, b"first")
     before = (mux.last_dts, mux.last_pcr_dts, mux.video_frames, dict(mux.cc))
     with pytest.raises(GridError, match="media_pcr_gap_limit"):
-        mux.add_video(9_001, 9_001, b"second")
+        mux.add_video(PCR_MAX_RECOVERY_GAP_90K + 1, PCR_MAX_RECOVERY_GAP_90K + 1, b"second")
     assert (mux.last_dts, mux.last_pcr_dts, mux.video_frames, dict(mux.cc)) == before
+
+
+def test_pcr_only_samples_preserve_payload_cc_and_wrap_the_33_bit_clock():
+    mux = TSMux()
+    mux.started = True
+    first_dts = (1 << 33) - 4_500
+    mux.add_video(first_dts, first_dts, b"first")
+    output = mux.add_video((1 << 33) + 13_500, (1 << 33) + 13_500, b"second")
+    samples = _read_pcr_samples(output)
+    bases = [sample[0] // 300 for sample in samples]
+    assert bases == [4_500, 13_500]
+    assert all((sample[1][3] & 15) == 0 for sample in samples[:-1])
+
+
+def test_pcr_recovery_ts_with_real_encoded_access_units_decodes(encoded_bframes, tmp_path):
+    import json
+    import os
+    import shutil
+    import subprocess
+
+    from soop_grid.h264clock import H264Clock
+
+    ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
+    ffprobe = os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe")
+    if not ffmpeg or not ffprobe:
+        pytest.skip("FFmpeg/FFprobe required to independently validate recovered PCR output")
+
+    from soop_grid.mpegts import nals
+
+    idrs = [unit for unit, _kind in encoded_bframes if any(nal[0] & 31 == 5 for nal in nals(unit))]
+    assert len(idrs) >= 2
+    clock, mux = H264Clock(), TSMux()
+    first = clock.inspect(idrs[0], 50_000_000, idrs[0].composition_offset_100ns)
+    second = clock.inspect(idrs[1], 52_310_000, idrs[1].composition_offset_100ns)
+    assert second["dts"] - first["dts"] == 20_790
+    output = bytearray(mux.add_video(first["dts"], first["pts"], idrs[0], idr=True))
+    audio_path = tmp_path / "test-audio.aac"
+    encoded_audio = subprocess.run(
+        [
+            ffmpeg,
+            "-v",
+            "error",
+            "-nostdin",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=880:sample_rate=44100",
+            "-t",
+            "0.25",
+            "-c:a",
+            "aac",
+            "-profile:a",
+            "aac_low",
+            "-f",
+            "adts",
+            str(audio_path),
+        ],
+        capture_output=True,
+        timeout=30,
+    )
+    assert encoded_audio.returncode == 0, encoded_audio.stderr.decode("utf-8", "replace")
+    output.extend(mux.add_audio(first["dts"] + 3_000, audio_path.read_bytes()))
+    output.extend(mux.add_video(second["dts"], second["pts"], idrs[1], idr=True))
+    pcr_values = [sample[0] // 300 for sample in _read_pcr_samples(output)]
+    assert pcr_values == [
+        first["dts"],
+        first["dts"] + PCR_INTERVAL_90K,
+        first["dts"] + 2 * PCR_INTERVAL_90K,
+        second["dts"],
+    ]
+    assert all(0 < b - a <= PCR_INTERVAL_90K for a, b in zip(pcr_values, pcr_values[1:], strict=False))
+    _assert_transport_continuity(output)
+    ts_path = tmp_path / "pcr-recovered.ts"
+    ts_path.write_bytes(output)
+    from tools.verify_recording import verify
+
+    facts = verify(ts_path, ffprobe, ffmpeg, timeout=30)
+    assert facts["passed"], facts["failures"]
+    assert facts["ts"]["max_pcr_value_delta_seconds"] <= 0.1
+    decoded = subprocess.run(
+        [
+            ffmpeg,
+            "-v",
+            "error",
+            "-xerror",
+            "-nostdin",
+            "-i",
+            str(ts_path),
+            "-map",
+            "0:v:0",
+            "-map",
+            "0:a:0",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        timeout=30,
+    )
+    assert decoded.returncode == 0, decoded.stderr.decode("utf-8", "replace")
+    probe = subprocess.run(
+        [ffprobe, "-v", "error", "-show_entries", "stream=codec_type,nb_frames", "-of", "json", str(ts_path)],
+        capture_output=True,
+        timeout=30,
+    )
+    assert probe.returncode == 0, probe.stderr.decode("utf-8", "replace")
+    assert {stream["codec_type"] for stream in json.loads(probe.stdout)["streams"]} == {"video", "audio"}
 
 
 def test_mux_tracks_presentation_extent_across_b_frame_reordering():

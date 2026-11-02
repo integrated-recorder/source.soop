@@ -724,6 +724,15 @@ class SliceHeader:
     idr_pic_id: int | None
 
 
+def _validate_frame_num_progress(frame_num, max_frame_num, gaps_allowed, previous_reference_frame_num):
+    """Apply the SPS frame_num constraint against the previous reference AU."""
+    if previous_reference_frame_num is None:
+        return
+    expected_frame_num = (previous_reference_frame_num + 1) % max_frame_num
+    if not gaps_allowed and frame_num != expected_frame_num:
+        raise GridError("h264_frame_num_gap")
+
+
 def parse_slice(nal, sps, pps):
     nal_type = nal[0] & 31
     if nal_type not in (1, 5):
@@ -1122,9 +1131,12 @@ class H264Clock:
         if header.idr and header.frame_num != 0:
             raise GridError("h264_frame_num_invalid")
         if not header.idr and self.previous_reference_frame_num is not None:
-            expected_frame_num = (self.previous_reference_frame_num + 1) % sps["max_frame_num"]
-            if not sps["gaps_allowed"] and header.frame_num != expected_frame_num:
-                raise GridError("h264_frame_num_gap")
+            _validate_frame_num_progress(
+                header.frame_num,
+                sps["max_frame_num"],
+                sps["gaps_allowed"],
+                self.previous_reference_frame_num,
+            )
             if sps["poc_type"] == 2 and not header.nal_ref_idc and self.previous_nonreference:
                 raise GridError("h264_poc2_nonreference_sequence_invalid")
         self._validate_timing_subset(header, sps)

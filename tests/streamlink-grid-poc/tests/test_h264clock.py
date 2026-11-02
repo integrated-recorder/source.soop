@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from soop_grid.h264clock import H264Clock, parse_pps, parse_sps
+from soop_grid.h264clock import H264Clock, _validate_frame_num_progress, parse_pps, parse_sps
 from soop_grid.media import adts_info
 from soop_grid.mpegts import TSMux, nals
 from tools.legacy_h264_audit import LegacyH264Clock
@@ -214,6 +214,19 @@ def test_mmco5_resets_frame_num_offset():
     assert clock._picture_order(header(0, mmco5=True), sps) == 32
     assert clock.prev_frame_num_offset == 0
     assert clock._picture_order(header(1), sps) == 2
+
+
+def test_reported_119_to_1_frame_num_transition_is_not_a_normal_wrap():
+    # MaxFrameNum is a power of two. With the common 7-bit domain, 119's
+    # successor is 120; the modulo wrap is 127 -> 0, not 119 -> 1.
+    with pytest.raises(GridError, match="h264_frame_num_gap"):
+        _validate_frame_num_progress(1, 128, False, 119)
+    _validate_frame_num_progress(0, 128, False, 127)
+
+
+def test_frame_num_successor_after_mmco5_uses_zero_reference_state():
+    # H.264 treats the MMCO5 picture as frame_num 0 for subsequent use.
+    _validate_frame_num_progress(1, 128, False, 0)
 
 
 def test_poc2_without_fixed_clock_but_zero_reorder_constraint_decodes(encoded_poc2_no_vui, tmp_path):
