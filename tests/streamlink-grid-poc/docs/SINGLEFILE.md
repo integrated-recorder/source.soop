@@ -25,12 +25,16 @@ Git 저장소의 생성 배포 산출물은 `dist/soop_grid.py`입니다. 이를
 
 `--soop-grid-purge-credentials`는 HLS 위임 시 내장 플러그인에 삭제를 요청합니다. Grid 로그인 쿠키는 저장하지 않으므로 Grid 모드에서 삭제할 Grid 쿠키 캐시는 없습니다.
 
-Native Grid는 하나의 `original` stream만 노출합니다. Streamlink 8.6.2의 `best`와 `worst` 별칭도 이 단일 stream을 선택합니다. 별도 Grid 화질 선택을 의미하지 않습니다. HLS에서는 내장 `soop`의 품질 목록과 선택을 유지합니다.
+Native Grid는 각 방송의 공식 preset과 실측으로 확인된 `original`, `720p`, `540p`, `360p` 중 제공되는 profile만 노출합니다. 모든 방송에 전부 제공되는 것은 아닙니다. 선택 profile과 실제 H.264 SPS가 다르면 출력 전에 종료합니다. 예: `streamlink URL 720p -o recording.ts`. `best`/`worst`는 노출된 profile 안에서 고릅니다. 2160p 원본의 1080p Grid 수신은 검증되지 않았습니다. 자세한 범위는 [화질 선택 검증](NATIVE_GRID_QUALITY_SELECTION.md)을 참고하세요. HLS는 내장 `soop` 품질 목록을 유지합니다.
 
 ```sh
 # Native Grid만
 streamlink --soop-grid-transport grid \
   'https://play.sooplive.com/CHANNEL_ID/BNO' original -o recording.ts
+
+# 실측된 저화질 Grid 프로파일 (해당 방송에서 제공되는 경우)
+streamlink --soop-grid-transport grid \
+  'https://play.sooplive.com/CHANNEL_ID/BNO' 720p -o recording.ts
 
 # 내장 Streamlink SOOP HLS 플러그인에 위임
 streamlink --soop-grid-transport hls \

@@ -17,7 +17,13 @@ from streamlink.plugin import Plugin, pluginargument, pluginmatcher
 
 from soop_grid.bootstrap import Config
 from soop_grid.protocol import GridError
-from soop_grid.stream import OfficialHLSFallback, SoopAutoStream, SoopGridStream, official_hls_plugin
+from soop_grid.stream import (
+    OfficialHLSFallback,
+    SoopAutoStream,
+    SoopGridStream,
+    official_grid_profiles,
+    official_hls_plugin,
+)
 
 
 log = logging.getLogger("streamlink.plugins.soop_grid")
@@ -171,46 +177,59 @@ class SoopGridPlugin(Plugin):
         if stream_password and not account:
             raise PluginError("grid_stream_password_requires_account; use --soop-grid-transport hls")
 
-        config = Config(
-            broadcaster=self.match["channel"],
-            bno=self.match["bno"],
-            account=account,
-            account_password=account_password,
-            stream_password=stream_password,
-            require_adult=bool(self.get_option("grid-require-adult")),
-            duration=self.get_option("grid-duration"),
-            startup_retries=self.get_option("grid-startup-retries") or 0,
-            startup_window=self.get_option("grid-startup-window")
-            if self.get_option("grid-startup-window") is not None
-            else 2.0,
-            max_bytes=self.get_option("grid-max-bytes"),
-            capture_dir=os.environ.get("SOOP_GRID_CAPTURE_DIR") or None,
-            diagnostics_dir=self.get_option("grid-diagnostics")
-            or os.environ.get("SOOP_GRID_DIAGNOSTICS_DIR")
-            or None,
-            referer="https://play.sooplive.com/"
-            + self.match["channel"]
-            + ("/" + self.match["bno"] if self.match["bno"] else ""),
-            user_agent=self.session.http.headers.get("User-Agent"),
+        channel, bno = self.match["channel"], self.match["bno"]
+        profiles = official_grid_profiles(
+            self.session,
+            self.url,
+            channel,
+            bno,
         )
-        try:
-            config.validate()
-        except GridError as exc:
-            config.clear()
-            raise PluginError(str(exc)) from None
-        grid = SoopGridStream(self.session, config)
-        if transport == "auto":
-            fallback = OfficialHLSFallback(
-                self.session,
-                self.url,
-                account,
-                account_password,
-                stream_password,
-                purge_credentials=purge_credentials,
+        referer = "https://play.sooplive.com/" + channel + ("/" + bno if bno else "")
+        for profile in profiles:
+            config = Config(
+                broadcaster=channel,
+                bno=bno,
+                account=account,
+                account_password=account_password,
+                stream_password=stream_password,
+                require_adult=bool(self.get_option("grid-require-adult")),
+                duration=self.get_option("grid-duration"),
+                startup_retries=self.get_option("grid-startup-retries") or 0,
+                startup_window=self.get_option("grid-startup-window")
+                if self.get_option("grid-startup-window") is not None
+                else 2.0,
+                max_bytes=self.get_option("grid-max-bytes"),
+                capture_dir=os.environ.get("SOOP_GRID_CAPTURE_DIR") or None,
+                diagnostics_dir=self.get_option("grid-diagnostics")
+                or os.environ.get("SOOP_GRID_DIAGNOSTICS_DIR")
+                or None,
+                referer=referer,
+                user_agent=self.session.http.headers.get("User-Agent"),
+                grid_quality=profile.name,
+                expected_grid_height=profile.expected_height,
             )
-            yield "original", SoopAutoStream(self.session, grid, fallback)
-        else:
-            yield "original", grid
+            try:
+                config.validate()
+            except GridError as exc:
+                config.clear()
+                raise PluginError(str(exc)) from None
+            grid = SoopGridStream(self.session, config)
+            if transport == "auto":
+                fallback = OfficialHLSFallback(
+                    self.session,
+                    self.url,
+                    account,
+                    account_password,
+                    stream_password,
+                    purge_credentials=purge_credentials,
+                    quality_key=profile.hls_label,
+                )
+                selected = SoopAutoStream(self.session, grid, fallback)
+            else:
+                selected = grid
+            yield profile.name, selected
+            if profile.name == "original" and profile.original_label:
+                yield profile.original_label.lower(), selected
 
 
 __plugin__ = SoopGridPlugin

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from .auth import HTTP, LIVE, PLAY, destination, identifier
 from .protocol import GridError, endpoint
+from .quality import profile_by_name
 
 
 @dataclass(repr=False)
@@ -30,8 +31,16 @@ class Config:
     startup_memory: int = 32 << 20
     startup_timeout: float = 15.0
     startup_total_timeout: float = 45.0
+    grid_quality: str = "original"
+    expected_grid_height: int | None = None
 
     def validate(self):
+        profile = profile_by_name(
+            self.grid_quality,
+            original_height=self.expected_grid_height if self.grid_quality == "original" else None,
+        )
+        if profile.expected_height != self.expected_grid_height:
+            raise GridError("grid_quality_metadata_invalid")
         if (
             type(self.startup_retries) is not int
             or not 0 <= self.startup_retries <= 2

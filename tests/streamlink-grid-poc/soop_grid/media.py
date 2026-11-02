@@ -203,7 +203,24 @@ def adts_info(payload):
 
 
 class MediaSink:
-    def __init__(self, emit, capture_dir=None, *, synchronize_startup=False):
+    def __init__(
+        self,
+        emit,
+        capture_dir=None,
+        *,
+        synchronize_startup=False,
+        expected_grid_height=None,
+        grid_quality_code=1,
+    ):
+        if expected_grid_height is not None and (
+            type(expected_grid_height) is not int or not 144 <= expected_grid_height <= 4320
+        ):
+            raise GridError("grid_quality_metadata_invalid")
+        if type(grid_quality_code) is not int or grid_quality_code not in (1, 2, 4, 8):
+            raise GridError("grid_quality_unsupported")
+        self.expected_grid_height = expected_grid_height
+        self.grid_quality_code = grid_quality_code
+        self.grid_quality_verified = expected_grid_height is None
         self.synchronize_startup = synchronize_startup
         self.startup_frames = []
         self.startup_bytes = 0
@@ -240,6 +257,9 @@ class MediaSink:
             "sequence_discontinuities": 0,
             "extended_media_packets": 0,
             "media_extension_bytes": 0,
+            "grid_quality_code": grid_quality_code,
+            "expected_grid_height": expected_grid_height or 0,
+            "grid_quality_verified": int(self.grid_quality_verified),
         }
         self.payload_hash = hashlib.sha256()
         self.video_output_hash = hashlib.sha256()
@@ -380,6 +400,20 @@ class MediaSink:
                 timing = self.video_clock.inspect(
                     chunk.payload, chunk.timestamp, chunk.composition_offset_raw
                 )
+                if timing is not None and self.expected_grid_height is not None:
+                    received_height = timing["sps"]["height"]
+                    self.stats["received_grid_height"] = received_height
+                    if received_height != self.expected_grid_height:
+                        raise GridError(
+                            "grid_quality_resolution_mismatch",
+                            safe_facts={
+                                "grid_quality_code": self.grid_quality_code,
+                                "expected_grid_height": self.expected_grid_height,
+                                "received_grid_height": received_height,
+                            },
+                        )
+                    self.grid_quality_verified = True
+                    self.stats["grid_quality_verified"] = 1
             except GridError as error:
                 if str(error) == "h264_frame_num_gap":
                     safe_facts = dict(error.safe_facts or {})

@@ -22,6 +22,7 @@ from .diagnostics import Diagnostics, safe_error, stop_reason
 from .media import MediaSink
 from .parent import receive_media
 from .protocol import Cancelled, GridError, Network
+from .quality import profile_by_name, profiles_from_viewpreset
 
 
 _log = logging.getLogger("streamlink.plugins.soop_grid")
@@ -44,6 +45,8 @@ def validate_media_output(stats):
         raise GridError("no_playable_grid_video")
     if not stats.get("audio_output_access_units"):
         raise GridError("no_playable_grid_audio")
+    if stats.get("expected_grid_height") and not stats.get("grid_quality_verified"):
+        raise GridError("grid_quality_resolution_unverified")
     span_status = stats.get("av_track_span_status")
     if span_status == "incomplete":
         raise GridError("media_track_coverage_incomplete")
@@ -174,8 +177,31 @@ def _receive_attempt(config, network, emit, report, stats):
         stats["bootstrap_bno"] = session.bno
         credentials = obtain_certificate(network, session, report)
         session.clear_gateway_auth()
-        parents, node_key = discover_parent(network, session.center, credentials, report)
-        sink = MediaSink(emit, config.capture_dir, synchronize_startup=True)
+        profile = profile_by_name(
+            config.grid_quality,
+            original_height=config.expected_grid_height if config.grid_quality == "original" else None,
+        )
+        stats.update(
+            grid_quality_code=profile.allocation_quality,
+            expected_grid_height=profile.expected_height or 0,
+            grid_quality_verified=0,
+        )
+        parents, node_key = discover_parent(
+            network,
+            session.center,
+            credentials,
+            report,
+            quality=profile.allocation_quality,
+            join_quality=profile.join_quality,
+            is_auto=profile.join_is_auto,
+        )
+        sink = MediaSink(
+            emit,
+            config.capture_dir,
+            synchronize_startup=True,
+            expected_grid_height=profile.expected_height,
+            grid_quality_code=profile.allocation_quality,
+        )
         stats.update(sink.stats)
         sink.stats = stats  # Heartbeats can observe counters while reception is running.
         duration = config.duration
@@ -199,7 +225,15 @@ def _receive_attempt(config, network, emit, report, stats):
             progress,
             duration,
             config.max_bytes,
-            rediscover=lambda: discover_parent(network, session.center, credentials, report),
+            rediscover=lambda: discover_parent(
+                network,
+                session.center,
+                credentials,
+                report,
+                quality=profile.allocation_quality,
+                join_quality=profile.join_quality,
+                is_auto=profile.join_is_auto,
+            ),
         )
     except BaseException as error:
         primary = error
@@ -515,13 +549,55 @@ def official_hls_plugin(session, url, account, password, stream_password, purge_
     )
 
 
+def official_grid_profiles(session, url, channel, bno):
+    """Read official live quality metadata and intersect it with measured Grid modes.
+
+    Streamlink's built-in SOOP plugin owns the Live API schema. Its matcher can
+    capture only a prefix of hyphenated channel IDs, so
+    this helper never trusts ``plugin.match``: the caller's exact channel and
+    broadcast number are passed directly to the official metadata method. This
+    optional lookup never starts a login and restores shared HTTP headers.
+    """
+    try:
+        session.plugins.load_builtin()
+        plugin_class = session.plugins.get_loaded().get("soop")
+        if plugin_class is None:
+            return profiles_from_viewpreset(None)
+        plugin = plugin_class(session, url)
+        headers = plugin.session.http.headers
+        old_headers = {key: headers.get(key) for key in ("Referer", "Origin")}
+        try:
+            headers.update({"Referer": url, "Origin": "https://play.sooplive.com"})
+            broadcast = bno or plugin._get_bno()
+            result, response_bno, _author, _title, _rmd, _cdn, _bpwd, viewpreset = plugin._get_channel_info(
+                channel, broadcast
+            )
+        finally:
+            for key, value in old_headers.items():
+                if value is None:
+                    headers.pop(key, None)
+                else:
+                    headers[key] = value
+        if result != plugin.CHANNEL_RESULT_OK or str(response_bno) != str(broadcast):
+            return profiles_from_viewpreset(None)
+        return profiles_from_viewpreset(viewpreset)
+    except Exception:
+        # Profile discovery is advisory. Original Grid remains available, but
+        # unconfirmed downscaled profiles are omitted rather than guessed.
+        _log.debug("Official SOOP quality metadata unavailable; exposing verified original only")
+        return profiles_from_viewpreset(None)
+
+
 class OfficialHLSFallback:
     """Lazy, one-shot delegation to Streamlink's maintained SOOP plugin."""
 
-    def __init__(self, session, url, account, password, stream_password, purge_credentials=False):
+    def __init__(
+        self, session, url, account, password, stream_password, purge_credentials=False, quality_key=None
+    ):
         self.session, self.url, self.account = session, url, account
         self.password, self.stream_password = password, stream_password
         self.purge_credentials = purge_credentials
+        self.quality_key = quality_key
         self.used = False
 
     def __repr__(self):
@@ -544,7 +620,14 @@ class OfficialHLSFallback:
                 self.purge_credentials,
             )
             streams = plugin.streams()
-            selected = streams.get("original") or streams.get("best") or next(iter(streams.values()), None)
+            if self.quality_key is not None:
+                selected = streams.get(self.quality_key)
+                if selected is None:
+                    raise StreamError("The requested HLS fallback quality is unavailable")
+            else:
+                selected = (
+                    streams.get("original") or streams.get("best") or next(iter(streams.values()), None)
+                )
             if selected is None:
                 raise StreamError("Official SOOP HLS plugin returned no playable stream")
             return selected.open()

@@ -68,9 +68,7 @@ perceptual A/V synchronization test has been performed.
   Authentication denial, malformed protocol/media, unsupported timing, and gaps
   after output begins do not fall back to HLS. HLS uses Streamlink's built-in
   `soop` plugin and its own quality selection.
-- Native Grid currently exposes only verified `original`. Multi-Parent reception,
-  automatic session reauthentication, automatic broadcast-number changes, and
-  broadcast-end versus network-failure classification are not supported.
+- Native Grid exposes only broadcast-advertised profiles with measured request-to-SPS mappings: currently `original`, `720p`, `540p`, and `360p`, subject to per-broadcast availability. A 2160p-to-1080p profile is unverified. Multi-Parent reception, automatic session reauthentication, automatic broadcast-number changes, and broadcast-end versus network-failure classification are not supported. See [quality selection evidence](NATIVE_GRID_QUALITY_SELECTION.md).
 - A three-second media stall may initiate recovery. A legitimate quiet interval
   can therefore cause a reconnect attempt. Recovery keeps a global duration
   deadline and requires exact cache overlap and identity continuity.

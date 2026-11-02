@@ -67,7 +67,7 @@ streamlink --loglevel debug --json \
   'https://play.sooplive.com/CHANNEL_ID/BNO'
 ```
 
-출력이나 디버그 로그에서 `soop_grid` 플러그인이 로드되고 `original` stream을 제공하는지 확인합니다. 실행 환경의 로깅 형식은 Streamlink 버전에 따라 달라질 수 있습니다. 이 명령은 실제 방송 접속을 시도할 수 있습니다.
+출력이나 디버그 로그에서 `soop_grid` 플러그인이 로드되고 `original` 또는 방송에서 제공하는 프로파일을 노출하는지 확인합니다. 실행 환경의 로깅 형식은 Streamlink 버전에 따라 달라질 수 있습니다. 이 명령은 실제 방송 접속을 시도할 수 있습니다.
 
 ## 3. 기본 녹화
 
@@ -159,7 +159,17 @@ Native Grid의 방송 비밀번호는 계정 인증 세션에서 전달되므로
 
 플러그인은 방송 비밀번호를 정상 Center JOIN 경로로 전달합니다.
 
-Native Grid는 `original` 하나를 제공합니다. Streamlink 8.6.2의 `best`와 `worst` 별칭도 이 단일 Grid stream을 선택하지만, 별도 Grid 화질 선택 기능은 아닙니다. HLS 모드에서는 내장 `soop` 플러그인이 제공하는 화질 목록과 선택 동작을 그대로 사용합니다.
+Native Grid 화질 선택은 방송의 공식 `VIEWPRESET`과 Grid 실측 결과가 일치하는 프로파일만 표시합니다. 현재 검증된 이름은 `original`, `720p`, `540p`, `360p`이며 방송마다 목록이 다를 수 있습니다. 예를 들어 해당 방송에서 720p가 표시되면 다음처럼 고를 수 있습니다.
+
+```sh
+streamlink --soop-grid-transport grid \
+  'https://play.sooplive.com/CHANNEL_ID/BNO' 720p -o recording.ts
+
+streamlink --soop-grid-transport grid \
+  'https://play.sooplive.com/CHANNEL_ID/BNO' 360p -o recording-360p.ts
+```
+
+수신기는 Center Parent 응답과 실제 H.264 SPS 해상도를 확인하고, 선택한 프로파일과 다르면 TS를 내보내기 전에 오류로 종료합니다. `best`와 `worst`는 해당 방송에 노출된 프로파일 중에서 선택합니다. 2160p 원본에서 1080p Grid 변환은 아직 검증되지 않았습니다. 표본, 프로토콜 코드, 한계는 [Native Grid 화질 선택 검증](NATIVE_GRID_QUALITY_SELECTION.md)을 참고하세요. HLS 모드는 내장 `soop` 플러그인의 별도 화질 목록을 사용합니다.
 
 이 플러그인은 성인 인증, 구독·유료 권한, 방송 비밀번호, CAPTCHA 또는 서비스의 접근 제한을 우회하지 않습니다. 계정 인증 및 보호 방송 호환성은 방송과 서버 상태에 따라 달라질 수 있습니다.
 

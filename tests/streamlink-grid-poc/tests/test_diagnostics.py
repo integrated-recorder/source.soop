@@ -111,6 +111,32 @@ def test_protocol_header_facts_are_allowlisted_without_raw_values(tmp_path):
     assert "fixture-secret" not in text and "private-wire" not in text
 
 
+def test_quality_mismatch_diagnostics_keep_only_bounded_server_quality_codes(tmp_path):
+    path = tmp_path / "quality-facts"
+    d = Diagnostics(path, lambda: {})
+    d.fail(
+        GridError(
+            "center_quality_not_honored",
+            safe_facts={
+                "requested_grid_quality_code": 10,
+                "returned_grid_quality_count": 2,
+                "returned_grid_quality_codes": [1, 4],
+                "parent_ip": "192.0.2.1",
+                "ticket": "fixture-secret",
+            },
+        )
+    )
+    d.close()
+    summary = json.loads((path / "summary.json").read_text())
+    assert summary["protocol_failure"] == {
+        "family": "grid_quality",
+        "requested_grid_quality_code": 10,
+        "returned_grid_quality_count": 2,
+        "returned_grid_quality_codes": [1, 4],
+    }
+    assert "fixture-secret" not in (path / "summary.json").read_text()
+
+
 def test_h264_frame_num_failure_persists_only_bounded_codec_and_grid_facts(tmp_path):
     path = tmp_path / "h264-gap"
     d = Diagnostics(path, lambda: {})
@@ -423,7 +449,7 @@ def test_cleanup_failure_does_not_replace_parser_failure(monkeypatch):
     sink = SimpleNamespace(stats={}, close=lambda: (_ for _ in ()).throw(OSError(errno.ENOSPC, "secret")))
     monkeypatch.setattr(stream_module, "bootstrap", lambda *a, **k: session)
     monkeypatch.setattr(stream_module, "obtain_certificate", lambda *a: credentials)
-    monkeypatch.setattr(stream_module, "discover_parent", lambda *a: ([], 1))
+    monkeypatch.setattr(stream_module, "discover_parent", lambda *a, **k: ([], 1))
     monkeypatch.setattr(stream_module, "MediaSink", lambda *a, **k: sink)
     monkeypatch.setattr(
         stream_module, "receive_media", lambda *a, **k: (_ for _ in ()).throw(GridError("media_header_short"))

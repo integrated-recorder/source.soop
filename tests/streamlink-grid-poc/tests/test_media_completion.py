@@ -118,7 +118,7 @@ def test_receive_checks_media_coverage_after_sink_final_drain(monkeypatch):
 
     monkeypatch.setattr(stream_module, "bootstrap", lambda *a, **k: session)
     monkeypatch.setattr(stream_module, "obtain_certificate", lambda *a: credentials)
-    monkeypatch.setattr(stream_module, "discover_parent", lambda *a: ([], 1))
+    monkeypatch.setattr(stream_module, "discover_parent", lambda *a, **k: ([], 1))
     monkeypatch.setattr(stream_module, "MediaSink", Sink)
     monkeypatch.setattr(stream_module, "receive_media", lambda *a, **k: None)
     with pytest.raises(GridError, match="media_track_coverage_incomplete"):

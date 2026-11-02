@@ -66,6 +66,60 @@ def test_streamlink_best_and_original_select_the_same_single_grid_stream(transpo
     assert streams["best"].shortname() == ("grid" if transport == "grid" else "auto")
 
 
+@pytest.mark.parametrize("transport", ["grid", "auto"])
+def test_verified_native_grid_profiles_are_enumerated_and_best_worst_are_numeric(monkeypatch, transport):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "540p", "name": "hd"},
+                {"label": "360p", "name": "sd"},
+                {"label": "720p", "name": "hd4k"},
+                {"label": "1080p", "name": "hd8k"},
+                {"label": "1440p", "name": "original"},
+            ]
+        ),
+    )
+    url = "https://play.sooplive.com/fixture_channel/12345"
+    streams = cls(session, url, options={"transport": transport}).streams()
+    assert {"original", "1440p", "720p", "540p", "360p", "best", "worst"} <= set(streams)
+    assert streams["original"] is streams["1440p"]
+    assert streams["best"] is streams["1440p"]
+    assert streams["worst"] is streams["360p"]
+    grid = streams["720p"].grid if transport == "auto" else streams["720p"]
+    assert grid.config.grid_quality == "720p"
+    assert grid.config.expected_grid_height == 720
+    if transport == "auto":
+        assert streams["720p"].fallback.quality_key == "720p"
+        assert streams["540p"].fallback.quality_key == "540p"
+        assert streams["360p"].fallback.quality_key == "360p"
+    grid360 = streams["360p"].grid if transport == "auto" else streams["360p"]
+    assert grid360.config.grid_quality == "360p"
+    assert grid360.config.expected_grid_height == 360
+
+
+def test_grid_profile_discovery_failure_preserves_original_only(monkeypatch):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(module, "official_grid_profiles", lambda *_args: profiles_from_viewpreset(None))
+    streams = cls(
+        session, "https://play.sooplive.com/fixture_channel/12345", options={"transport": "grid"}
+    ).streams()
+    assert {"original", "best", "worst"} == set(streams)
+
+
 def test_modular_cli_sideload_from_unrelated_directory(tmp_path):
     env = os.environ.copy()
     for k in (

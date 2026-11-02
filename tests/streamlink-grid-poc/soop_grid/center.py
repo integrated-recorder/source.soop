@@ -14,6 +14,8 @@ from .protocol import GridError, center_packet, read_frame
 
 ADJUST = (1, 255, 253, 254, 1, 2)
 JOINLOG = b"log\x11\x06&\x06os\x06=\x06Linux\x12"
+GRID_QUALITY_CODES = frozenset((1, 2, 4, 8))
+JOIN_QUALITY_VALUES = frozenset(("high", "ori", "normal", "low", "high_4000", "high_8000"))
 
 
 def valid_seed(seed):
@@ -81,7 +83,7 @@ def auth_body(c, counter=1):
     return struct.pack("<II", 8, 16 + len(encrypted)) + digest + encrypted
 
 
-def join_body(c):
+def join_body(c, quality="ori", is_auto=False):
     if (
         not isinstance(c.ticket, bytes)
         or not 0 < len(c.ticket) <= 4096
@@ -98,12 +100,18 @@ def join_body(c):
         or len(c.joinlog) > 8192
     ):
         raise GridError("join_field_bounds")
+    if not isinstance(quality, str) or quality not in JOIN_QUALITY_VALUES or type(is_auto) is not bool:
+        raise GridError("join_quality_invalid")
     log = re.sub(b"liveualog\x11[^\x12]*\x12", b"", c.joinlog, count=1)
     text = (
         log
         + b"ticket\x11"
         + c.ticket
-        + b"\x12quality\x11ori\x12is_auto\x11false\x12passwd\x11"
+        + b"\x12quality\x11"
+        + quality.encode("ascii")
+        + b"\x12is_auto\x11"
+        + (b"true" if is_auto else b"false")
+        + b"\x12passwd\x11"
         + c.password
         + b"\x12"
     )
@@ -117,9 +125,11 @@ def json_body(data):
     return struct.pack("<I", len(text)) + text
 
 
-def discover_parent(network, address, credentials, report):
+def discover_parent(network, address, credentials, report, quality=1, join_quality="ori", is_auto=False):
+    if type(quality) is not int or quality not in GRID_QUALITY_CODES:
+        raise GridError("grid_quality_unsupported")
     authentication = auth_body(credentials)
-    join = join_body(credentials)
+    join = join_body(credentials, join_quality, is_auto)
     sock = network.connect(address)
 
     def send(cmd, body=b""):
@@ -170,7 +180,9 @@ def discover_parent(network, address, credentials, report):
                 parent_requested = True
                 send(
                     0x69,
-                    json_body({"list": [{"alloc_type": 1, "parent_ip": 0, "parent_port": 0, "quality": 1}]}),
+                    json_body(
+                        {"list": [{"alloc_type": 1, "parent_ip": 0, "parent_port": 0, "quality": quality}]}
+                    ),
                 )
             if frame.command == 0x69:
                 if not parent_requested:
@@ -178,8 +190,18 @@ def discover_parent(network, address, credentials, report):
                 from .parent import parse_parents
 
                 parents = parse_parents(frame.body)
+                matching = [parent for parent in parents if parent.quality == quality]
+                if not matching:
+                    raise GridError(
+                        "center_quality_not_honored",
+                        safe_facts={
+                            "requested_grid_quality_code": quality,
+                            "returned_grid_quality_count": len(parents),
+                            "returned_grid_quality_codes": sorted({parent.quality for parent in parents})[:8],
+                        },
+                    )
                 report("parent_discovery_received")
-                return parents, node_key
+                return matching, node_key
         raise GridError("parent_discovery_missing")
     finally:
         network.release(sock)

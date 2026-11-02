@@ -28,6 +28,15 @@ def test_go_center_auth_and_password_golden(golden):
         auth_body(c)
 
 
+def test_join_supports_measured_low_auto_profile(golden):
+    body = join_body(credentials(golden), quality="low", is_auto=True)
+    assert b"\x12quality\x11low\x12is_auto\x11true\x12passwd\x11" in body
+    with pytest.raises(GridError, match="join_quality_invalid"):
+        join_body(credentials(golden), quality="unmeasured", is_auto=True)
+    with pytest.raises(GridError, match="join_quality_invalid"):
+        join_body(credentials(golden), quality="low", is_auto=1)
+
+
 @pytest.mark.parametrize("kind", ["short", "length", "seed", "unterminated", "password"])
 def test_issued_certificate_rejects_corruption(golden, kind):
     b = bytearray.fromhex(golden["center"]["certificate"])
@@ -148,3 +157,138 @@ def test_center_rejects_discovery_before_join(golden, monkeypatch, command):
     with pytest.raises(GridError, match="sequence"):
         discover_parent(net, ("8.8.8.8", 1), credentials(golden), lambda _: None)
     assert net.released
+
+
+@pytest.mark.parametrize("quality", [1, 2, 4, 8])
+def test_center_requests_only_measured_grid_quality_and_checks_assignment(golden, monkeypatch, quality):
+    import json
+    import soop_grid.center as center
+
+    class Net:
+        def __init__(self):
+            self.wires = []
+
+        def connect(self, _address):
+            return object()
+
+        def send(self, _sock, wire):
+            self.wires.append(wire)
+
+        def release(self, _sock):
+            pass
+
+    parent_list = json_body(
+        {"list": [{"parent_ip": 0x08080808, "parent_port": 0x1027, "quality": quality, "cur_frame_no": 99}]}
+    )
+    replies = iter(
+        [
+            Frame(2, bytes(8)),
+            Frame(3, struct.pack("<II", 0, 42)),
+            Frame(0x4A, bytes(52)),
+            Frame(0x46, b""),
+            Frame(0x50, b""),
+            Frame(0x69, parent_list),
+        ]
+    )
+    monkeypatch.setattr(center, "read_frame", lambda *_args: next(replies))
+    net = Net()
+    parents, _key = discover_parent(net, ("8.8.8.8", 1), credentials(golden), lambda _: None, quality=quality)
+    request = json.loads(net.wires[-1][24:])
+    assert request["list"][0]["quality"] == quality
+    assert parents[0].quality == quality
+
+
+def test_center_sends_measured_q8_low_auto_join(golden, monkeypatch):
+    import soop_grid.center as center
+
+    class Net:
+        def __init__(self):
+            self.wires = []
+
+        def connect(self, _address):
+            return object()
+
+        def send(self, _sock, wire):
+            self.wires.append(wire)
+
+        def release(self, _sock):
+            pass
+
+    replies = iter(
+        [
+            Frame(2, bytes(8)),
+            Frame(3, struct.pack("<II", 0, 42)),
+            Frame(0x4A, bytes(52)),
+            Frame(0x46, b""),
+            Frame(0x50, b""),
+            Frame(
+                0x69,
+                json_body(
+                    {
+                        "list": [
+                            {"parent_ip": 0x08080808, "parent_port": 0x1027, "quality": 8, "cur_frame_no": 99}
+                        ]
+                    }
+                ),
+            ),
+        ]
+    )
+    monkeypatch.setattr(center, "read_frame", lambda *_args: next(replies))
+    net = Net()
+    parents, _ = discover_parent(
+        net,
+        ("8.8.8.8", 1),
+        credentials(golden),
+        lambda _: None,
+        quality=8,
+        join_quality="low",
+        is_auto=True,
+    )
+    join_wire = next(wire for wire in net.wires if struct.unpack_from("<I", wire)[0] == 0x46)
+    assert b"\x12quality\x11low\x12is_auto\x11true\x12passwd\x11" in join_wire
+    assert parents[0].quality == 8
+
+
+def test_center_rejects_quality_assignment_mismatch(golden, monkeypatch):
+    import soop_grid.center as center
+
+    class Net:
+        def connect(self, _address):
+            return object()
+
+        def send(self, *_args):
+            pass
+
+        def release(self, _sock):
+            pass
+
+    parent_list = json_body(
+        {"list": [{"parent_ip": 0x08080808, "parent_port": 0x1027, "quality": 1, "cur_frame_no": 99}]}
+    )
+    replies = iter(
+        [
+            Frame(2, bytes(8)),
+            Frame(3, struct.pack("<II", 0, 42)),
+            Frame(0x4A, bytes(52)),
+            Frame(0x46, b""),
+            Frame(0x50, b""),
+            Frame(0x69, parent_list),
+        ]
+    )
+    monkeypatch.setattr(center, "read_frame", lambda *_args: next(replies))
+    with pytest.raises(GridError, match="center_quality_not_honored") as caught:
+        discover_parent(Net(), ("8.8.8.8", 1), credentials(golden), lambda _: None, quality=2)
+    assert caught.value.safe_facts == {
+        "requested_grid_quality_code": 2,
+        "returned_grid_quality_count": 1,
+        "returned_grid_quality_codes": [1],
+    }
+
+
+def test_center_rejects_unmeasured_quality_before_network(golden):
+    class Net:
+        def connect(self, _address):
+            raise AssertionError("unsupported quality must be rejected before connecting")
+
+    with pytest.raises(GridError, match="grid_quality_unsupported"):
+        discover_parent(Net(), ("8.8.8.8", 1), credentials(golden), lambda _: None, quality=3)

@@ -198,6 +198,70 @@ def test_real_official_fallback_uses_best_quality_without_original(monkeypatch):
     assert opened == ["1080p"]
 
 
+def test_quality_matched_fallback_selects_exact_hls_profile(monkeypatch):
+    import io
+
+    session = Streamlink()
+    Soop = loaded_official(session, monkeypatch)
+    opened = []
+
+    class HLS(Stream):
+        __shortname__ = "hls"
+
+        def __init__(self, quality):
+            super().__init__(session)
+            self.quality = quality
+
+        def open(self):
+            opened.append(self.quality)
+            return io.BytesIO(self.quality.encode())
+
+    monkeypatch.setattr(
+        Soop,
+        "_get_streams",
+        lambda self: {"540p": HLS("540p"), "720p": HLS("720p"), "1080p": HLS("1080p")},
+    )
+    fallback = OfficialHLSFallback(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        "",
+        "",
+        "",
+        quality_key="720p",
+    )
+    with fallback.open() as output:
+        assert output.read() == b"720p"
+    assert opened == ["720p"]
+
+
+def test_quality_matched_fallback_never_substitutes_another_hls_profile(monkeypatch):
+    from streamlink.exceptions import StreamError
+
+    session = Streamlink()
+    Soop = loaded_official(session, monkeypatch)
+    opened = []
+
+    class HLS(Stream):
+        __shortname__ = "hls"
+
+        def open(self):
+            opened.append("opened")
+            return object()
+
+    monkeypatch.setattr(Soop, "_get_streams", lambda self: {"1080p": HLS(session), "540p": HLS(session)})
+    fallback = OfficialHLSFallback(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        "",
+        "",
+        "",
+        quality_key="720p",
+    )
+    with pytest.raises(StreamError, match="Official SOOP HLS fallback failed"):
+        fallback.open()
+    assert opened == []
+
+
 @pytest.mark.parametrize("stage", ["enumerate", "open"])
 def test_real_cli_fallback_errors_are_stream_errors_without_private_text(monkeypatch, stage):
     from streamlink.exceptions import PluginError

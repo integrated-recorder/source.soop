@@ -82,6 +82,7 @@ startup_deadline_reached startup_attempts startup_retries startup_staged_bytes s
 startup_peak_bytes startup_commit_attempt startup_first_output_ms startup_total_input_bytes
 media_packets payload_bytes wire_bytes parent_wire_bytes video_frames audio_frames sequence_discontinuities
  mux_output_bytes stream_emit_bytes stream_reader_bytes stream_output_discarded_bytes
+grid_quality_code expected_grid_height received_grid_height grid_quality_verified
 stream_buffer_accepted_bytes stream_buffer_discarded_bytes stream_buffer_unaccepted_bytes stream_output_drain_complete stream_output_bytes_drained reader_eof_observed
 parent_connections failover_attempts failover_successes rediscoveries duplicate_frames_excluded
 gap_events recovered_ranges unrecoverable_ranges parent_connection_attempts parent_packets
@@ -453,6 +454,20 @@ class Diagnostics:
                             safe[key] = value
                     if len(safe) > 1:
                         self.protocol_failure = safe
+                if code == "center_quality_not_honored" and isinstance(facts, dict):
+                    safe = {"family": "grid_quality"}
+                    for key in ("requested_grid_quality_code", "returned_grid_quality_count"):
+                        value = facts.get(key)
+                        if type(value) is int and 0 <= value <= 16:
+                            safe[key] = value
+                    returned = facts.get("returned_grid_quality_codes")
+                    if (
+                        isinstance(returned, (list, tuple))
+                        and len(returned) <= 8
+                        and all(type(value) is int and 0 <= value <= 0xFFFFFFFF for value in returned)
+                    ):
+                        safe["returned_grid_quality_codes"] = sorted(set(returned))
+                    self.protocol_failure = safe
 
     def complete(self, reason):
         with self.lock:
@@ -539,6 +554,7 @@ ERROR_CODES = frozenset(
         "audio_timestamp_cumulative_drift",
         "audio_chunk_clock_mismatch",
         "center_discovery_sequence_invalid",
+        "center_quality_not_honored",
         "h264_access_unit_boundary_invalid",
         "h264_hrd_clock_unconfirmed",
         "h264_hrd_clock_changed",
@@ -629,6 +645,11 @@ ERROR_CODES = frozenset(
         "grid_video_dts_not_increasing",
         "grid_composition_offset_unsupported",
         "guid_invalid",
+        "join_quality_invalid",
+        "grid_quality_metadata_invalid",
+        "grid_quality_resolution_mismatch",
+        "grid_quality_resolution_unverified",
+        "grid_quality_unsupported",
         "h264_chroma_unsupported",
         "h264_codec_configuration_changed",
         "h264_bit_depth_unsupported",

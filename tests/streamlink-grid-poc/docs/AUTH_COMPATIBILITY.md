@@ -62,4 +62,4 @@ Purge 동작은 transport별로 다릅니다. `hls`에서는 내장 SOOP 플러�
 
 외부 플러그인의 정식 인증 인터페이스는 `--soop-grid-username`, `--soop-grid-password`, `--soop-grid-stream-password` 및 `SOOP_GRID_USERNAME`, `SOOP_GRID_PASSWORD`, `SOOP_GRID_STREAM_PASSWORD`입니다. 앞선 `SOOP_ACCOUNT_ID`, `SOOP_ACCOUNT_PASSWORD`, `SOOP_STREAM_PASSWORD` 환경변수는 호환 별칭입니다. 내장 `--soop-*` 옵션을 외부 플러그인으로 전달하는 기능과 영속 쿠키 캐시 공유는 지원하지 않습니다. 이는 Streamlink의 플러그인별 옵션 경계에 따른 의도된 인터페이스입니다. argparse 조작, 코어 수정, 내장 플러그인 교체 또는 중복 옵션 등록은 사용하지 않습니다.
 
-Native Grid는 현재 단일 `original` stream을 제공합니다. Streamlink 8.6.2의 `best`/`worst` 별칭은 이 하나뿐인 Grid stream으로 해석됩니다. 이는 Grid에서 추가 화질을 선택할 수 있음을 뜻하지 않습니다. HLS 위임은 내장 `soop`의 실제 품질 목록을 유지하며, 자동 fallback은 Grid `original`에 대응하는 HLS `original`을 우선 열고, `original`이 없을 때만 내장 `best` 별칭을 사용합니다.
+Native Grid는 방송별 공식 preset에 나타나고 실제 Grid SPS와 대조된 profile만 제공합니다. 현재 검증 범위는 `original`, `720p`, `540p`, `360p`이며 방송마다 제공 목록이 다릅니다. `best`/`worst`는 그 목록 안에서 선택합니다. Auto에서 대응 HLS preset 이름을 확인한 경우 같은 key만 열며, 그 key가 없으면 다른 화질로 대체하지 않습니다. 메타데이터 조회 자체가 실패하면 `original`만 노출되고 기존 `original`/`best` fallback이 유지됩니다. 2160p 원본의 1080p Grid profile은 아직 확인하지 않았습니다. 자세한 내용은 [화질 선택 검증](NATIVE_GRID_QUALITY_SELECTION.md)을 참고하세요.
