@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 """Evidence-gated Native Grid quality enumeration and resolution checks."""
 
+import os
+import shutil
+import subprocess
+
 import pytest
 
 from soop_grid.bootstrap import Config
@@ -16,6 +20,50 @@ VIEWPRESET = [
     {"label": "1440p", "name": "original"},
     {"label": "auto", "name": "auto"},
 ]
+
+
+def encode_profile_idr(tmp_path, width, height):
+    """Generate one real, independently configured IDR at a supported height."""
+    ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
+    if not ffmpeg:
+        pytest.skip("FFmpeg required to generate resolution-verification H.264 fixtures")
+    path = tmp_path / f"profile-{width}x{height}.h264"
+    result = subprocess.run(
+        [
+            ffmpeg,
+            "-v",
+            "error",
+            "-nostdin",
+            "-f",
+            "lavfi",
+            "-i",
+            f"testsrc2=size={width}x{height}:rate=30",
+            "-frames:v",
+            "1",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-b:v",
+            "800k",
+            "-minrate",
+            "800k",
+            "-maxrate",
+            "800k",
+            "-bufsize",
+            "1600k",
+            "-x264-params",
+            "bframes=0:keyint=1:min-keyint=1:scenecut=0:aud=1:repeat-headers=1:force-cfr=1:nal-hrd=cbr",
+            "-f",
+            "h264",
+            str(path),
+        ],
+        capture_output=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+    return path.read_bytes()
 
 
 def test_measured_native_grid_profiles_require_exact_live_preset_evidence():
@@ -236,19 +284,49 @@ def test_media_sink_rejects_wrong_sps_before_emitting_ts(encoded_bframes):
     sink.close()
 
 
-@pytest.mark.parametrize("quality", [1, 8])
-def test_media_sink_confirms_expected_resolution_from_sps(encoded_bframes, quality):
+@pytest.mark.parametrize(("quality", "width", "height"), [(1, 1280, 720), (8, 640, 360)])
+def test_media_sink_confirms_expected_resolution_from_sps(tmp_path, quality, width, height):
     from conftest import media_body
     from soop_grid.media import MediaSink, sps_info
+    from soop_grid.mpegts import nals
     from soop_grid.protocol import Frame
 
-    payload = next(payload for payload, kind in encoded_bframes if kind == "I")
-    height = sps_info(payload)["height"]
+    payload = encode_profile_idr(tmp_path, width, height)
+    assert sps_info(payload)["height"] == height
+    assert {7, 8, 5}.issubset({nal[0] & 31 for nal in nals(payload)})
     sink = MediaSink(lambda _data: None, expected_grid_height=height, grid_quality_code=quality)
     sink.add(Frame(0xC748, media_body(payload, "I", 1, 50000000)))
     assert sink.stats["received_grid_height"] == height
     assert sink.stats["grid_quality_code"] == quality
     assert sink.stats["grid_quality_verified"] == 1
+    sink.close()
+
+
+def test_media_sink_rejects_expected_height_below_supported_floor():
+    from soop_grid.media import MediaSink
+
+    with pytest.raises(GridError, match="grid_quality_metadata_invalid"):
+        MediaSink(lambda _data: None, expected_grid_height=96, grid_quality_code=1)
+
+
+def test_media_sink_rejects_wrong_supported_sps_before_emitting_ts(tmp_path):
+    from conftest import media_body
+    from soop_grid.media import MediaSink, sps_info
+    from soop_grid.protocol import Frame
+
+    payload = encode_profile_idr(tmp_path, 640, 360)
+    assert sps_info(payload)["height"] == 360
+    emitted = []
+    sink = MediaSink(emitted.append, expected_grid_height=720, grid_quality_code=2)
+    with pytest.raises(GridError, match="grid_quality_resolution_mismatch") as caught:
+        sink.add(Frame(0xC748, media_body(payload, "I", 1, 50000000)))
+    assert caught.value.safe_facts == {
+        "grid_quality_code": 2,
+        "expected_grid_height": 720,
+        "received_grid_height": 360,
+    }
+    assert emitted == []
+    assert sink.stats.get("mux_output_bytes", 0) == sink.stats.get("stream_emit_bytes", 0) == 0
     sink.close()
 
 
