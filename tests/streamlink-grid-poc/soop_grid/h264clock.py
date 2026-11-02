@@ -9,6 +9,7 @@ the same fixed origin. Historical timing comparisons live in tools only.
 """
 
 from collections import deque
+from copy import copy
 from dataclasses import dataclass
 from fractions import Fraction
 
@@ -724,13 +725,17 @@ class SliceHeader:
     idr_pic_id: int | None
 
 
-def _validate_frame_num_progress(frame_num, max_frame_num, gaps_allowed, previous_reference_frame_num):
+def _validate_frame_num_progress(
+    frame_num, max_frame_num, gaps_allowed, previous_reference_frame_num, safe_facts=None
+):
     """Apply the SPS frame_num constraint against the previous reference AU."""
     if previous_reference_frame_num is None:
         return
     expected_frame_num = (previous_reference_frame_num + 1) % max_frame_num
     if not gaps_allowed and frame_num != expected_frame_num:
-        raise GridError("h264_frame_num_gap")
+        facts = dict(safe_facts or {})
+        facts["h264_expected_frame_num"] = expected_frame_num
+        raise GridError("h264_frame_num_gap", safe_facts=facts)
 
 
 def parse_slice(nal, sps, pps):
@@ -844,6 +849,11 @@ class H264Clock:
         self.media_origin_hint = None
         self.last_picture_idr = False
         self.last_slice_kind = None
+        self.last_picture_frame_num = None
+        self.last_picture_nal_ref_idc = None
+        self.last_picture_mmco5 = False
+        self.last_sps_id = None
+        self.last_pps_id = None
 
     def observe_audio(self, timestamp):
         if type(timestamp) is not int or not 0 <= timestamp < 1 << 64:
@@ -1131,12 +1141,44 @@ class H264Clock:
         if header.idr and header.frame_num != 0:
             raise GridError("h264_frame_num_invalid")
         if not header.idr and self.previous_reference_frame_num is not None:
-            _validate_frame_num_progress(
-                header.frame_num,
-                sps["max_frame_num"],
-                sps["gaps_allowed"],
-                self.previous_reference_frame_num,
-            )
+            active_pps = self.pps.get(header.pps_id)
+            frame_num_facts = {
+                "h264_current_sps_id": sps["id"],
+                "h264_current_pps_id": header.pps_id,
+                "h264_current_sps_active": int(sps["id"] in self.sps),
+                "h264_current_pps_active": int(active_pps is not None),
+                "h264_max_frame_num": sps["max_frame_num"],
+                "h264_gaps_allowed": int(sps["gaps_allowed"]),
+                "h264_previous_reference_frame_num": self.previous_reference_frame_num,
+                "h264_current_frame_num": header.frame_num,
+                "h264_current_nal_ref_idc": header.nal_ref_idc,
+                "h264_current_poc_type": sps["poc_type"],
+                "h264_current_idr": int(header.idr),
+                "h264_current_mmco5": int(header.mmco5),
+                "h264_previous_sps_id": self.last_sps_id,
+                "h264_previous_pps_id": self.last_pps_id,
+                "h264_previous_frame_num": self.last_picture_frame_num,
+                "h264_previous_nal_ref_idc": self.last_picture_nal_ref_idc,
+                "h264_previous_idr": int(self.last_picture_idr),
+                "h264_previous_mmco5": int(self.last_picture_mmco5),
+                "h264_previous_poc": self.last_poc,
+                "h264_previous_dts_100ns": self.last_dts,
+            }
+            if self.last_slice_kind in ("I", "P", "B"):
+                frame_num_facts["h264_previous_slice_type"] = self.last_slice_kind
+            try:
+                _validate_frame_num_progress(
+                    header.frame_num,
+                    sps["max_frame_num"],
+                    sps["gaps_allowed"],
+                    self.previous_reference_frame_num,
+                    frame_num_facts,
+                )
+            except GridError as error:
+                if str(error) == "h264_frame_num_gap":
+                    probe = copy(self)
+                    error.safe_facts["h264_current_poc"] = probe._picture_order(header, sps)
+                raise
             if sps["poc_type"] == 2 and not header.nal_ref_idc and self.previous_nonreference:
                 raise GridError("h264_poc2_nonreference_sequence_invalid")
         self._validate_timing_subset(header, sps)
@@ -1218,6 +1260,11 @@ class H264Clock:
         self.last_dts, self.last_dts_out, self.last_pts, self.last_poc = grid_timestamp, dts, pts, poc
         self.last_picture_idr = header.idr
         self.last_slice_kind = header.slice_kind
+        self.last_picture_frame_num = header.frame_num
+        self.last_picture_nal_ref_idc = header.nal_ref_idc
+        self.last_picture_mmco5 = header.mmco5
+        self.last_sps_id = sps["id"]
+        self.last_pps_id = header.pps_id
         self.max_pts = pts if self.max_pts is None else max(self.max_pts, pts)
         return {
             "dts": dts,

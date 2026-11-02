@@ -111,6 +111,50 @@ def test_protocol_header_facts_are_allowlisted_without_raw_values(tmp_path):
     assert "fixture-secret" not in text and "private-wire" not in text
 
 
+def test_h264_frame_num_failure_persists_only_bounded_codec_and_grid_facts(tmp_path):
+    path = tmp_path / "h264-gap"
+    d = Diagnostics(path, lambda: {})
+    d.fail(
+        GridError(
+            "h264_frame_num_gap",
+            safe_facts={
+                "h264_current_sps_id": 0,
+                "h264_current_pps_id": 2,
+                "h264_max_frame_num": 128,
+                "h264_gaps_allowed": 0,
+                "h264_previous_reference_frame_num": 119,
+                "h264_current_frame_num": 1,
+                "h264_expected_frame_num": 120,
+                "h264_current_nal_ref_idc": 3,
+                "h264_current_poc_type": 2,
+                "h264_current_poc": 242,
+                "h264_current_idr": 0,
+                "h264_current_mmco5": 0,
+                "h264_previous_idr": 0,
+                "h264_previous_mmco5": 0,
+                "h264_previous_slice_type": "P",
+                "grid_previous_frame_number": 1000,
+                "grid_current_frame_number": 1001,
+                "grid_frame_sequence_delta": 1,
+                "grid_frame_sequence_contiguous": 1,
+                "cookie": "fixture-secret",
+                "payload": b"private-media",
+            },
+        )
+    )
+    d.close()
+
+    summary_path = path / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    failure = summary["media_failure"]
+    assert failure["family"] == "h264_frame_num_gap"
+    assert failure["h264_previous_reference_frame_num"] == 119
+    assert failure["h264_expected_frame_num"] == 120
+    assert failure["grid_frame_sequence_contiguous"] == 1
+    text = summary_path.read_text()
+    assert "fixture-secret" not in text and "private-media" not in text
+
+
 def test_diagnostic_allowlist_atomic_summary_and_first_cause(tmp_path):
     path = tmp_path / "diagnostics"
     d = Diagnostics(

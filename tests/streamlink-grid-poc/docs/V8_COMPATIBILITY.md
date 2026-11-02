@@ -30,6 +30,21 @@ reproduction of the reporter's unavailable bitstream. No H.264 payload,
 timestamp, reference state, or POC validation is altered to make the report
 pass.
 
+An additional offline replay covered nine retained raw Grid-wire captures. The
+current receiver order (Continuity.accept() before H264Clock.inspect())
+accepted all unique video access units. One trace contained 56 repeated,
+identity-matching Grid frames; replaying every wire packet directly into the
+H.264 clock without continuity filtering produced an apparent frame-number
+gap on a repeated frame, while the real receiver path excluded those duplicates
+and continued. This demonstrates why a Grid replay must not be passed through
+the video clock as new media. It does not reproduce the reported 119 → 1 case.
+
+For a future h264_frame_num_gap, opt-in diagnostics now retain bounded numeric
+facts for the active SPS/PPS identifiers and status, MaxFrameNum, gap flag,
+previous reference number, expected/current frame_num, current nal_ref_idc and
+POC, IDR/MMCO5 state, the preceding AU summary, and adjacent Grid frame-sequence
+values. Raw media, URLs, credentials, and packet contents are excluded.
+
 ## PCR interval report
 
 The muxer emits PCR on the video PID (`0x0100`) from its existing unwrapped

@@ -224,6 +224,59 @@ def test_reported_119_to_1_frame_num_transition_is_not_a_normal_wrap():
     _validate_frame_num_progress(0, 128, False, 127)
 
 
+def test_synthetic_frame_num_gap_reports_sps_reference_poc_and_grid_facts(encoded_bframes, monkeypatch):
+    from dataclasses import replace
+
+    from conftest import media_body
+    from soop_grid.media import MediaSink
+    from soop_grid.protocol import Frame
+    import soop_grid.h264clock as h264clock_module
+
+    sink = MediaSink(lambda _data: None)
+    first, second = encoded_bframes[:2]
+    sink.add(Frame(0xC748, media_body(first[0], "I", 400, 50_000_000)))
+    original_parse_slice = h264clock_module.parse_slice
+
+    def report_gap(nal, sps, pps):
+        header = original_parse_slice(nal, sps, pps)
+        if header.idr:
+            return header
+        return replace(header, frame_num=(header.frame_num + 1) % sps["max_frame_num"])
+
+    monkeypatch.setattr(h264clock_module, "parse_slice", report_gap)
+    try:
+        with pytest.raises(GridError, match="h264_frame_num_gap") as caught:
+            sink.add(
+                Frame(
+                    0xC748,
+                    media_body(second[0], "P", 401, 50_333_333),
+                )
+            )
+    finally:
+        sink.close()
+
+    facts = caught.value.safe_facts
+    assert facts["h264_current_sps_id"] == 0
+    assert facts["h264_current_pps_id"] == 0
+    assert facts["h264_current_sps_active"] == facts["h264_current_pps_active"] == 1
+    assert facts["h264_max_frame_num"] == 1 << sink.video_clock.sps[0]["log2_frame_num"]
+    assert facts["h264_gaps_allowed"] == 0
+    assert facts["h264_previous_reference_frame_num"] == 0
+    assert facts["h264_expected_frame_num"] == 1
+    assert facts["h264_current_frame_num"] == 2
+    assert facts["h264_current_nal_ref_idc"] in (0, 1, 2, 3)
+    assert facts["h264_current_poc_type"] in (0, 2)
+    assert type(facts["h264_current_poc"]) is int
+    assert facts["h264_current_idr"] == 0
+    assert facts["h264_current_mmco5"] == 0
+    assert facts["h264_previous_idr"] == 1
+    assert facts["h264_previous_slice_type"] == "I"
+    assert facts["grid_previous_frame_number"] == 400
+    assert facts["grid_current_frame_number"] == 401
+    assert facts["grid_frame_sequence_delta"] == 1
+    assert facts["grid_frame_sequence_contiguous"] == 1
+
+
 def test_frame_num_successor_after_mmco5_uses_zero_reference_state():
     # H.264 treats the MMCO5 picture as frame_num 0 for subsequent use.
     _validate_frame_num_progress(1, 128, False, 0)

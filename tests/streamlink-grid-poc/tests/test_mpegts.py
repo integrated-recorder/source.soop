@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (c) 2026 source.soop contributors
+import hashlib
 import pytest
 
 from conftest import synthetic_sps
-from soop_grid.media import adts_info, sps_info
+from soop_grid.media import adts_info, parse_adts, sps_info
 from soop_grid.mpegts import PCR_INTERVAL_90K, PCR_MAX_RECOVERY_GAP_90K, TSMux, crc_mpeg, pts_bytes
 from soop_grid.protocol import GridError
 
@@ -128,7 +129,7 @@ def _assert_transport_continuity(data):
 
 @pytest.mark.parametrize(
     ("delta", "expected_intermediate"),
-    [(9_001, 1), (20_790, 2), (45_000, 4), (180_000, 19)],
+    [(9_001, 1), (9_090, 1), (20_790, 2), (45_000, 4), (180_000, 19)],
 )
 def test_mux_inserts_bounded_pcr_only_samples_for_dts_gaps(delta, expected_intermediate):
     mux = TSMux()
@@ -235,6 +236,16 @@ def test_pcr_recovery_ts_with_real_encoded_access_units_decodes(encoded_bframes,
     facts = verify(ts_path, ffprobe, ffmpeg, timeout=30)
     assert facts["passed"], facts["failures"]
     assert facts["ts"]["max_pcr_value_delta_seconds"] <= 0.1
+    assert facts["ts"]["pcr_pid_declarations"] == ["0x100"]
+    assert facts["ts"]["continuity_errors"] == 0
+    assert facts["ts"]["psi_crc_errors"] == 0
+    video_pes = facts["ts"]["pes_payloads"]["0x100"]
+    assert video_pes["bytes"] == sum(len(unit) for unit in idrs)
+    assert video_pes["sha256"] == hashlib.sha256(b"".join(idrs)).hexdigest()
+    audio_es = b"".join(frame.data for frame in parse_adts(audio_path.read_bytes()).frames)
+    audio_pes = facts["ts"]["pes_payloads"]["0x101"]
+    assert audio_pes["bytes"] == len(audio_es)
+    assert audio_pes["sha256"] == hashlib.sha256(audio_es).hexdigest()
     decoded = subprocess.run(
         [
             ffmpeg,

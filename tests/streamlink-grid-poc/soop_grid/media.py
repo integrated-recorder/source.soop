@@ -369,7 +369,8 @@ class MediaSink:
             self.stats["media_extension_bytes"] += chunk.extension_bytes
         if discard:
             return chunk
-        if self.last_frame is not None and chunk.frame != self.last_frame + 1:
+        previous_grid_frame = self.last_frame
+        if previous_grid_frame is not None and chunk.frame != previous_grid_frame + 1:
             self.stats["sequence_discontinuities"] += 1
         self.last_frame = chunk.frame
         if chunk.kind in ("I", "P", "B"):
@@ -379,6 +380,22 @@ class MediaSink:
                 timing = self.video_clock.inspect(
                     chunk.payload, chunk.timestamp, chunk.composition_offset_raw
                 )
+            except GridError as error:
+                if str(error) == "h264_frame_num_gap":
+                    safe_facts = dict(error.safe_facts or {})
+                    safe_facts.update(
+                        grid_current_frame_number=chunk.frame,
+                        grid_previous_frame_known=int(previous_grid_frame is not None),
+                    )
+                    if previous_grid_frame is not None:
+                        safe_facts.update(
+                            grid_previous_frame_number=previous_grid_frame,
+                            grid_frame_sequence_delta=chunk.frame - previous_grid_frame,
+                            grid_frame_sequence_contiguous=int(chunk.frame == previous_grid_frame + 1),
+                        )
+                    error.safe_facts = safe_facts
+                    self.video_clock.last_observation.update(safe_facts)
+                raise
             finally:
                 self.stats.update(self.video_clock.last_observation)
                 self.stats["video_preroll_frames"] = self.video_clock.preroll_frames

@@ -234,6 +234,7 @@ class Diagnostics:
         self.error_code = None
         self.exception_category = None
         self.protocol_failure = None
+        self.media_failure = None
         self.error_sites = []
         self.last_transport_error = None
         self.stage = "initializing"
@@ -283,6 +284,8 @@ class Diagnostics:
         recovery_failure_code = data.get("recovery_failure_code")
         if recovery_failure_code in ERROR_CODES:
             result["recovery_failure_code"] = recovery_failure_code
+        if self.media_failure:
+            result["media_failure"] = self.media_failure
         result.update(
             stop_reason=self.reason,
             error_code=self.error_code,
@@ -395,6 +398,46 @@ class Diagnostics:
                     else "unexpected_exception"
                 )
                 facts = getattr(error, "safe_facts", None)
+                if code == "h264_frame_num_gap" and isinstance(facts, dict):
+                    numeric_fields = (
+                        "h264_current_sps_id",
+                        "h264_current_pps_id",
+                        "h264_current_sps_active",
+                        "h264_current_pps_active",
+                        "h264_max_frame_num",
+                        "h264_gaps_allowed",
+                        "h264_previous_reference_frame_num",
+                        "h264_current_frame_num",
+                        "h264_expected_frame_num",
+                        "h264_current_nal_ref_idc",
+                        "h264_current_poc_type",
+                        "h264_current_poc",
+                        "h264_current_idr",
+                        "h264_current_mmco5",
+                        "h264_previous_sps_id",
+                        "h264_previous_pps_id",
+                        "h264_previous_frame_num",
+                        "h264_previous_nal_ref_idc",
+                        "h264_previous_idr",
+                        "h264_previous_mmco5",
+                        "h264_previous_poc",
+                        "h264_previous_dts_100ns",
+                        "grid_current_frame_number",
+                        "grid_previous_frame_known",
+                        "grid_previous_frame_number",
+                        "grid_frame_sequence_delta",
+                        "grid_frame_sequence_contiguous",
+                    )
+                    safe = {}
+                    for key in numeric_fields:
+                        value = facts.get(key)
+                        if type(value) is int and -(1 << 64) < value < (1 << 64):
+                            safe[key] = value
+                    previous_slice_type = facts.get("h264_previous_slice_type")
+                    if previous_slice_type in ("I", "P", "B"):
+                        safe["h264_previous_slice_type"] = previous_slice_type
+                    if safe:
+                        self.media_failure = {"family": "h264_frame_num_gap", **safe}
                 if isinstance(facts, dict) and facts.get("family") in ("gateway", "center"):
                     numeric = (
                         "command",
