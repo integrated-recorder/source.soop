@@ -26,6 +26,7 @@ The Center `0x69` allocation request's integer `quality` is an effective profile
 | Streamlink profile | Center allocation quality | Center JOIN fields | Required H.264 SPS height | Official live preset required |
 | --- | ---: | --- | ---: | --- |
 | `original` | 1 | `quality=ori`, `is_auto=false` | Exact advertised original height when available | `name=original` |
+| `1080p` | 32 | `quality=high_8000`, `is_auto=false` | 1080 | `label=1080p`, `name=hd8k`; exposed only when original is 1440p |
 | `720p` | 2 | `quality=ori`, `is_auto=false` | 720 | `label=720p`, `name=hd4k` |
 | `540p` | 4 | `quality=ori`, `is_auto=false` | 540 | `label=540p`, `name=hd` |
 | `360p` | 8 | `quality=low`, `is_auto=true` | 360 | `label=360p`, `name=sd` |
@@ -33,6 +34,17 @@ The Center `0x69` allocation request's integer `quality` is an effective profile
 The new `360p` result is the reason the set of known values is not limited to 1, 2, and 4. In a fresh strict validation, nine separate public broadcasts were tested: three with 2560×1440 originals, three with 1920×1080 originals, and three with 1280×720 originals. All nine advertised the official `360p:sd` preset; all nine returned Parent quality 8 for the q=8 request; all nine supplied video and audio; all nine's measured SPS height was 360 and passed the receiver's height guard; and all nine completed the two-second sample without a Grid sequence discontinuity. Media remained in memory and was discarded.
 
 The q=8 test used the complete observed selector pair (`quality=low`, `is_auto=true`) along with Center allocation quality 8. Holding the JOIN fields at `ori/false` is not equivalent. Exact Parent assignment and SPS checks remain required; the implementation does not accept a server response that silently substitutes another profile.
+
+## 1440p to 1080p Grid profile
+
+A separate, bounded diagnostic probe on a public 2560×1440 live source tested two new, evidence-derived Center candidates. The `q=16`/`high_4000`/`false` request returned Parent q=16 and 1280×720 SPS, so it is not a 1080p profile. The `q=32`/`high_8000`/`false` request returned Parent q=32 and 1920×1080 SPS. A second probe then repeated q=32 twice against the same 1440p source, sequentially and with the normal receiver's strict quality/SPS checks.
+
+| Request | Parent quality | SPS | Received video frames | AAC frames in independent decode | Grid gaps | TS alignment | Decode |
+| --- | ---: | --- | ---: | ---: | ---: | --- | --- |
+| JOIN `high_8000`, auto=false; Center q=32 | 32 | 1920×1080 | 599 | 456 | 0 | 188-byte sync valid | FFprobe + FFmpeg pass |
+| Same request, repeat | 32 | 1920×1080 | 600 | 456 | 0 | 188-byte sync valid | FFprobe + FFmpeg pass |
+
+The two repeated receives produced 10,545,108 and 10,426,292 bytes of in-memory TS. FFmpeg reported no decode-error lines. No stream bytes were written externally; the short samples were discarded after measurement. This establishes a reproducible 1080p Native Grid profile for the tested 1440p source and `VIEWPRESET` condition. It does **not** establish the old client's exact internal `QUALITY`→Center transformation: the legacy `FUN_1401921a0` body and matching binary are unavailable, and the newer candidate's mapping belongs to a different binary/version. Nor does this sample establish the profile for 2160p originals, all broadcasts, or long-duration stability.
 
 ## Controlled RTMP test source
 
@@ -65,11 +77,12 @@ The candidate `SOOPStreamer.exe` artifact used in prior static analysis has SHA-
 
 The plugin intersects the broadcast's official `VIEWPRESET` entries with the measured mappings. `best` and `worst` select only among profiles returned for that broadcast. If the selected profile's Parent quality does not match, discovery fails. Before producing TS, the first applicable H.264 SPS must match the selected height. If the official metadata is missing or ambiguous, only `original` is exposed. Auto fallback uses the exact corresponding HLS key when one was identified; it does not substitute another quality.
 
-Examples:
+Examples (the `1080p` choice is listed only for a 1440p original that advertises `1080p:hd8k`):
 
 ```sh
 streamlink 'https://play.sooplive.com/CHANNEL_ID/BNO' 360p -o recording.ts
 streamlink 'https://play.sooplive.com/CHANNEL_ID/BNO' 720p -o recording.ts
+streamlink 'https://play.sooplive.com/CHANNEL_ID/BNO' 1080p -o recording.ts
 streamlink 'https://play.sooplive.com/CHANNEL_ID/BNO' original -o recording.ts
 ```
 
@@ -78,5 +91,5 @@ streamlink 'https://play.sooplive.com/CHANNEL_ID/BNO' original -o recording.ts
 * No active 2160p original was found in the public listing scan. A 2160p→1080p Native Grid profile is **not verified** and is not advertised.
 * Official HLS presets are availability hints. Their labels do not, by themselves, prove a Grid profile; each listed Grid mapping also has measured Parent and SPS evidence.
 * Samples were brief and memory-only. They do not establish 30-minute stability, every channel's profile availability, or universal service behavior.
-* The measured 360p profile is a downscaled Grid stream; it does not establish 1080p output from a 2160p source.
+* The measured 1080p and 360p profiles are downscaled Grid streams under their separately tested source conditions. The 1080p measurement does not establish output from a 2160p source.
 * HLS remains a separate transport and quality list. Grid and HLS timelines are not mixed.

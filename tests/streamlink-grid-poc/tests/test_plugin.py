@@ -90,10 +90,15 @@ def test_verified_native_grid_profiles_are_enumerated_and_best_worst_are_numeric
     )
     url = "https://play.sooplive.com/fixture_channel/12345"
     streams = cls(session, url, options={"transport": transport}).streams()
-    assert {"original", "1440p", "720p", "540p", "360p", "best", "worst"} <= set(streams)
+    assert {"original", "1440p", "1080p", "720p", "540p", "360p", "best", "worst"} <= set(streams)
     assert streams["original"] is streams["1440p"]
     assert streams["best"] is streams["1440p"]
     assert streams["worst"] is streams["360p"]
+    grid1080 = streams["1080p"].grid if transport == "auto" else streams["1080p"]
+    assert grid1080.config.grid_quality == "1080p"
+    assert grid1080.config.expected_grid_height == 1080
+    if transport == "auto":
+        assert streams["1080p"].fallback.quality_key == "1080p"
     grid = streams["720p"].grid if transport == "auto" else streams["720p"]
     assert grid.config.grid_quality == "720p"
     assert grid.config.expected_grid_height == 720

@@ -762,7 +762,7 @@ class _sg_diagnostics_Diagnostics:
 _sg_diagnostics_ERROR_CODES = frozenset(['startup_configuration_invalid', 'startup_capture_unsupported', 'startup_staging_limit', 'startup_already_committed', 'startup_timeout', 'startup_byte_limit', 'startup_unverified', 'aac_configuration_changed', 'aac_profile_unsupported', 'aac_raw_data_blocks_unsupported', 'adts_channel_config_unsupported', 'adts_chunk_limit', 'adts_crc_layout_invalid', 'adts_frame_length_invalid', 'adts_frame_limit', 'adts_input_invalid', 'adts_profile_unsupported', 'audio_preroll_limit', 'audio_timestamp_regression', 'audio_timestamp_cumulative_drift', 'audio_chunk_clock_mismatch', 'center_discovery_sequence_invalid', 'center_quality_not_honored', 'h264_access_unit_boundary_invalid', 'h264_hrd_clock_unconfirmed', 'h264_hrd_clock_changed', 'h264_hrd_grid_clock_conflict', 'h264_hrd_delay_limit', 'h264_hrd_initial_delay_invalid', 'h264_hrd_parameters_ambiguous', 'h264_hrd_timing_missing', 'h264_hrd_low_delay_timing_unsupported', 'h264_vui_hrd_flags_invalid', 'h264_frame_num_gap', 'h264_frame_num_invalid', 'h264_poc2_nonreference_sequence_invalid', 'h264_sei_payload_invalid', 'h264_nal_count_limit', 'h264_parameter_set_limit', 'h264_parameter_set_trailing_bits_invalid', 'media_pts_dts_invalid', 'h264_start_boundary_unavailable', 'h264_vcl_missing', 'h264_idr_picture_id_limit', 'h264_mmco5_timing_unsupported', 'h264_pic_struct_unsupported', 'h264_picture_order_conflict', 'h264_sei_message_limit', 'h264_sei_parameter_set_mismatch', 'h264_sei_after_vcl', 'h264_sei_buffering_period_order_invalid', 'h264_sei_buffering_period_missing', 'h264_sei_buffering_period_unexpected', 'h264_sei_timing_duplicate', 'h264_sei_timing_limit', 'h264_sei_trailing_bits_invalid', 'h264_sei_truncated', 'http_deadline_reached', 'user_agent_invalid', 'aac_pes_limit', 'account_credentials_required', 'account_input_invalid', 'account_login_denied_or_verification_required', 'account_session_unconfirmed', 'adts_header_invalid', 'adts_sample_rate_invalid', 'adult_check_unconfirmed', 'audio_prefix_unconfirmed', 'bootstrap_schema_invalid', 'broadcast_number_bounds', 'broadcast_target_invalid', 'buffer_backpressure_timeout', 'buffer_output_unit_invalid', 'cache_frame_bounds', 'cache_request_limit', 'capture_byte_limit_bounds', 'capture_close_failed', 'capture_deadline_reached', 'duration_limit_output_incomplete', 'stream_output_incomplete', 'duration_limit_output_incomplete', 'capture_duration_bounds', 'capture_limits_invalid', 'center_access_denied', 'center_body_limit', 'center_init_unexpected', 'center_rediscovery_failed', 'center_rediscovery_failed', 'center_session_missing', 'certificate_length_invalid', 'channel_live_number_unavailable', 'control_checksum_invalid', 'diagnostic_thread_start_failed', 'diagnostic_write_failed', 'first_party_http_failed', 'first_party_http_rejected', 'first_party_json_invalid', 'frame_identity_conflict', 'frame_sequence_gap_or_reset', 'frame_timestamp_regression', 'gateway_body_limit', 'gateway_certificate_denied', 'gateway_certificate_fields_invalid', 'gateway_cookie_missing_or_invalid', 'gateway_login_denied', 'gateway_login_fields_invalid', 'gateway_login_response_layout', 'gateway_login_unterminated_field', 'gateway_negative_reply', 'gateway_ticket_missing_or_invalid', 'grid_video_dts_not_increasing', 'grid_composition_offset_unsupported', 'guid_invalid', 'join_quality_invalid', 'grid_quality_metadata_invalid', 'grid_quality_resolution_mismatch', 'grid_quality_resolution_unverified', 'grid_quality_unsupported', 'h264_chroma_unsupported', 'h264_codec_configuration_changed', 'h264_bit_depth_unsupported', 'h264_dimensions_invalid', 'h264_emulation_prevention_invalid', 'h264_field_bounds', 'h264_golomb_limit', 'h264_header_truncated', 'h264_hrd_limit', 'h264_idr_reference_invalid', 'h264_interlaced_unsupported', 'h264_level_dpb_invalid', 'h264_profile_unsupported', 'h264_reference_count_invalid', 'h264_dpb_bound_invalid', 'h264_weighted_bipred_reserved', 'h264_memory_management_operation_invalid', 'h264_memory_management_operation_limit', 'h264_multiple_pictures_per_grid_chunk', 'h264_nal_header_invalid', 'h264_parameter_set_missing', 'h264_poc_cycle_limit', 'h264_poc_fields_missing', 'h264_poc_mode_unsupported', 'h264_poc_regression_out_of_bound', 'h264_poc_width_invalid', 'h264_pps_id_limit', 'h264_pps_chroma_qp_offset_invalid', 'h264_pps_qp_offset_invalid', 'h264_pps_scaling_layout_mismatch', 'h264_pps_scaling_layout_unconfirmed', 'h264_pts_before_dts', 'h264_reference_count_limit', 'h264_ref_list_modification_invalid', 'h264_ref_list_modification_limit', 'h264_reorder_bound_invalid', 'h264_reorder_bound_unconfirmed', 'h264_reorder_limit', 'h264_reorder_timing_unconfirmed', 'h264_reserved_sps_bits_nonzero', 'h264_separate_colour_plane_unsupported', 'h264_slice_count_limit', 'h264_slice_groups_unsupported', 'h264_slice_nal_type_invalid', 'h264_slice_parameter_set_mismatch', 'h264_slice_type_invalid', 'h264_sps_id_limit', 'h264_switching_slice_unsupported', 'h264_timing_changed', 'h264_timing_unconfirmed', 'h264_vcl_partition_or_extension_unsupported', 'h264_vui_timing_invalid', 'http_destination_invalid', 'http_response_limit', 'incoming_body_limit', 'invalid_server_endpoint', 'issued_certificate_invalid', 'issued_seed_required', 'issued_ticket_required', 'join_field_bounds', 'live_metadata_denied_or_offline', 'live_target_changed', 'media_dts_bounds', 'media_dts_not_monotonic', 'media_header_short', 'media_kind_unconfirmed', 'media_layout_unconfirmed', 'media_pcr_gap_limit', 'media_pcr_not_increasing', 'media_pts_bounds', 'media_timestamp_bounds', 'media_startup_limit', 'h264_grid_poc_type_unverified', 'h264_grid_mmco5_unverified', 'network_read_failed', 'network_read_timeout', 'network_write_failed', 'no_playable_grid_video', 'no_playable_grid_audio', 'media_track_coverage_incomplete', 'media_track_coverage_unverified', 'no_usable_server_parent', 'parent_access_denied', 'parent_body_limit', 'parent_discovery_missing', 'parent_header_invalid', 'parent_list_invalid', 'parent_list_length', 'parent_list_short', 'parent_list_trailing_data', 'parent_media_stalled', 'parent_packet_limit', 'parent_quality_changed', 'parent_rediscovery_empty', 'parent_retry_limit', 'password_state_unknown', 'peer_closed_or_truncated', 'private_capture_create_failed', 'public_policy_restricted_or_unknown', 'public_watch_access_denied', 'public_watch_schema_invalid', 'reader_closed', 'reader_timeout', 'reader_shutdown_timeout', 'receiver_closed', 'receiver_internal_failure', 'receiver_thread_start_failed', 'recovery_candidates_exhausted', 'recovery_deadline_exhausted', 'recovery_overlap_unavailable', 'scoped_cookie_invalid', 'sps_chroma', 'sps_cycle_limit', 'sps_dimensions_invalid', 'sps_golomb_limit', 'sps_poc_invalid', 'sps_truncated', 'stream_password_encoding_invalid', 'stream_password_state_mismatch', 'tcp_connect_failed', 'video_prefix_unconfirmed', 'watch_target_changed'])
 
 
-# Module: quality; source SHA-256: 068f88d86a9b2da8a57b145bef6a49fa2a400a2dae4ed82442a47a224a61775d
+# Module: quality; source SHA-256: ea890f9a6ee817e19050c7333a4ab5977e881c014b7df0f94f520f376d5942b8
 from dataclasses import dataclass as _sg_quality_dataclass
 import re as _sg_quality_re
 _sg_quality_GridError = _sg_protocol_GridError
@@ -776,7 +776,7 @@ class _sg_quality_GridProfile:
     original_label: str | None = None
     join_quality: str = 'ori'
     join_is_auto: bool = False
-_sg_quality__GRID_PROFILES = {'original': (1, None, None, 'ori', False), '720p': (2, 720, 'hd4k', 'ori', False), '540p': (4, 540, 'hd', 'ori', False), '360p': (8, 360, 'sd', 'low', True)}
+_sg_quality__GRID_PROFILES = {'original': (1, None, None, 'ori', False), '1080p': (32, 1080, 'hd8k', 'high_8000', False), '720p': (2, 720, 'hd4k', 'ori', False), '540p': (4, 540, 'hd', 'ori', False), '360p': (8, 360, 'sd', 'low', True)}
 _sg_quality__LABEL = _sg_quality_re.compile('([0-9]{3,4})p\\Z', _sg_quality_re.IGNORECASE)
 
 def _sg_quality_profile_by_name(name, *, original_height=None, original_label=None):
@@ -795,8 +795,8 @@ def _sg_quality_profiles_from_viewpreset(viewpreset):
     """Return Grid modes only when their matching HLS labels are advertised.
 
     VIEWPRESET is an availability hint, not proof that Grid supports the same
-    profile. Each lower Grid mode also requires an exact, empirically observed
-    preset name and is gated against the received SPS height.
+    profile. Each downscaled mode requires an exact measured preset. The 1080p
+    mode is exposed only for a 1440p original and is checked against received SPS.
     """
     entries = {}
     if isinstance(viewpreset, list):
@@ -817,7 +817,8 @@ def _sg_quality_profiles_from_viewpreset(viewpreset):
         if stream_name == 'original':
             continue
         label = entries.get((height, preset_name))
-        if label is not None and (not original_ambiguous) and (height != original[0]):
+        source_matches = stream_name != '1080p' or original[0] == 1440
+        if label is not None and (not original_ambiguous) and (height != original[0]) and source_matches:
             result.append(_sg_quality_GridProfile(stream_name, quality, height, label, None, join_quality, join_is_auto))
     return tuple(result)
 
@@ -2465,7 +2466,7 @@ class _sg_h264clock_H264Clock:
         return self._rescale(timestamp_100ns - self.origin_dts) + 90000
 
 
-# Module: media; source SHA-256: f5ef3e703c9f4ab6fbd1df860bad552b6903dde39ccbaf0e19f277f172e80f37
+# Module: media; source SHA-256: 52c2659550197c80d91d58cc6e3e6f15ba5e403021b66e48748206a1a9acf0d6
 import hashlib as _sg_media_hashlib
 import json as _sg_media_json
 import os as _sg_media_os
@@ -2649,7 +2650,7 @@ class _sg_media_MediaSink:
     def __init__(self, emit, capture_dir=None, *, synchronize_startup=False, expected_grid_height=None, grid_quality_code=1):
         if expected_grid_height is not None and (type(expected_grid_height) is not int or not 144 <= expected_grid_height <= 4320):
             raise _sg_media_GridError('grid_quality_metadata_invalid')
-        if type(grid_quality_code) is not int or grid_quality_code not in (1, 2, 4, 8):
+        if type(grid_quality_code) is not int or grid_quality_code not in (1, 2, 4, 8, 32):
             raise _sg_media_GridError('grid_quality_unsupported')
         self.expected_grid_height = expected_grid_height
         self.grid_quality_code = grid_quality_code
@@ -3385,7 +3386,7 @@ def _sg_parent_receive_media(network, parents, bno, node_key, sink, report, dura
                 network.release(sock)
 
 
-# Module: center; source SHA-256: debad0be2d9c83d1c8c79d7c1d945c465f53f182797640f2e4c9d598a13770b1
+# Module: center; source SHA-256: b590d38df5cd0d4f2caf5c371b0c95af4c19d5aa653023758cae51ed36019622
 import hmac as _sg_center_hmac
 import json as _sg_center_json
 import re as _sg_center_re
@@ -3405,7 +3406,7 @@ _sg_center_center_packet = _sg_protocol_center_packet
 _sg_center_read_frame = _sg_protocol_read_frame
 _sg_center_ADJUST = (1, 255, 253, 254, 1, 2)
 _sg_center_JOINLOG = b'log\x11\x06&\x06os\x06=\x06Linux\x12'
-_sg_center_GRID_QUALITY_CODES = frozenset((1, 2, 4, 8))
+_sg_center_GRID_QUALITY_CODES = frozenset((1, 2, 4, 8, 32))
 _sg_center_JOIN_QUALITY_VALUES = frozenset(('high', 'ori', 'normal', 'low', 'high_4000', 'high_8000'))
 
 def _sg_center_valid_seed(seed):

@@ -159,11 +159,14 @@ Native Grid의 방송 비밀번호는 계정 인증 세션에서 전달되므로
 
 플러그인은 방송 비밀번호를 정상 Center JOIN 경로로 전달합니다.
 
-Native Grid 화질 선택은 방송의 공식 `VIEWPRESET`과 Grid 실측 결과가 일치하는 프로파일만 표시합니다. 현재 검증된 이름은 `original`, `720p`, `540p`, `360p`이며 방송마다 목록이 다를 수 있습니다. 예를 들어 해당 방송에서 720p가 표시되면 다음처럼 고를 수 있습니다.
+Native Grid 화질 선택은 방송의 공식 `VIEWPRESET`과 Grid 실측 결과가 일치하는 프로파일만 표시합니다. 현재 검증된 이름은 `original`, `1080p`, `720p`, `540p`, `360p`이며 방송마다 목록이 다를 수 있습니다. 1080p는 1440p 원본에서 `1080p:hd8k`가 제공될 때 표시됩니다. 예를 들어 해당 방송에서 1080p가 표시되면 다음처럼 고를 수 있습니다.
 
 ```sh
 streamlink --soop-grid-transport grid \
   'https://play.sooplive.com/CHANNEL_ID/BNO' 720p -o recording.ts
+
+streamlink --soop-grid-transport grid \
+  'https://play.sooplive.com/CHANNEL_ID/BNO' 1080p -o recording-1080p.ts
 
 streamlink --soop-grid-transport grid \
   'https://play.sooplive.com/CHANNEL_ID/BNO' 360p -o recording-360p.ts

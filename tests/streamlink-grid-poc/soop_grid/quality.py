@@ -24,6 +24,7 @@ class GridProfile:
 # values; they are deliberately not inferred from HLS VIEWPRESET names alone.
 _GRID_PROFILES = {
     "original": (1, None, None, "ori", False),
+    "1080p": (32, 1080, "hd8k", "high_8000", False),
     "720p": (2, 720, "hd4k", "ori", False),
     "540p": (4, 540, "hd", "ori", False),
     "360p": (8, 360, "sd", "low", True),
@@ -52,8 +53,8 @@ def profiles_from_viewpreset(viewpreset):
     """Return Grid modes only when their matching HLS labels are advertised.
 
     VIEWPRESET is an availability hint, not proof that Grid supports the same
-    profile. Each lower Grid mode also requires an exact, empirically observed
-    preset name and is gated against the received SPS height.
+    profile. Each downscaled mode requires an exact measured preset. The 1080p
+    mode is exposed only for a 1440p original and is checked against received SPS.
     """
     entries = {}
     if isinstance(viewpreset, list):
@@ -75,6 +76,7 @@ def profiles_from_viewpreset(viewpreset):
         if stream_name == "original":
             continue
         label = entries.get((height, preset_name))
-        if label is not None and not original_ambiguous and height != original[0]:
+        source_matches = stream_name != "1080p" or original[0] == 1440
+        if label is not None and not original_ambiguous and height != original[0] and source_matches:
             result.append(GridProfile(stream_name, quality, height, label, None, join_quality, join_is_auto))
     return tuple(result)

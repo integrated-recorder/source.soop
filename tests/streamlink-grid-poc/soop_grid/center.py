@@ -14,7 +14,7 @@ from .protocol import GridError, center_packet, read_frame
 
 ADJUST = (1, 255, 253, 254, 1, 2)
 JOINLOG = b"log\x11\x06&\x06os\x06=\x06Linux\x12"
-GRID_QUALITY_CODES = frozenset((1, 2, 4, 8))
+GRID_QUALITY_CODES = frozenset((1, 2, 4, 8, 32))
 JOIN_QUALITY_VALUES = frozenset(("high", "ori", "normal", "low", "high_4000", "high_8000"))
 
 

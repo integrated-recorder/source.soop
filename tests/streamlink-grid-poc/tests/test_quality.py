@@ -70,11 +70,13 @@ def test_measured_native_grid_profiles_require_exact_live_preset_evidence():
     profiles = profiles_from_viewpreset(VIEWPRESET)
     assert [(p.name, p.allocation_quality, p.expected_height) for p in profiles] == [
         ("original", 1, 1440),
+        ("1080p", 32, 1080),
         ("720p", 2, 720),
         ("540p", 4, 540),
         ("360p", 8, 360),
     ]
-    assert [p.hls_label for p in profiles] == ["1440p", "720p", "540p", "360p"]
+    assert [p.hls_label for p in profiles] == ["1440p", "1080p", "720p", "540p", "360p"]
+    assert (profiles[1].join_quality, profiles[1].join_is_auto) == ("high_8000", False)
     assert (profiles[-1].join_quality, profiles[-1].join_is_auto) == ("low", True)
 
 
@@ -95,7 +97,7 @@ def test_1080_original_exposes_only_measured_lower_grid_profiles():
     ]
 
 
-def test_2160_original_does_not_invent_unmeasured_1080_grid_profile():
+def test_2160_original_does_not_expose_1440_to_1080_grid_profile():
     profiles = profiles_from_viewpreset(
         [
             {"label": "1080p", "name": "hd8k"},
@@ -103,6 +105,20 @@ def test_2160_original_does_not_invent_unmeasured_1080_grid_profile():
         ]
     )
     assert [(p.name, p.expected_height) for p in profiles] == [("original", 2160)]
+
+
+def test_1440_original_exposes_measured_1080_only_for_exact_hd8k_preset():
+    profiles = profiles_from_viewpreset(
+        [
+            {"label": "1440p", "name": "original"},
+            {"label": "1080p", "name": "hd8k"},
+            {"label": "1080p", "name": "other"},
+        ]
+    )
+    assert [(p.name, p.allocation_quality, p.expected_height) for p in profiles] == [
+        ("original", 1, 1440),
+        ("1080p", 32, 1080),
+    ]
 
 
 @pytest.mark.parametrize(
@@ -143,7 +159,7 @@ def test_grid_lower_profile_is_not_duplicated_when_it_matches_original_resolutio
     assert [(p.name, p.allocation_quality, p.expected_height) for p in profiles] == [("original", 1, 720)]
 
 
-@pytest.mark.parametrize("name", ["original", "720p", "540p", "360p"])
+@pytest.mark.parametrize("name", ["original", "1080p", "720p", "540p", "360p"])
 def test_grid_profile_configuration_preserves_verified_request(name):
     profile = profile_by_name(name, original_height=1080 if name == "original" else None)
     config = Config(
@@ -175,7 +191,7 @@ def test_grid_profile_configuration_rejects_unknown_height_contract(name, height
 
 def test_unknown_grid_profile_is_rejected():
     with pytest.raises(GridError, match="grid_quality_unsupported"):
-        profile_by_name("1080p")
+        profile_by_name("480p")
 
 
 def test_metadata_failure_keeps_only_legacy_original():
@@ -259,7 +275,7 @@ def test_optional_quality_metadata_never_starts_a_new_login():
     profiles = stream_module.official_grid_profiles(
         Session(), "https://play.sooplive.com/channel/12345", "channel", "12345"
     )
-    assert [profile.name for profile in profiles] == ["original", "720p", "540p", "360p"]
+    assert [profile.name for profile in profiles] == ["original", "1080p", "720p", "540p", "360p"]
 
 
 def test_media_sink_rejects_wrong_sps_before_emitting_ts(encoded_bframes):
@@ -284,7 +300,7 @@ def test_media_sink_rejects_wrong_sps_before_emitting_ts(encoded_bframes):
     sink.close()
 
 
-@pytest.mark.parametrize(("quality", "width", "height"), [(1, 1280, 720), (8, 640, 360)])
+@pytest.mark.parametrize(("quality", "width", "height"), [(1, 1280, 720), (8, 640, 360), (32, 1920, 1080)])
 def test_media_sink_confirms_expected_resolution_from_sps(tmp_path, quality, width, height):
     from conftest import media_body
     from soop_grid.media import MediaSink, sps_info

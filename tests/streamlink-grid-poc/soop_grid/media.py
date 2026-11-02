@@ -216,7 +216,7 @@ class MediaSink:
             type(expected_grid_height) is not int or not 144 <= expected_grid_height <= 4320
         ):
             raise GridError("grid_quality_metadata_invalid")
-        if type(grid_quality_code) is not int or grid_quality_code not in (1, 2, 4, 8):
+        if type(grid_quality_code) is not int or grid_quality_code not in (1, 2, 4, 8, 32):
             raise GridError("grid_quality_unsupported")
         self.expected_grid_height = expected_grid_height
         self.grid_quality_code = grid_quality_code

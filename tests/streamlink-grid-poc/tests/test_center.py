@@ -159,7 +159,7 @@ def test_center_rejects_discovery_before_join(golden, monkeypatch, command):
     assert net.released
 
 
-@pytest.mark.parametrize("quality", [1, 2, 4, 8])
+@pytest.mark.parametrize("quality", [1, 2, 4, 8, 32])
 def test_center_requests_only_measured_grid_quality_and_checks_assignment(golden, monkeypatch, quality):
     import json
     import soop_grid.center as center
@@ -249,7 +249,8 @@ def test_center_sends_measured_q8_low_auto_join(golden, monkeypatch):
     assert parents[0].quality == 8
 
 
-def test_center_rejects_quality_assignment_mismatch(golden, monkeypatch):
+@pytest.mark.parametrize("requested_quality", [2, 32])
+def test_center_rejects_quality_assignment_mismatch(golden, monkeypatch, requested_quality):
     import soop_grid.center as center
 
     class Net:
@@ -277,9 +278,9 @@ def test_center_rejects_quality_assignment_mismatch(golden, monkeypatch):
     )
     monkeypatch.setattr(center, "read_frame", lambda *_args: next(replies))
     with pytest.raises(GridError, match="center_quality_not_honored") as caught:
-        discover_parent(Net(), ("8.8.8.8", 1), credentials(golden), lambda _: None, quality=2)
+        discover_parent(Net(), ("8.8.8.8", 1), credentials(golden), lambda _: None, quality=requested_quality)
     assert caught.value.safe_facts == {
-        "requested_grid_quality_code": 2,
+        "requested_grid_quality_code": requested_quality,
         "returned_grid_quality_count": 1,
         "returned_grid_quality_codes": [1],
     }
