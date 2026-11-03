@@ -3,7 +3,7 @@
 ## Latest offline candidate — 2026-11-03
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
-* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; current branch HEAD `35b2d2baa6105faff0c2de073170958201facf71` is documentation-only.
+* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; subsequent branch commits are documentation-only.
 * Latest source tests: 774 passed, 0 skipped; bundled parity: 765 passed, 0 skipped; single-file tests: 9 passed.
 * All NAL headers, including opaque pass-through units, now receive common H.264 header validation. The malformed-AUD regression and valid control pass.
 * A deterministic 768-input malformed-parser smoke test produces no unexpected exceptions; broader coverage-guided fuzzing is not claimed.

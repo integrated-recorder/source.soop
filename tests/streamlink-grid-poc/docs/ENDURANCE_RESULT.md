@@ -1,5 +1,14 @@
 # Current offline candidate supplement — 2026-11-03
 
+## Exact-candidate regression rerun — 2026-11-03
+
+* Code under test: source commit `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; bundle SHA-256 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. Later commits in this run were documentation-only; no code or bundle changed.
+* Source pytest, excluding preserved untracked `tests/test_suffix_latejoin.py`: **774 passed, 0 skipped** in 57.61 s.
+* Bundled parity via `tools/test_bundle.py`, with the same untracked test excluded: **765 passed, 0 skipped** in 52.91 s. The source run also includes the 9 single-file construction/loading tests.
+* Environment: Python 3.12.3, pytest 8.4.2, Streamlink 8.6.2, FFmpeg/FFprobe 6.1.1 with libx264. Supplying the FFmpeg/FFprobe paths activated the media fixtures. The first sandboxed run without those paths had 64 skips and 14 local socket `EPERM` failures; the repeat used configured tool paths and permitted local socket tests. No SOOP endpoint was contacted.
+* Ruff check and format: PASS (54 tracked project files); compileall: PASS; deterministic bundle `--check`: PASS; `dist/SHA256SUMS`: PASS; module and single-file Streamlink plugin discovery: PASS; `git diff --check`: PASS.
+* No fresh live or endurance claim follows from this rerun. 2 h, 6 h and controlled live-failure stages remain **NOT TESTED**.
+
 ## Offline NAL-header hardening candidate — 2026-11-03
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
@@ -10,7 +19,7 @@
 
 ## Deterministic parser robustness smoke — 2026-11-03
 
-* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`. Current branch HEAD `35b2d2baa6105faff0c2de073170958201facf71` contains only subsequent documentation corrections; the production bundle is unchanged.
+* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; subsequent changes in this branch are documentation-only, and the production bundle is unchanged.
 * Added a fixed-seed test that submits 768 malformed/random byte inputs to `H264Clock.inspect()` and `parse_media()`, including inserted Annex-B start codes. It asserts malformed inputs either return or fail with the documented `GridError` family, never an unexpected Python exception. This is a bounded parser robustness smoke test, not coverage-guided fuzzing or a proof of parser safety.
 * The test is source-only; production bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 * Latest source suite: **774 passed, 0 skipped**. Bundled parity: **765 passed, 0 skipped**. The untracked suffix experiment remains excluded.
