@@ -2,9 +2,10 @@
 
 ## Latest verification — 2026-11-03, offline only
 
-Current source commit: `2e88360eebe860c7208e86e99845b938dbe005c4` on
-`fix/grid-startup-readiness`; remote HEAD matches. Production bundle SHA-256
-remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Production source/tool baseline: `2e88360eebe860c7208e86e99845b938dbe005c4`
+on `fix/grid-startup-readiness`; later commits in this verification sequence
+changed documentation only. Production bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 Source tests: **793 passed / 0 skipped**; bundled parity: **784 passed / 0
 skipped**. The cancellable wall-clock pacing mode passed a 60-second smoke and
 a 7,200-second generated-media run (7,426.947 seconds wall time), including
