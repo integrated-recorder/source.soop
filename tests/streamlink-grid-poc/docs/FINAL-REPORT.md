@@ -16,8 +16,12 @@ DPB/reference-list/HRD text or every minor correction. See
 `H264_REFERENCE_CONFORMANCE.md`.
 
 * Targeted new tests: **6 passed**.
-* This change is test and documentation only; production source and bundle are
-  unchanged. Full source: **780 passed, 0 skipped**; bundled parity: **771
+* A seeded TS-scanner mutation regression now corrupts up to four bytes in each
+  of 64 generated transport streams and checks bounded scan results and full
+  input hashing. This is a deterministic mutation smoke test, not coverage-
+  guided fuzzing.
+* Changes are tests and documentation only; production source and bundle are
+  unchanged. Full source: **781 passed, 0 skipped**; bundled parity: **772
   passed, 0 skipped**. The source count includes the 9 single-file construction
   tests. Bundle SHA-256 remains
   `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

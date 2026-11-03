@@ -54,6 +54,18 @@ failed 14 local socket cases with `EPERM`; the permission-enabled offline rerun
 passed. No SOOP endpoint was contacted. The 2 h, 6 h and live controlled-failure
 stages remain NOT TESTED.
 
+## Offline-only follow-up — TS scanner mutation smoke
+
+A fixed-seed regression makes 64 copies of a generated valid TS and mutates
+one to four packet bytes in each copy. It verifies bounded scanner result
+fields, packet accounting, and hashing of the complete mutated input. This is
+a deterministic mutation smoke test, not coverage-guided fuzzing. No production
+code or bundle bytes changed. Source pytest: **781 passed, 0 skipped**; bundled
+parity: **772 passed, 0 skipped**. The source count includes nine standalone
+bundle construction/loading tests. The test used only generated local media;
+no SOOP endpoint was contacted. Live, 2 h, 6 h and live controlled-failure
+stages remain NOT TESTED.
+
 ## Candidate and environment
 
 * Branch: `fix/grid-startup-readiness`

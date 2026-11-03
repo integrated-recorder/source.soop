@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import random
 import shutil
 import subprocess
 import sys
@@ -419,6 +420,37 @@ def test_independent_ts_structural_corruptions(generated, tmp_path, mutation, me
     path = tmp_path / "corrupt.ts"
     path.write_bytes(data)
     assert verifier.scan_ts(path)[metric] > 0
+
+
+def test_seeded_ts_packet_mutations_never_escape_scanner(tmp_path, generated):
+    source = generated.read_bytes()
+    packet_count = len(source) // 188
+    assert packet_count > 32 and len(source) % 188 == 0
+    rng = random.Random(0x2642026)
+
+    for index in range(64):
+        mutated = bytearray(source)
+        for _ in range(rng.randint(1, 4)):
+            packet = rng.randrange(packet_count)
+            byte = rng.randrange(188)
+            mutated[packet * 188 + byte] = rng.randrange(256)
+        path = tmp_path / f"mutated-{index}.ts"
+        path.write_bytes(mutated)
+        facts = verifier.scan_ts(path)
+        assert facts["packets"] == packet_count
+        assert facts["sha256"] == hashlib.sha256(mutated).hexdigest()
+        assert all(
+            type(facts[key]) is int and facts[key] >= 0
+            for key in (
+                "sync_errors",
+                "continuity_errors",
+                "transport_errors",
+                "scrambled_packets",
+                "adaptation_errors",
+                "psi_crc_errors",
+                "psi_structure_errors",
+            )
+        )
 
 
 def test_null_counters_and_signaled_discontinuity(tmp_path):
