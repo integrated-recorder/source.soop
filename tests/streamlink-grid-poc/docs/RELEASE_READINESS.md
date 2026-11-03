@@ -58,6 +58,11 @@ Additional accelerated 1,800-second synthetic media timeline: PASS for the
 tested POC-2/no-reorder fixture. This is not 30-minute real-time endurance and
 does not establish six-hour process stability.
 
+An accelerated 7,200-second synthetic POC-2/AAC timeline also passed the full
+TS and decode gates. It took 356.393 wall seconds; its harness peak RSS was
+1,082,268 KiB while retaining generated media and parsed AUs. This is not a
+two-hour wall-clock receiver run or a product-only memory measurement.
+
 ## Historical MMCO-5 candidate — superseded
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.

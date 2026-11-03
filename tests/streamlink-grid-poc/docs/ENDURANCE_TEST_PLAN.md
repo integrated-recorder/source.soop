@@ -8,8 +8,8 @@ This plan applies to one immutable candidate identified by commit SHA and Bundle
 `MediaSink -> SoopGridReader/StreamIO -> MPEG-TS` path using locally generated
 H.264/AAC. It applies media timestamps faster than real time and checks
 EOF/drain, byte accounting, VCL/AAC identity, TS structure and FFmpeg decode.
-The tool bounds duration, output size and subprocess time and uses temporary
-files.
+The tool bounds duration to 120 media minutes, generated input to 512 MiB,
+output to 1 GiB, subprocess time and uses temporary files.
 
 This is supplementary offline validation only. It does not exercise SOOP,
 network pacing, authentication, Parent/Cache recovery, controlled failures,

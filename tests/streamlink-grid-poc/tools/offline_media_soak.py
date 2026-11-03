@@ -35,6 +35,7 @@ BASE_TIMESTAMP = 50_000_000
 FPS = 10
 SAMPLE_RATE = 48_000
 MAX_MEDIA_BYTES = 1 << 30
+MAX_FIXTURE_BYTES = 512 << 20
 
 
 def _run(binary, args, timeout):
@@ -132,6 +133,8 @@ def _fd_count():
 
 
 def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
+    if not 1 <= minutes <= 120:
+        raise ValueError("timeline_duration_invalid")
     duration = minutes * 60
     video_frames_expected = duration * FPS
     if output_cap < 1 << 20 or output_cap > MAX_MEDIA_BYTES:
@@ -186,6 +189,9 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             min(timeout, 300),
         )
 
+        generated_input_bytes = video_path.stat().st_size + audio_path.stat().st_size
+        if generated_input_bytes > MAX_FIXTURE_BYTES:
+            raise RuntimeError("soak_fixture_size_limit")
         video_data = video_path.read_bytes()
         video_aus = _access_units(video_data, video_frames_expected)
         sps = next((unit for unit in nals(video_data) if unit[0] & 31 == 7), None)
@@ -327,6 +333,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             "scope": "generated_media_timeline_not_live_or_realtime",
             "timeline_seconds": duration,
             "elapsed_wall_seconds": elapsed,
+            "generated_input_bytes": generated_input_bytes,
             "sps": {
                 "width": sps_info["width"],
                 "height": sps_info["height"],
@@ -363,7 +370,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--minutes", type=int, default=10, choices=range(1, 31))
+    parser.add_argument("--minutes", type=int, default=10, choices=range(1, 121))
     parser.add_argument("--ffmpeg", default=os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg"))
     parser.add_argument("--ffprobe", default=os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe"))
     parser.add_argument("--timeout", type=float, default=900)

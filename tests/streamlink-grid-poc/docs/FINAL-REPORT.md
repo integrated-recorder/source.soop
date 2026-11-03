@@ -265,4 +265,11 @@ FD count passed. RSS peaked at 301,156 KiB for the harness that retains and
 parses all generated input media; this is not product-only or long-run leak
 evidence. Live, real-time and 2/6-hour gates are still untested.
 
+The same bounded helper also passed a 7,200-second synthetic timeline in
+356.393 wall seconds: 72,000 VCL NALs and 337,501 AAC AUs matched; full decode,
+TS integrity, PCR spacing, EOF/drain and byte accounting passed. Its
+1,082,268 KiB RSS peak includes the helper's retained source media and parsed
+AU lists. This supplies long media-timestamp coverage only; it is not live or
+wall-clock endurance evidence and does not change the release gate.
+
 # Existing report history
