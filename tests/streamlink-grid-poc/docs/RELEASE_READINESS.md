@@ -40,6 +40,11 @@ source/bundle regression was rerun with this pyproject change present and
 passed 793/0 and 784/0; the production bundle SHA did not change. This repairs
 build/install readiness without changing the live-test or Stable gates.
 
+The host has only Python 3.12.3. All 56 tracked Python files parse under the
+Python 3.10 grammar, and the installed Streamlink 8.6.2 metadata declares
+`Requires-Python: >=3.10`; this is static compatibility evidence only. A
+Python 3.10 runtime test and Windows/macOS execution were not available here.
+
 ## Latest offline candidate — 2026-11-03
 
 H.264 V16 SEI envelope regressions were added for opaque payload types 213–215
