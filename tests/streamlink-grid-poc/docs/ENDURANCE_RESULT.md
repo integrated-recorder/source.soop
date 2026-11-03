@@ -416,3 +416,27 @@ This strengthens current-HEAD offline regression and local fault-injection
 evidence. It does not establish SOOP live/Parent behavior, current-build
 source-relative synchronization, or live 2 h/6 h endurance. Stable remains
 **NO-GO**.
+
+## Packaging build compatibility — 2026-11-03
+
+A clean wheel-build check exposed a metadata/backend mismatch: `pyproject.toml`
+used PEP 639 `project.license` SPDX syntax and `project.license-files`, while
+the declared backend floor was setuptools 68. The environment's pinned 68.1.2
+rejected both fields. [Setuptools' PEP 639 migration guide](https://setuptools.pypa.io/en/stable/userguide/license_migration.html)
+documents support starting at 77.0.0;
+the build requirement was raised to `setuptools>=77` in commit
+`62e365f`.
+
+With build isolation, wheel creation and installation into a temporary target
+passed. The installed `soop_grid` package imported from that target, and
+Streamlink 8.6.2 loaded the sideloaded plugin with `plugins.load_path()`,
+resolved a fixture SOOP URL and enumerated its Grid stream. Wheel metadata
+contained `License-Expression: AGPL-3.0-only` and the packaged `LICENSE`.
+After the packaging change, source tests passed **793/0 skipped** and bundle
+parity passed **784/0 skipped**. Ruff, format, compileall, deterministic
+single-file bundle check and manifest passed. Production bundle SHA remained
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+This fixes clean build/install compatibility. It does not change runtime
+compatibility or any SOOP live/endurance gate; those remain separately
+classified in the matrix.

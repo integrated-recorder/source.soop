@@ -2,9 +2,9 @@
 
 ## Latest verification — 2026-11-03, offline only
 
-Production source/tool baseline: `2e88360eebe860c7208e86e99845b938dbe005c4`
-on `fix/grid-startup-readiness`; later commits in this verification sequence
-changed documentation only. Production bundle SHA-256 remains
+Production runtime source baseline: `2e88360eebe860c7208e86e99845b938dbe005c4`
+on `fix/grid-startup-readiness`; packaging backend floor was corrected in
+`62e365f`. Production bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 Source tests: **793 passed / 0 skipped**; bundled parity: **784 passed / 0
 skipped**. The cancellable wall-clock pacing mode passed a 60-second smoke and
@@ -31,6 +31,14 @@ local socket permission; Ruff, tracked Python format, compileall, deterministic
 bundle check, SHA manifest and `git diff --check` passed. Bundle bytes remain
 unchanged. This confirms offline regression on current HEAD; live gates remain
 NOT_TESTED.
+
+Packaging follow-up at `62e365f` raised the build backend requirement to
+setuptools 77, which understands the declared PEP 639 SPDX/license-file
+metadata. An isolated wheel build, temporary target install, license metadata
+inspection and Streamlink 8.6.2 sideload/plugin enumeration all passed. Full
+source/bundle regression was rerun with this pyproject change present and
+passed 793/0 and 784/0; the production bundle SHA did not change. This repairs
+build/install readiness without changing the live-test or Stable gates.
 
 ## Latest offline candidate — 2026-11-03
 
