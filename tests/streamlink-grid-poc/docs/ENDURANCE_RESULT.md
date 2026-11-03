@@ -168,6 +168,9 @@ This candidate passes the executed offline regression gates and has passed 120 s
 After the user confirmed that no authorized live test source is currently
 available, ran `tools/offline_media_soak.py` on the code at HEAD
 `b1adbfc419ce834315ddab3ea864ca3a1cc2d0f6`. No SOOP endpoint was contacted.
+Environment: Linux 6.8.0-147-generic x86_64, Python 3.12.3, Streamlink 8.6.2,
+FFmpeg/FFprobe 6.1.1-3ubuntu5; production bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 The generated SPS was parsed; this FFmpeg/libx264 build emitted 320x180
 progressive Baseline, POC Type 2, zero reorder.
 
