@@ -24,7 +24,7 @@ Short self-broadcast Grid tests additionally verified:
 
 Each TS passed the independent structural/timestamp verifier and full FFmpeg decode; exact per-run metrics and the clipped capture bounds are in [POC_GRID_LIVE_VALIDATION.md](POC_GRID_LIVE_VALIDATION.md). This is short synthetic evidence, not broad encoder/service compatibility evidence.
 
-The two existing encoder-dependent skips are because the pinned FFmpeg does not provide `libopenh264`; the available libx264 encoder was used and each actual SPS type was checked. The skips do not suppress failures in the new POC E2E tests.
+The former two encoder-dependent skips have been removed. Their POC-2 no-B fixture now uses the available libx264 Baseline encoder; tests inspect the emitted SPS and independently decode the bitstream before checking the production path. The follow-up source and bundle suites both ran with zero skips.
 
 ## Remaining limits
 

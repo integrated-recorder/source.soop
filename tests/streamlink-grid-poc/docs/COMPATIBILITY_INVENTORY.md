@@ -28,7 +28,7 @@ Audit scope: source and bundled code at `b070755ed1f1593714575c3813ace1bc64da221
 
 * The production timestamp source is Grid composition, not the historical HRD-derived PTS model. `RELIABILITY.md` was corrected in this audit to remove a stale contradictory description.
 * The current quality code includes q=32/1080p. `LIMITATIONS.md` was corrected; earlier text naming only q=1/2/4/8 was stale.
-* Current full source regression on the exact bundle passed 764 tests, with two existing `libopenh264`-dependent skips. Current bundle regression is recorded separately in `ENDURANCE_RESULT.md`.
+* Supplemental offline regression after replacing the legacy `libopenh264`-dependent POC-2 fixture: Source **767 passed, 0 skipped**; bundled production-code suite **758 passed, 0 skipped**. The production bundle hash is unchanged. Exact commands and scope are in `ENDURANCE_RESULT.md`.
 * No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
 
 The literal error-code catalogue, source locations, and coarse retry/fallback/terminal handling classes are in [ERROR_CODE_INVENTORY.md](ERROR_CODE_INVENTORY.md). It is generated from literal `GridError` call sites; dynamically supplied codes and full caller-specific control flow require manual tracing.

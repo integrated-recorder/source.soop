@@ -18,3 +18,5 @@ Evidence is scoped to code/tests and explicitly named artifact hashes. `VERIFIED
 | Security/auth boundaries | Offline auth/parser tests | Historical authorized sessions | Historical | Historical | NOT_TESTED | Offline VERIFIED; no new auth-expiry live test |
 
 Exact current candidate identity and staged result: `ENDURANCE_RESULT.md`. A looped-source smoke is excluded from PASS because its loop boundary introduced a reference audio timestamp overlap and A/V offset jump; the 30-minute source is non-looping. User availability now blocks further live sessions; 2 h, 6 h, and controlled-failure stages are NOT_TESTED.
+
+Supplemental offline regression for the same production bundle: Source 767 passed / 0 skipped; bundled production-code suite 758 passed / 0 skipped. The two former POC-2 fixture skips were closed using independently decoded libx264 output; this does not change the live/endurance rows above.

@@ -13,10 +13,10 @@
 
 | Check | Result |
 |---|---|
-| Source pytest, excluding preserved untracked `tests/test_suffix_latejoin.py` | PASS: 764 passed, 2 skipped, 62.46 s |
-| Bundle pytest, excluding preserved untracked `tests/test_suffix_latejoin.py` | PASS: 755 passed, 2 skipped, 54.80 s |
-| Skip 1 | `tests/test_h264clock.py:285`: optional generated POC-2 fixture requires FFmpeg `libopenh264`; installed FFmpeg exposes libx264 only |
-| Skip 2 | `tests/test_h264clock.py:409`: same encoder dependency for a second check |
+| Source pytest, excluding preserved untracked `tests/test_suffix_latejoin.py` | Initial run: 764 passed, 2 skipped. Supplemental run after replacing the encoder-specific fixture: **767 passed, 0 skipped, 50.47 s** |
+| Bundle pytest, excluding preserved untracked `tests/test_suffix_latejoin.py` | Initial run: 755 passed, 2 skipped. Supplemental run on the same production bundle: **758 passed, 0 skipped, 44.43 s** |
+| Former skip 1 | `tests/test_h264clock.py:285`: now runs with a real libx264-generated POC-2 fixture; independently decoded and full TS path passes |
+| Former skip 2 | `tests/test_h264clock.py:409`: now runs against the same fixture and passes its malformed B-slice/reordering rejection check |
 | Initial sandboxed source run | Not a product failure: 14 local TCP/socketpair tests raised `EPERM`; rerun outside sandbox passed |
 | Ruff check | PASS |
 | Ruff format check on tracked project paths, excluding preserved untracked suffix test | PASS: 54 files already formatted |
@@ -26,7 +26,9 @@
 | Streamlink 8.6.2 plugin load | PASS: `streamlink --plugin-dir plugins --plugins` lists both `soop` and `soop_grid` |
 | Bundle SHA256SUMS | PASS: verified from `dist/`; `soop_grid.py: OK` |
 
-The project-local alternate FFmpeg executable could not be launched because its isolated runtime dependency set is incomplete (`libpulsecommon-16.1.so`, then `liblapack.so.3` were unavailable on its loader path). No package installation or network download was performed. The available FFmpeg can generate and independently decode current fixtures, but not those two optional libopenh264-specific test vectors.
+The project-local alternate FFmpeg executable could not be launched because its isolated runtime dependency set is incomplete (`libpulsecommon-16.1.so`, then `liblapack.so.3` were unavailable on its loader path). No package installation or network download was performed. The system FFmpeg 6.1.1 libx264 encoder now generates the POC-2 no-B fixture; its emitted SPS is checked for `pic_order_cnt_type=2`, zero reorder, and non-fixed VUI timing, and FFmpeg independently decodes it. The two encoder-dependent skips are therefore closed without relaxing assertions.
+
+The supplemental test-fixture change does not alter production sources. The deterministic single-file bundle remains SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`.
 
 ## Live and endurance stages
 

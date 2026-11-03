@@ -6,7 +6,7 @@ All media used here is generated synthetic test content. No broadcast-origin med
 
 * FFmpeg/FFprobe 6.1.1 (Ubuntu build), with libx264 and AAC encoder.
 * Python 3.12 test environment; Streamlink 8.6.2.
-* `libopenh264` encoder is absent. Two legacy encoder-dependent tests remain skipped for that explicit reason; the new POC tests use the available libx264 output and independently check the resulting SPS rather than assuming a requested type.
+* `libopenh264` is absent. The former tests that required it now use libx264 for their real POC-2 no-B fixture; the SPS is parsed and checked, and FFmpeg independently decodes the elementary stream. This removes the environment-specific skips without weakening the fixture assertions.
 
 ## Deterministic offline fixtures
 
@@ -15,6 +15,8 @@ All media used here is generated synthetic test content. No broadcast-origin med
 * Type 0: libx264 Main/CAVLC, 2 B frames, repeat headers; generated SPS is parsed and asserted to signal type 0.
 * Type 1: a standards-conforming syntax transformation of that Type-0 bitstream. It changes the SPS POC model to a one-entry reference cycle and writes slice deltas to preserve the source POC values; coded macroblock data is copied. FFmpeg full decode succeeds, and decoded frame hashes equal the original Type-0 stream.
 * Type 2: libx264 Baseline, no B frames; the emitted SPS is parsed and asserted to signal type 2 and zero reorder.
+
+The POC-2 no-fixed-clock fixture used by `tests/test_h264clock.py` is also generated with libx264 Baseline, 60 frames at 30 fps, `bframes=0`, repeated headers and a 30-frame key interval. The actual emitted SPS is asserted to have POC type 2, no fixed VUI timing and a signaled zero-reorder bound. The raw stream is decoded independently before the production clock/mux test runs. The B-slice syntax test uses that valid SPS/PPS as a prefix and confirms the production parser rejects a B slice when zero reorder is required; it does not claim that the synthetic partial slice is a decodable picture.
 
 This is not claimed to be an encoder-native Type-1 mode. It is an independently decoded, valid Type-1 coded stream used to exercise the production parser/muxer. The transformer rejects unsupported source features such as MMCO 5 and unsuitable PPS/SPS syntax.
 

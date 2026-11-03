@@ -173,11 +173,6 @@ def encoded_poc2_no_vui(tmp_path_factory):
     ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
     if not ffmpeg:
         pytest.skip("FFmpeg required to synthesize a POC type 2 fixture")
-    encoders = subprocess.run(
-        [ffmpeg, "-hide_banner", "-encoders"], capture_output=True, timeout=15, check=True
-    ).stdout
-    if b"libopenh264" not in encoders:
-        pytest.skip("FFmpeg libopenh264 encoder required for a real POC type 2 fixture")
     path = tmp_path_factory.mktemp("h264-poc2") / "video.h264"
     result = subprocess.run(
         [
@@ -193,11 +188,15 @@ def encoded_poc2_no_vui(tmp_path_factory):
             "60",
             "-an",
             "-c:v",
-            "libopenh264",
+            "libx264",
+            "-profile:v",
+            "baseline",
+            "-bf",
+            "0",
+            "-x264-params",
+            "aud=1:repeat-headers=1:bframes=0:keyint=30:min-keyint=30:scenecut=0",
             "-b:v",
             "300k",
-            "-g",
-            "30",
             "-f",
             "h264",
             str(path),

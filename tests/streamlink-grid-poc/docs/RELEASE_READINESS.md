@@ -6,8 +6,8 @@ Candidate evaluated: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 
 
 | Gate | Status | Evidence / gap |
 |---|---|---|
-| Source full regression | PASS | 764 passed, 2 optional libopenh264 skips |
-| Bundle full regression | PASS | 755 passed, 2 optional libopenh264 skips; same candidate code/bundle hash as endurance run |
+| Source full regression | PASS | Supplemental run: 767 passed, 0 skipped; former libopenh264-dependent fixture now uses validated libx264 POC-2 output |
+| Bundle full regression | PASS | Supplemental run: 758 passed, 0 skipped; production candidate bundle hash unchanged |
 | Ruff / format / compileall / deterministic build | PASS on tracked project files | Untracked `tests/test_suffix_latejoin.py` was preserved and excluded from format check |
 | POC 0/1/2 documented subsets | PARTIAL | Historical short live evidence uses older bundle; Type 1 live B picture absent |
 | MMCO 5 | NO-GO | Production intentionally rejects pending complete state/timeline proof |
