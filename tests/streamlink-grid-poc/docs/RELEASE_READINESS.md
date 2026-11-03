@@ -8,8 +8,8 @@ the new H.274/VSEI metadata semantics are not interpreted. No production
 source or bundle change results. See `H264_REFERENCE_CONFORMANCE.md`.
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
-* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; subsequent branch commits are documentation-only.
-* Latest source tests: 774 passed, 0 skipped; bundled parity: 765 passed, 0 skipped; single-file tests: 9 passed.
+* Production code candidate: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; latest test/document tree: `3eddf193f222970b75d2254fe97942707e8129c7`.
+* Latest source tests: 780 passed, 0 skipped; bundled parity: 771 passed, 0 skipped. The source count includes the 9 standalone single-file tests.
 * All NAL headers, including opaque pass-through units, now receive common H.264 header validation. The malformed-AUD regression and valid control pass.
 * A deterministic 768-input malformed-parser smoke test produces no unexpected exceptions; broader coverage-guided fuzzing is not claimed.
 * Ruff, format, compileall, deterministic builder, manifest and Streamlink 8.6.2 plugin discovery pass.
