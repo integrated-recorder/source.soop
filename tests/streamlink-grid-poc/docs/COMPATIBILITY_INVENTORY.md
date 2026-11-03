@@ -1,0 +1,38 @@
+# Native Grid compatibility inventory
+
+Audit scope: source and bundled code at `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`. This is a code/test inventory, not a claim of broad live compatibility. The exact community V3/V5/V8 inputs are not available.
+
+## Classification
+
+| Area / boundary | Current behavior and evidence | Classification / remaining proof |
+|---|---|---|
+| H.264 profile and syntax | Progressive frame-coded Annex-B subset; parsed SPS/PPS/slice/SEI, bounded NAL and parameter-set sizes; unsupported profiles, interlace, FMO, unsupported slice syntax, midstream codec changes, unsupported `pic_struct`, and malformed RBSP fail closed. See `soop_grid/h264clock.py`, `tests/test_h264_audit.py`. | Unsupported normal structures are explicit; malformed syntax must be rejected. Not a general H.264 decoder. |
+| POC 0/1/2 | Enabled for tested progressive subsets. POC checks order; Grid composition supplies production PTS. Type 0 live evidence has B pictures; Type 1 live evidence is no-reorder, while Type 1 B-picture is offline-only; Type 2 live evidence is no-reorder/zero-reorder. `docs/POC_TYPE_SUPPORT_MATRIX.md`. | Verified for subsets. Type 1 live B-picture and arbitrary DPB/reference structures remain unverified. |
+| MMCO 5 | Parsed and represented in state, but production rejects with `h264_grid_mmco5_unverified`. `tests/test_grid_composition.py`. | Deliberate fail-closed unsupported syntax pending a valid end-to-end fixture and epoch proof. |
+| `frame_num` gaps | With gaps disallowed, non-successor relative to the previous reference picture raises `h264_frame_num_gap`, with bounded numeric diagnostics. With gaps allowed, the parser does not synthesize access units; the downstream conforming decoder handles any non-existing-reference semantics. | Exact V8 `119→1` input remains unverified. Grid sequence continuity does not establish coded-picture/reference continuity. |
+| POC / composition | Increasing Grid DTS, PTS from Grid timestamp plus nonnegative composition; POC/PTS order, duplicate PTS, reorder bound, IDR epoch and fixed resource bounds are checked. | Verified synthetic and short historical live subsets; current-hash long-run source-clock/perceptual sync not tested. |
+| HRD / SEI | Syntax and applicable buffering-period/picture-timing constraints are checked; HRD delay is not used as production PTS. Low-delay HRD and unsupported timing combinations fail closed. | Supported only within documented parsed subset; see `H264_COMPATIBILITY_AUDIT.md`. |
+| AAC / ADTS | Parser bounds a chunk to 4 MiB/8192 frames and validates framing/config. Production accepts AAC-LC, one raw data block per ADTS frame, stable configuration, supported rate/channel config; checks sample-clock consistency and rejects unexplained gaps/regressions. | Other AAC object types, PCE channel config 0, multi-block frames and in-session config change are unsupported. Parseability is not decoder compatibility. |
+| MPEG-TS / PCR | H.264/AAC payload and PES PTS/DTS are retained; PCR follows video DTS on PMT PCR PID. Bounded PCR-only packets regularize file timestamps for positive gaps up to 2 s; regression and larger gaps fail. | File PCR values are not real-time pacing. The exact 231 ms community capture is unavailable. |
+| Grid framing / identity | Protocol lengths, checksums, bounds and media layouts are validated; malformed or unknown versions fail closed. | Depends on documented server protocol subset; unknown future wire versions unsupported. |
+| Cache / Parent recovery | One Parent active. Retry/rediscovery budgets are finite; recovery requires exact overlap identity and timestamp/sequence continuity. No fabricated media or silent clock reset. | Controlled client-owned socket-close tests exist in historical evidence; repeated natural remote failure behavior remains unverified. |
+| Startup retry | Opt-in and default-off. Only exact initial Cache sequence-gap condition before publication may retry, within count/time/memory/byte limits. No retry after output begins. | Natural first-fail-then-success benefit not established; retain disabled default. |
+| Authentication / session | First-party metadata/ticket/certificate flow, explicit denial terminal. No credential synthesis, automatic reauthentication or access-control bypass. | Expired session requires a new authorized Streamlink session. SOOP Grid control sockets are plaintext per documented protocol. |
+| Streamlink quality | Advertised/verified Grid profiles: original, 1080p/q32, 720p/q2, 540p/q4, 360p/q8; expected SPS height is checked. Hidden ordering alias is not exposed; sorting exclusions follow Streamlink. HLS remains delegated to built-in SOOP plugin. | Profile availability is broadcast-dependent. No 2160p conversion claim. |
+| Auto/HLS fallback | Auto is Grid-first; HLS fallback only for allowlisted initial transport errors before any Grid bytes are emitted. Auth denial, malformed media, unsupported timing, continuity failure and post-output errors are terminal. | Fallback is a separate source/timeline, never concatenated as continuous Grid media. |
+| StreamIO / resource use | Bounded ring buffer, finite network frame bounds, bounded identity window, cancellable network close and bounded worker join. Accounting distinguishes accepted/read/discarded/unaccepted bytes. | OS I/O can outlast shutdown bound; actual current-build hours-long RSS/FD/thread trend is not measured. |
+| Diagnostics | Fixed safe error-code set and numeric bounded facts; no media payload, URL, token or cookie in routine summary. Raw diagnostic capture is opt-in and size-bounded. | Private captures need separate handling and review; not suitable for public repository. |
+| Close / EOF | Reader close cancels network and buffer, joins worker; incomplete drain is surfaced. Final output coverage checks both tracks. | Coverage checks are coarse integrity gates, not perceptual lip-sync proof or fsync durability. |
+
+## Current-code findings
+
+* The production timestamp source is Grid composition, not the historical HRD-derived PTS model. `RELIABILITY.md` was corrected in this audit to remove a stale contradictory description.
+* The current quality code includes q=32/1080p. `LIMITATIONS.md` was corrected; earlier text naming only q=1/2/4/8 was stale.
+* Current full source regression on the exact bundle passed 764 tests, with two existing `libopenh264`-dependent skips. Current bundle regression is recorded separately in `ENDURANCE_RESULT.md`.
+* No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
+
+## Primary follow-up risks
+
+1. Obtain lawful, reproducible Type-1 B-picture and MMCO-5 bitstreams and run them through the current production sink/StreamIO path before widening support.
+2. Execute the exact current bundle against an authorized self-broadcast for duration and controlled failure tests.
+3. Measure source-relative A/V drift, memory, descriptors and threads on the same exact build for at least 2 h and 6 h before Stable consideration.

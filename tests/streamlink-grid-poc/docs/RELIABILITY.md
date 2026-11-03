@@ -67,13 +67,14 @@ error; the user may start a fresh session.
 
 ## H.264 and AAC timing
 
-POC 0/1/2 tracks picture order only. The current supported mapping derives DTS
-from observed Grid time and, when HRD is present, PTS from Picture Timing SEI DPB
-output delay. Fixed VUI timing alone does not map arbitrary POC distances to time.
-Without HRD, only constrained POC-2 or zero-reorder input may use PTS=DTS. Conflicts
-fail closed; missing evidence is not replaced by estimated FPS. Audio uses the same
-clock origin with no arbitrary reorder lead. AAC access-unit/sample counts and
-clock residuals are tracked independently of Grid message count.
+POC 0/1/2 validates picture order; it does not supply elapsed time. Production DTS
+comes from Grid `startTime`, and PTS comes from `startTime + composition`, both
+rescaled against the common media origin. HRD/SEI timing is parsed and checked but
+does not replace the Grid composition clock. PTS/POC contradictions, non-increasing
+DTS, unverified reorder bounds, unsupported timing syntax and unsupported MMCO 5
+fail closed. No FPS-based timestamps are invented. AAC uses its validated
+sample-count clock against the same origin; source-clock and perceptual A/V sync
+are not established by track-span checks alone.
 
 PES/PCR serialization wraps by specification while internal timestamps remain
 unwrapped. Bounded startup retains early audio until valid SPS/PPS/IDR; unsupported

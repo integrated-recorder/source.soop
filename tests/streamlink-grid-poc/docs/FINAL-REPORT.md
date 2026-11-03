@@ -44,3 +44,35 @@ Commit `41309cb` had incorrectly allowed successive non-reference POC-type-2 pic
 ## Release decision
 
 **Beta: GO for the validated progressive POC 0/1/2 subsets. Stable: NO-GO.** Do not promote MMCO 5, arbitrary reference-state combinations, live Type-1 B frames, long-duration drift, exact V3/V5/V8 cases or universal broadcaster compatibility based on these short synthetic tests. The q=32/1080p profile remains separate and unchanged.
+# Comprehensive compatibility campaign — 2026-11-03 update
+
+This update applies to HEAD `b070755ed1f1593714575c3813ace1bc64da221e` and
+`dist/soop_grid.py` SHA-256
+`5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`.
+It supplements earlier artifact-scoped results below; it does not rewrite their
+test hashes or claim that historical endurance runs exercised this candidate.
+
+* Exact candidate offline tests: source `764 passed, 2 skipped`; bundle
+  `755 passed, 2 skipped`. Both skips require `libopenh264`, absent from the
+  available FFmpeg 6.1.1 build. Module and bundle used the same exclusions for
+  the preserved untracked `tests/test_suffix_latejoin.py`.
+* Ruff check, tracked-file format check, compileall, deterministic bundle check,
+  Streamlink 8.6.2 plugin discovery and diff checks passed.
+* No production media defect was reproduced in this pass. Two stale statements
+  were corrected: production timing uses Grid composition (not HRD-derived PTS),
+  and verified Grid quality enumeration includes conditional 1080p/q32.
+* The exact community V3/V5/V8 inputs remain unavailable. MMCO 5 remains
+  fail-closed; Type-1 live B-picture handling remains unverified; the current
+  candidate has no fresh live, A/V-marker, memory/FD trend, 2-hour or 6-hour run.
+* Current candidate Stable decision: **NO-GO**. Existing Beta use remains
+  conditional on the documented subsets and fail-closed boundaries.
+* Host GitHub DNS lookup failed in this environment. Remote synchronization is
+  not represented as verified here; see the final execution report for the
+  eventual push check.
+
+See `COMPATIBILITY_INVENTORY.md`, `H264_REFERENCE_CONFORMANCE.md`,
+`AAC_AV_SYNC_CONFORMANCE.md`, `TRANSPORT_RECOVERY_CONFORMANCE.md`,
+`ENDURANCE_TEST_PLAN.md`, `ENDURANCE_RESULT.md`, `COMPATIBILITY_MATRIX.md` and
+`RELEASE_READINESS.md` for detail.
+
+# Existing report history
