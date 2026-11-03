@@ -183,7 +183,8 @@ def generated_poc_streams(tmp_path_factory):
 
 
 @pytest.mark.parametrize("poc_type", [0, 1, 2])
-def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, poc_type, monkeypatch):
+@pytest.mark.parametrize("corrupt", [False, True], ids=["valid", "bad-vcl-header"])
+def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, poc_type, corrupt, monkeypatch):
     ffmpeg, ffprobe, root, streams, audio_payload = generated_poc_streams
     source_path, source = streams[poc_type]["path"], streams[poc_type]["data"]
     source_sps = streams[poc_type]["sps"]
@@ -308,6 +309,11 @@ def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, po
             kind = header.slice_kind if header.slice_kind in ("I", "P", "B") else "I"
             if header.idr:
                 kind = "I"
+            if corrupt and index == 5:
+                au = bytearray(au)
+                vcl_offset = au.index(b"\x00\x00\x00\x01" + vcl) + 4
+                au[vcl_offset] |= 0x80  # forbidden_zero_bit: deterministic malformed NAL header
+                au = bytes(au)
             server_packets.append(
                 parent_packet(
                     0xC748,
@@ -338,13 +344,51 @@ def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, po
     try:
         reader.open()
         output = bytearray()
-        while True:
-            block = reader.read(64 << 10)
-            if not block:
-                break
-            output.extend(block)
+        if corrupt:
+            with pytest.raises(OSError, match="h264_nal_header_invalid"):
+                while True:
+                    block = reader.read(64 << 10)
+                    if not block:
+                        break
+                    output.extend(block)
+        else:
+            while True:
+                block = reader.read(64 << 10)
+                if not block:
+                    break
+                output.extend(block)
     finally:
         reader.close()
+
+    if corrupt:
+        assert output
+        assert reader.failure_code == "h264_nal_header_invalid"
+        assert reader.stats["reader_eof_observed"] == 0
+        assert reader.stats["stream_output_drain_complete"] == 0
+        assert reader.network.requests == [0xCB2E, 0xCB2F, 0xCB30]
+        assert not reader.network._sockets
+        partial_ts = root / f"poc-{poc_type}-bad-header.ts"
+        partial_h264 = root / f"poc-{poc_type}-bad-header.h264"
+        partial_ts.write_bytes(output)
+        _run(
+            ffmpeg,
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            partial_ts,
+            "-map",
+            "0:v:0",
+            "-c",
+            "copy",
+            "-f",
+            "h264",
+            partial_h264,
+        )
+        accepted_vcl = [unit for unit in nals(partial_h264.read_bytes()) if unit[0] & 31 in (1, 5)]
+        expected_prefix = [unit for group in source_groups[:5] for unit in group if unit[0] & 31 in (1, 5)]
+        assert accepted_vcl == expected_prefix
+        return
 
     assert output and len(output) % 188 == 0
     assert all(output[offset] == 0x47 for offset in range(0, len(output), 188))

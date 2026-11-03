@@ -2,6 +2,12 @@
 
 Evidence is scoped to code/tests and explicitly named artifact hashes. `VERIFIED` means evidence exists at that scope, not universal service compatibility.
 
+Latest offline follow-up (2026-11-03): POC 0/1/2 valid and malformed local
+Parent-wire E2E cases pass (12 cases). The bad VCL NAL is rejected before
+publication completes; see `ENDURANCE_RESULT.md`. This adds no live Grid or
+endurance evidence. Current-build SOOP 2 h/6 h remain NOT_TESTED; Stable is
+NO-GO.
+
 | Feature | Offline | Grid E2E | 30 min | 2 h | 6 h | Current exact-candidate status |
 |---|---|---|---|---|---|---|
 | POC 0 progressive subset | VERIFIED; current candidate includes MMCO5 offline fixture | Historical exact-bundle 120 s/600 s/1,800 s runs on the prior candidate; B pictures and contiguous source/Grid VCL identity | Historical prior-bundle 1,800 s capture PASS; full TS/decode pass | NOT_TESTED | NOT_TESTED | VERIFIED_FOR_SUBSET; current candidate MMCO5 subset is offline-only |

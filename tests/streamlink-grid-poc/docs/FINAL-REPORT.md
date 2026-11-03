@@ -368,3 +368,19 @@ obtained. This remains **PARTIAL; Stable NO-GO**. See `ENDURANCE_RESULT.md`
 for scope and the exact tests.
 
 # Existing report history
+
+## Offline Parent-wire fault-injection continuation — 2026-11-03
+
+Added deterministic malformed-VCL cases to the POC Type 0/1/2 local Parent
+wire-to-StreamIO E2E. Each corrupt AU is rejected as
+`h264_nal_header_invalid` before EOF/drain completion; output VCL contains
+only the valid source prefix, no live transition is requested, and sockets
+are closed. Valid controls continue through TS and full FFmpeg decode.
+
+Results: POC E2E **12 passed**; source suite **797 passed, 0 skipped**;
+bundle parity **788 passed, 0 skipped**. Bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+The preserved untracked `tests/test_suffix_latejoin.py` is excluded and
+untouched. No authorized test broadcast is available: live Grid, current-build
+source-relative A/V, and live 2 h/6 h endurance remain NOT TESTED. Campaign
+status is **PARTIAL**; Stable is **NO-GO**.

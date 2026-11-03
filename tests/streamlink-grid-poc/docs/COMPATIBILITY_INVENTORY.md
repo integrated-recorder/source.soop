@@ -50,3 +50,5 @@ The literal error-code catalogue, source locations, and coarse retry/fallback/te
 1. Obtain lawful, reproducible Type-1 B-picture and MMCO-5 bitstreams and run them through the current production sink/StreamIO path before widening support.
 2. Execute the exact current bundle against an authorized self-broadcast for duration and controlled failure tests.
 3. Measure source-relative A/V drift, memory, descriptors and threads on the same exact build for at least 2 h and 6 h before Stable consideration.
+
+Latest offline regression at working-tree base `8f988a1045837c091dd574ee226e2a62e0f16125` adds local Parent-wire malformed-AU fault injection for POC 0/1/2. The invalid VCL header fails closed and does not enter the output prefix. Source/bundle suites pass 797/788 with zero skips. This does not change the live, source-relative sync, or endurance limitations above; see `ENDURANCE_RESULT.md`.

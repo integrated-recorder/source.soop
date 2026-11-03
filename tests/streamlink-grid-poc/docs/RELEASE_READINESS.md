@@ -87,6 +87,13 @@ long-duration test.
 
 **Campaign: PARTIAL. Stable: NO-GO.** This is an offline hardening candidate; it does not replace current-build live or endurance gates.
 
+Latest offline test-only follow-up adds malformed VCL header injection to the
+local Parent-wire POC 0/1/2 E2E. POC module: 12 passed; full source/bundle:
+797/788 passed, zero skipped. Invalid media fails closed and is not emitted.
+Bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+No authorized broadcast is available; live and current-build 2 h/6 h gates
+remain NOT TESTED. Stable remains NO-GO.
+
 The generated-media soak was subsequently extended to 1,800 media seconds and
 passed VCL/AAC identity, full decode, TS integrity and StreamIO drain. It ran in
 89.335 wall seconds and is an accelerated POC-2 synthetic test, not 30-minute

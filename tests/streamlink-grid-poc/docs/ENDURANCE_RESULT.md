@@ -473,3 +473,22 @@ payload identity. The complete source suite passed **794/0 skipped** and
 bundle parity passed **785/0 skipped**. This is a local protocol fixture, not
 a SOOP connection or Native Grid service validation. Production bundle SHA
 remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+## Parent-wire malformed-AU fault injection — 2026-11-03
+
+The POC 0/1/2 E2E now has valid and malformed cases through a local fake
+Parent socket, production frame parsing and `receive_media()`, `MediaSink`,
+`StreamIO`, and TS output. The malformed case sets `forbidden_zero_bit` on
+VCL AU 6. All three POC types fail closed with `h264_nal_header_invalid`;
+the malformed AU is absent from the emitted VCL prefix, EOF/drain is not
+reported complete, `CB2B` is not sent, and the local socket is closed. Valid
+cases retain full decode and coded-media identity checks. This is local
+protocol fault injection, not an SOOP service or live recovery test.
+
+The POC E2E module passed **12 tests**. Full source pytest passed **797/0
+skipped** and static bundle parity passed **788/0 skipped**. Production bundle
+SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+No authorized SOOP test broadcast is available, so campaign status remains
+**PARTIAL** and Stable remains **NO-GO**; current-build live and live 2 h/6 h
+gates remain NOT TESTED.
