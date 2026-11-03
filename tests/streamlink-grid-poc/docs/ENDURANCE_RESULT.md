@@ -100,6 +100,16 @@ framing arithmetic only; it does not validate AAC CRC values or decode mutated
 AAC payloads. Production code and bundle are unchanged; live and endurance
 gates remain untested.
 
+## Repeated StreamIO lifecycle smoke — 2026-11-03
+
+Added and ran 64 local synthetic StreamIO sessions through open, complete
+read, EOF/drain and close. Each session's bytes match exactly with no discarded
+or unaccepted output; receiver worker threads returned to baseline and Linux
+FD count was unchanged. Full source and bundled regressions passed **784** and
+**775** tests, respectively, with no skips. This checks repeated lifecycle
+cleanup, not RSS trend over hours or network/Parent endurance. Production
+source and bundle remain unchanged.
+
 ## Candidate and environment
 
 * Branch: `fix/grid-startup-readiness`

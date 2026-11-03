@@ -9,19 +9,20 @@ source or bundle change results. See `H264_REFERENCE_CONFORMANCE.md`.
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 * Production code candidate: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; latest offline test run was on the working tree based on `ee61fae6884371c247cfeb1ecb431854bfd6ac92`.
-* Latest source tests: 783 passed, 0 skipped; bundled parity: 774 passed, 0 skipped. The source count includes the 9 standalone single-file tests.
+* Latest source tests: 784 passed, 0 skipped; bundled parity: 775 passed, 0 skipped. The source count includes the 9 standalone single-file tests.
 * All NAL headers, including opaque pass-through units, now receive common H.264 header validation. The malformed-AUD regression and valid control pass.
 * A deterministic 768-input malformed-parser smoke test produces no unexpected exceptions; broader coverage-guided fuzzing is not claimed.
 * A fixed-seed TS scanner mutation smoke test processes 64 generated TS variants with 1–4 mutated bytes each; it verifies bounded scan results and input hashes, not coverage-guided fuzzing.
 * A fixed-seed near-valid H.264 parser mutation test covers 1,024 variants of a synthetic SPS/PPS/IDR access unit and found no unexpected exception; it is not a conformance proof or coverage-guided fuzzing.
 * A fixed-seed ADTS framing mutation test covers 1,024 variants of eight real encoded frames and checks frame-boundary, sample-count, duration and reconstruction invariants. It does not validate mutated AAC decoding or CRC values.
+* A 64-session local StreamIO lifecycle smoke completed with exact byte accounting, no receiver worker left behind, and no Linux FD delta; this does not establish hours-long memory trends.
 * Ruff, format, compileall, deterministic builder, manifest and Streamlink 8.6.2 plugin discovery pass.
 * No live source is currently available. 2 h, 6 h, live controlled-recovery and current-hash live verification remain NOT TESTED.
 
 ### Latest test-only follow-up
 
 After adding six bounded H.264 V16 SEI-envelope tests (payload types 213–215),
-source pytest is **783 passed, 0 skipped** and bundled parity is **774 passed,
+source pytest is **784 passed, 0 skipped** and bundled parity is **775 passed,
 0 skipped**. The source count includes nine single-file construction tests.
 The production bundle remains SHA-256
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
@@ -29,8 +30,9 @@ VSEI payload semantics are not interpreted. No live or endurance evidence was
 added; Stable remains **NO-GO**.
 
 The subsequent deterministic TS-scanner, near-valid H.264 and ADTS mutation
-regressions are included in the latest counts above. They are bounded
-robustness smokes, not a fuzzing campaign.
+regressions, plus the repeated StreamIO lifecycle smoke, are included in the
+latest counts above. They are bounded checks, not a fuzzing campaign or
+long-duration test.
 
 **Campaign: PARTIAL. Stable: NO-GO.** This is an offline hardening candidate; it does not replace current-build live or endurance gates.
 

@@ -30,8 +30,12 @@ DPB/reference-list/HRD text or every minor correction. See
   concatenation, bounded frame count, sample totals and rational duration;
   malformed inputs use `GridError`. This checks framing arithmetic, not AAC
   payload decoding or CRC validity.
+* A repeated StreamIO lifecycle test ran 64 synthetic sessions through
+  open/read/EOF/drain/close. Every byte was accounted for, all receiver workers
+  exited, and Linux FD count returned to baseline. This is a lifecycle smoke,
+  not a long-duration RSS or live transport endurance result.
 * Changes are tests and documentation only; production source and bundle are
-  unchanged. Full source: **783 passed, 0 skipped**; bundled parity: **774
+  unchanged. Full source: **784 passed, 0 skipped**; bundled parity: **775
   passed, 0 skipped**. The source count includes the 9 single-file construction
   tests. Bundle SHA-256 remains
   `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

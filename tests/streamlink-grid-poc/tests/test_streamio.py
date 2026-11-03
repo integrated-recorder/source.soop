@@ -50,6 +50,51 @@ def test_open_partial_read_readinto_eof_and_double_close():
     assert r.stats["stream_reader_bytes"] == len(b"abcdef")
 
 
+def test_repeated_reader_lifecycle_drains_and_releases_workers_and_fds():
+    import os
+
+    payload = (b"\x47" + b"lifecycle-fixture".ljust(187, b".")) * 8
+    worker_names_before = {
+        thread.ident for thread in threading.enumerate() if thread.name == "soop-grid-receiver"
+    }
+
+    def fd_count():
+        return len(os.listdir("/proc/self/fd")) if os.path.isdir("/proc/self/fd") else None
+
+    fds_before = fd_count()
+
+    for _ in range(64):
+
+        def run(_config, _network, emit, _report, stats):
+            emit(payload)
+            stats["stream_emit_bytes"] = len(payload)
+            stats["stop_reason"] = "duration_limit"
+
+        source = reader(run, timeout=1, capacity=376).open()
+        output = bytearray()
+        try:
+            while block := source.read(188):
+                output.extend(block)
+        finally:
+            source.close()
+
+        assert output == payload
+        assert not source.thread.is_alive()
+        assert source.stats["reader_eof_observed"] == 1
+        assert source.stats["stream_output_drain_complete"] == 1
+        assert source.stats["stream_reader_bytes"] == len(payload)
+        assert source.stats["stream_buffer_accepted_bytes"] == len(payload)
+        assert source.stats["stream_buffer_discarded_bytes"] == 0
+        assert source.stats["stream_buffer_unaccepted_bytes"] == 0
+
+    worker_names_after = {
+        thread.ident for thread in threading.enumerate() if thread.name == "soop-grid-receiver"
+    }
+    assert worker_names_after == worker_names_before
+    if fds_before is not None:
+        assert fd_count() == fds_before
+
+
 def test_streamlink_runner_writes_every_reader_byte_through_eof(tmp_path):
     from streamlink_cli.output.file import FileOutput
     from streamlink_cli.streamrunner import StreamRunner
