@@ -268,16 +268,28 @@ changed, and production bundle SHA-256 remains
 
 The timeout regression creates a slow local child fixture, verifies the
 expected `TimeoutExpired`, and confirms it terminates in under two seconds.
-Latest full offline source tests: **788 passed, 0 skipped**; bundled parity:
-**779 passed, 0 skipped**. The preserved untracked suffix test was excluded
-and untouched. Ruff check, tracked-file format check, compileall, deterministic
-bundle check, SHA256 manifest verification, Streamlink plugin discovery, and
-`git diff --check` passed after the test and document update.
+Before the additional AAC E2E fixture, full offline source tests were **788
+passed, 0 skipped**; bundled parity was **779 passed, 0 skipped**. The
+preserved untracked suffix test was excluded and untouched.
 
 The focused offline recovery/StreamIO/startup-retry/Parent-fault/transport
 group then passed **139 tests in 7.99 s**, with the isolated FFmpeg fixture
 environment enabled (zero skips). It includes synthetic and local loopback
 fault tests; it is not evidence for remote SOOP failure timing.
+
+An additional `test_poc2_streamio_44100_stereo_aac_identity_and_decode`
+fixture passed: 30 POC-2 video frames and 43 AAC-LC 44.1 kHz stereo access
+units traversed MediaSink/StreamIO/TS, demuxed VCL and AAC payloads matched,
+FFprobe confirmed 320x180 video and 44.1 kHz stereo audio, full FFmpeg decode
+and EOF/drain passed. The first fixture duration intentionally failed the
+track-coverage gate; the corrected 43-AU duration matches the video timeline.
+After this test, full source/bundle regressions passed **789/780**, zero
+skipped. Production bundle bytes remain unchanged.
+
+Ruff, tracked-file format, compileall, deterministic bundle check, SHA256
+manifest verification, Streamlink plugin discovery, and `git diff --check`
+passed for the final test changes. Live and wall-clock endurance remain
+NOT_TESTED.
 
 This is accelerated synthetic media-time validation, not live or six-hour
 wall-clock endurance. Live 2 h/6 h, real-time sync, Parent/Cache network

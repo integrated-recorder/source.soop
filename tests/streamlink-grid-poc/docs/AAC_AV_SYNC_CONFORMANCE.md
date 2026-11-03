@@ -16,6 +16,8 @@ Audio timing is accumulated from AAC core sample counts at the signaled rate, an
 
 Historical short self-broadcast trials recorded exact AAC AU interval identity and full audio decode for the tested synthetic stream. A separate earlier two-hour artifact has source-relative marker results in `STABLE_CANDIDATE_VALIDATION.md`; it is not the current build. No current exact-bundle A/V marker test, 2-hour run or 6-hour run was performed in this campaign. The local test suite exercises sample-clock parsing, mixed media and TS output but does not substitute for source-relative drift measurement.
 
+Current offline E2E also exercises 43 AAC-LC AUs at 44.1 kHz stereo alongside a 30-frame POC-2 video fixture through `MediaSink`, StreamIO and MPEG-TS. FFprobe reports 44.1 kHz/two channels, all source AAC raw data blocks and video VCL NALs match after demux, full FFmpeg decode succeeds, and EOF/drain accounting matches. This is a short synthetic format/transport check, not source-relative synchronization or long-duration evidence.
+
 ## Required follow-up
 
 For an authorized self-broadcast, insert numbered audio clicks and video flashes at a known cadence; retain a bounded source reference and output for the same interval. Report initial offset, additional offset, maximum and p95 offset, fitted drift (ppm), missing markers and uncertainty. Require the exact test Bundle SHA, same capture interval and complete decode before interpreting the result. Do not infer long-term sync from one short sample or track-span coverage alone.
