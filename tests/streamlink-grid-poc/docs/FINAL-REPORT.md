@@ -352,4 +352,19 @@ Parent/Cache recovery, and live controlled-failure tests remain NOT TESTED.
 The 2-hour and 6-hour wall-clock-paced offline generated-media runs, and the
 earlier accelerated six-hour timeline, do not substitute for those gates.
 
+## Offline-only continuation — 2026-11-03
+
+The user confirmed that an authorized SOOP test broadcast is unavailable, so
+this continuation was limited to offline work. Added a stdlib-only regression
+test requiring setuptools 77+ for the declared PEP 639 SPDX/license-file
+metadata. At source HEAD `f45c25e751107bdaeb5d1ddeaa94238b057b81ec`, source
+pytest passed **794/0 skipped** and static bundle parity passed **785/0
+skipped**. Ruff, format, compileall, deterministic bundle check, SHA manifest,
+and `git diff --check` passed. Bundle SHA remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+No new live Grid/A/V/recovery or current-build live 2 h/6 h evidence was
+obtained. This remains **PARTIAL; Stable NO-GO**. See `ENDURANCE_RESULT.md`
+for scope and the exact tests.
+
 # Existing report history

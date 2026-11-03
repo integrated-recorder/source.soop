@@ -6,7 +6,7 @@ Production runtime source baseline: `2e88360eebe860c7208e86e99845b938dbe005c4`
 on `fix/grid-startup-readiness`; packaging backend floor was corrected in
 `62e365f`. Production bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
-Source tests: **793 passed / 0 skipped**; bundled parity: **784 passed / 0
+Source tests: **794 passed / 0 skipped**; bundled parity: **785 passed / 0
 skipped**. The cancellable wall-clock pacing mode passed a 60-second smoke and
 a 7,200-second generated-media run (7,426.947 seconds wall time), including
 identity, TS/decode, PCR, StreamIO drain and sampled resource endpoints. This
@@ -44,6 +44,12 @@ The host has only Python 3.12.3. All 56 tracked Python files parse under the
 Python 3.10 grammar, and the installed Streamlink 8.6.2 metadata declares
 `Requires-Python: >=3.10`; this is static compatibility evidence only. A
 Python 3.10 runtime test and Windows/macOS execution were not available here.
+
+The packaging regression test for the PEP 639/setuptools floor was added on
+2026-11-03. Current offline source and bundle runs pass **794/0** and **785/0**
+respectively; the bundle remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+The user confirmed offline-only work, with no authorized live test broadcast
+available. Live and live-duration release gates remain untested.
 
 ## Latest offline candidate — 2026-11-03
 

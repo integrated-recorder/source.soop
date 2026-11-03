@@ -440,3 +440,23 @@ single-file bundle check and manifest passed. Production bundle SHA remained
 This fixes clean build/install compatibility. It does not change runtime
 compatibility or any SOOP live/endurance gate; those remain separately
 classified in the matrix.
+
+## Offline-only continuation — 2026-11-03
+
+The user confirmed that no authorized test broadcast is currently available;
+only offline verification can continue. A stdlib-only packaging regression
+test now guards the `setuptools>=77` floor required by the project's PEP 639
+SPDX/license-file metadata. The test initially caught its own version-tuple
+normalization bug, which was corrected before the final run.
+
+At source HEAD `f45c25e751107bdaeb5d1ddeaa94238b057b81ec`, source pytest passed
+**794 tests, 0 skipped** and static bundle parity passed **785 tests, 0
+skipped**, excluding the preserved untracked `tests/test_suffix_latejoin.py`.
+Ruff check/format, compileall, deterministic bundle `--check`, manifest
+verification, and `git diff --check` passed. Bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`; the
+new test and report do not alter production bundle bytes.
+
+This adds offline regression evidence only. No SOOP/Grid session, source-
+relative A/V test, live fault recovery, or exact-candidate live 2 h/6 h run
+was possible. Campaign remains **PARTIAL** and Stable remains **NO-GO**.
