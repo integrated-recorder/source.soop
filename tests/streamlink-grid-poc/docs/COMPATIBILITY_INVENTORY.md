@@ -4,7 +4,15 @@ Base audit scope: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c
 
 Current offline source supplement (2026-11-03): every NAL header is validated, including opaque pass-through AUD/filler units. Fixed-seed robustness tests cover 768 arbitrary malformed inputs, 1,024 near-valid SPS/PPS/IDR mutations, 1,024 ADTS framing mutations based on real encoded frames, and a separate deterministic 64-file TS mutation smoke. A 64-session StreamIO lifecycle smoke checks byte accounting, worker shutdown and FD baseline. These are bounded checks, not comprehensive fuzzing or long-duration endurance. ADTS mutations validate framing and accounting only, not decoded quality or CRC values. The V16 SEI tests cover bounded envelope handling for types 213–215, not VSEI semantics. ITU's 06/2026 H.264 edition is in force; the published SEI delta and relevant Annex D clauses were reviewed, while no complete V15-to-V16 textual audit of POC/DPB/MMCO-5 clauses is claimed. See `H264_REFERENCE_CONFORMANCE.md` and the newest sections in `ENDURANCE_RESULT.md`.
 
-Final offline-only follow-up on 2026-11-03 adds four soak deadline tests, including child-process termination at the global timeout, a corrected 21,600-second synthetic timeline, and 44.1 kHz stereo AAC StreamIO E2E coverage across POC 0/1/2. Latest source/bundle suites are **791/782 passed, zero skipped**, excluding the preserved untracked suffix test. The 6-hour media timeline took 1,067.107 wall seconds and passed the POC-2/AAC-LC fixture/TS/decode/EOF gates; it is not wall-clock/live endurance. Details and resource scope are in `ENDURANCE_RESULT.md`.
+Final offline-only follow-up on 2026-11-03 adds soak pacing/cancellation deadline tests, including child-process termination at the global timeout, a corrected 21,600-second synthetic timeline, and 44.1 kHz stereo AAC StreamIO E2E coverage across POC 0/1/2. At HEAD `2e88360eebe860c7208e86e99845b938dbe005c4`, source/bundle suites are **793/784 passed, zero skipped**, excluding the preserved untracked suffix test. A 60-second wall-clock-paced POC-2 synthetic smoke passed, followed by a 7,200-second paced run in 7,426.947 wall seconds with VCL/AAC identity, TS/decode, EOF/drain and stable sampled process FD/RSS/thread endpoints. The paced run is local generated-media evidence, not SOOP Grid, source-relative sync, Parent/Cache, or controlled-failure endurance. The 21,600-second accelerated media timeline took 1,067.107 wall seconds; it is also not wall-clock/live endurance. Details and measurement scope are in `ENDURANCE_RESULT.md`.
+
+Post-inventory continuation: the same current bundle passed a 21,600-second
+wall-clock-paced generated-media run in 22,273.389 seconds, with 721
+harness-inclusive RSS/FD/thread samples and full VCL/AAC identity, TS,
+decode, EOF and drain checks. This extends only the local synthetic
+MediaSink/StreamIO path; it does not change SOOP/Grid E2E, source-relative A/V,
+Parent/Cache, or controlled-failure status. The 2 h and 6 h SOOP live gates
+remain NOT_TESTED.
 
 ## Classification
 
@@ -32,7 +40,7 @@ Final offline-only follow-up on 2026-11-03 adds four soak deadline tests, includ
 
 * The production timestamp source is Grid composition, not the historical HRD-derived PTS model. `RELIABILITY.md` was corrected in this audit to remove a stale contradictory description.
 * The current quality code includes q=32/1080p. `LIMITATIONS.md` was corrected; earlier text naming only q=1/2/4/8 was stale.
-* Historical offline counts 767/758, 771/762, 774/765, 780/771, 781/772, 782/773, 783/774, 784/775, 787/778, 788/779 and 789/780 refer to earlier source/bundle states. Latest offline run has **791 passed, 0 skipped** and bundle parity **782 passed, 0 skipped**; see `ENDURANCE_RESULT.md`.
+* Historical offline counts 767/758, 771/762, 774/765, 780/771, 781/772, 782/773, 783/774, 784/775, 787/778, 788/779, 789/780 and 791/782 refer to earlier source/bundle states. Latest offline run has **793 passed, 0 skipped** and bundle parity **784 passed, 0 skipped**; see `ENDURANCE_RESULT.md`.
 * No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
 
 The literal error-code catalogue, source locations, and coarse retry/fallback/terminal handling classes are in [ERROR_CODE_INVENTORY.md](ERROR_CODE_INVENTORY.md). It is generated from literal `GridError` call sites; dynamically supplied codes and full caller-specific control flow require manual tracing.

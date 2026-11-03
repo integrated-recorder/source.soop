@@ -312,4 +312,44 @@ deterministic bundle check, manifest, Streamlink discovery, and diff check
 passed. Production bundle SHA remained
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 
+## Offline continuation — 2026-11-03, current HEAD `2e88360`
+
+The user confirmed that no authorized test broadcast is available and requested
+offline verification only. Added a cancellable wall-clock pacing mode and
+30-second RSS/FD/thread sampling to `tools/offline_media_soak.py`; production
+receiver code and bundle did not change. A 60-second local POC-2/AAC-LC
+synthetic run passed exact VCL/AAC identity, 20,384-packet TS integrity,
+100 ms maximum PCR value gap, full FFmpeg decode, StreamIO byte accounting,
+EOF and drain. It was followed by a 7,200-second wall-clock-paced offline run
+(7,426.947 s total) preserving 72,000 VCL AUs and 337,501 AAC AUs. All
+2,436,879 TS packets passed continuity/PSI checks, max PCR value gap was
+100 ms, and full decode/EOF/drain passed. RSS/FD/thread samples were stable at
+endpoints. Measurements are local and harness-inclusive; they do not test
+SOOP networking, source-relative A/V sync, Parent/Cache recovery, or
+receiver-only memory behavior.
+
+A 21,600-second wall-clock-paced generated-media run then completed in
+22,273.389 seconds. It preserved 216,000/216,000 VCL AUs and
+1,012,501/1,012,501 AAC AUs; 7,310,631 TS packets had zero continuity and PSI
+CRC errors, and the 100 ms PCR-gap, full decode, byte-accounting, EOF and drain
+checks passed. The peak StreamIO buffer was 62,604 bytes. Across 721
+harness-inclusive resource samples, RSS was 213,572/114,000/295,924 KiB
+(first/last/peak), sampled FDs 7/4/7, process FDs 4 before/after, and threads
+2/1/2. The 21.333 ms decoded coverage-boundary delta is not source-clock drift
+or perceptual sync. This six-hour local synthetic run still does not exercise
+SOOP/Grid, source-relative sync, Parent/Cache, or controlled failures.
+
+Source regression: **793 passed, 0 skipped**; bundled parity: **784 passed,
+0 skipped**. Ruff, tracked source formatting, compileall, deterministic bundle
+check, manifest, and `git diff --check` passed. Bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Commit `2e88360eebe860c7208e86e99845b938dbe005c4` is pushed and matches origin;
+the preserved untracked suffix experiment was excluded and untouched.
+
+The campaign remains **PARTIAL** and Stable remains **NO-GO**. Current-build
+SOOP live reception, source-relative A/V sync, 2 h/6 h SOOP operation, live
+Parent/Cache recovery, and live controlled-failure tests remain NOT TESTED.
+The 2-hour and 6-hour wall-clock-paced offline generated-media runs, and the
+earlier accelerated six-hour timeline, do not substitute for those gates.
+
 # Existing report history

@@ -332,3 +332,63 @@ manifest verification, and `git diff --check` passed. Production bundle bytes
 remain unchanged at SHA-256
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 `tests/test_suffix_latejoin.py` was excluded, left untouched, and unstaged.
+
+## Two-hour wall-clock-paced offline soak — 2026-11-03
+
+Ran the committed tool from source HEAD `2e88360eebe860c7208e86e99845b938dbe005c4`;
+production bundle SHA-256 was
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Environment remained Linux x86_64, Python 3.12.3, Streamlink 8.6.2 and
+FFmpeg/FFprobe 6.1.1-3ubuntu5. A 7,200-second generated POC-2 zero-reorder,
+320x180 Baseline video + AAC-LC 48 kHz mono timeline was fed through the
+production MediaSink/StreamIO/MPEG-TS path paced to wall-clock timestamps. It
+completed in **7,426.947 s** including generation and verification.
+
+* Input/output identity: 72,000/72,000 VCL AUs and 337,501/337,501 AAC AUs;
+  VCL SHA-256 `b50b5e3384b07a81891f6c689a3b63f0efc14075603d0edd16376a44cf2b5e59`;
+  AAC SHA-256 `fd32f6c8ad9d695e82093d3869262cd23dc76c31c7c46ce736754be5fc82b18d`.
+* Output: 458,133,252 bytes, 2,436,879 TS packets; continuity errors 0,
+  PSI CRC errors 0, maximum PCR value gap 100 ms; full FFmpeg decode passed.
+  StreamIO byte accounting, EOF and drain passed; peak buffer 27,636 bytes.
+* 241 resource samples: process RSS first/last/peak 213,464/202,620/293,488
+  KiB; FDs 7/4/7, with process count 4 before and after; threads 2/1/2.
+  These are harness-inclusive samples. The 21.333 ms decoded coverage-boundary
+  delta is not source-clock drift or perceptual sync.
+
+This verifies a two-hour **local generated-media paced pipeline** on the
+current production bundle. It has no SOOP network, Parent/Cache, source-side
+clock or sync markers, broadcast quality negotiation, or injected failures;
+it does not pass the campaign's two-hour live gate. The preserved untracked
+suffix experiment remained untouched.
+
+## Six-hour wall-clock-paced offline soak — 2026-11-03
+
+Ran the same committed harness and production bundle as the two-hour offline
+run: source HEAD `2e88360eebe860c7208e86e99845b938dbe005c4`, bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`, Linux
+x86_64, Python 3.12.3, Streamlink 8.6.2, FFmpeg/FFprobe 6.1.1-3ubuntu5. The
+21,600-second generated POC-2 zero-reorder 320x180 Baseline + AAC-LC 48 kHz
+mono timeline completed in **22,273.389 s** (6 h 11 min 13 s), including
+fixture generation and full-file verification.
+
+* Input/output identity: 216,000/216,000 VCL AUs and 1,012,501/1,012,501 AAC
+  AUs. VCL SHA-256 `fe2c226b284a8695c5d586e8ea7363ba186d014835da2f252f98eec8ca812cc9`;
+  AAC SHA-256 `af7003b104b201918ba2740a62fe1c30aeb39c07d8147e6fc4db392284421062`.
+* Output: 1,374,398,628 bytes, SHA-256
+  `eb7393bb04bf0902a06af4d0a98cfeaa73d89d9d86914aba2cbc6cf5955852fb`,
+  7,310,631 TS packets. Continuity errors 0, PSI CRC errors 0, max PCR value
+  gap 100 ms; FFprobe, full FFmpeg decode, payload identity, byte accounting,
+  EOF/drain all passed. Peak StreamIO buffer: 62,604 bytes.
+* 721 resource samples: RSS first/last/peak 213,572/114,000/295,924 KiB;
+  sampled FD first/last/peak 7/4/7, process FD count 4 before and after;
+  sampled thread first/last/peak 2/1/2. Samples include the Python harness,
+  fixture processing and transient worker/file activity, not receiver-only
+  memory. Decoded A/V coverage-boundary delta was 21.333 ms; this is not
+  source-clock drift or perceptual synchronization.
+
+This is six hours of **local synthetic wall-clock-paced MediaSink/StreamIO
+pipeline** operation. It does not exercise the SOOP protocol, authentication,
+Parent/Cache/failover, production Streamlink capture from a real stream,
+source-relative sync markers, quality negotiation or controlled failures.
+Therefore the six-hour live/Grid Stable gate remains NOT TESTED even though
+the local paced soak passed. No SOOP endpoint was contacted.

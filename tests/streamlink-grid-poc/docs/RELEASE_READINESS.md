@@ -1,5 +1,28 @@
 # Release readiness
 
+## Latest verification — 2026-11-03, offline only
+
+Current source commit: `2e88360eebe860c7208e86e99845b938dbe005c4` on
+`fix/grid-startup-readiness`; remote HEAD matches. Production bundle SHA-256
+remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Source tests: **793 passed / 0 skipped**; bundled parity: **784 passed / 0
+skipped**. The cancellable wall-clock pacing mode passed a 60-second smoke and
+a 7,200-second generated-media run (7,426.947 seconds wall time), including
+identity, TS/decode, PCR, StreamIO drain and sampled resource endpoints. This
+is local synthetic evidence, not SOOP network, source-relative sync, Parent
+recovery, or receiver-only leak evidence. User confirmed no authorized SOOP
+test broadcast is available. Current-hash live 2 h/6 h, live sync and
+controlled-live-failure gates remain NOT TESTED. **Campaign PARTIAL; Stable
+NO-GO.**
+
+A separate 21,600-second wall-clock-paced local synthetic run completed in
+22,273.389 seconds on the same source/bundle identity. It passed VCL/AAC AU
+identity, TS continuity/PSI CRC, full decode, byte accounting and StreamIO
+EOF/drain, with 721 harness-inclusive resource samples. It still does not
+exercise SOOP/Grid networking, source-relative A/V synchronization,
+Parent/Cache recovery or controlled failures; the live 6 h gate remains
+NOT_TESTED.
+
 ## Latest offline candidate — 2026-11-03
 
 H.264 V16 SEI envelope regressions were added for opaque payload types 213–215
