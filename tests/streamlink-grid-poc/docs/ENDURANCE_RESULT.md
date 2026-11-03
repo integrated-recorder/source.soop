@@ -274,6 +274,11 @@ and untouched. Ruff check, tracked-file format check, compileall, deterministic
 bundle check, SHA256 manifest verification, Streamlink plugin discovery, and
 `git diff --check` passed after the test and document update.
 
+The focused offline recovery/StreamIO/startup-retry/Parent-fault/transport
+group then passed **139 tests in 7.99 s**, with the isolated FFmpeg fixture
+environment enabled (zero skips). It includes synthetic and local loopback
+fault tests; it is not evidence for remote SOOP failure timing.
+
 This is accelerated synthetic media-time validation, not live or six-hour
 wall-clock endurance. Live 2 h/6 h, real-time sync, Parent/Cache network
 recovery and controlled live failures remain NOT_TESTED; Stable remains

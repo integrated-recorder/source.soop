@@ -26,8 +26,12 @@ Routine diagnostics use allowlisted event/error fields and bounded numeric facts
 
 No current-hash live Parent failure, session expiration, authentication denial, self-broadcast, or shutdown-under-network-fault test was executed. Local deterministic transport/fault tests are part of the module and bundled suites; exact current bundle counts are recorded in `ENDURANCE_RESULT.md`.
 
-On source commit `69b2cce2a6f45dbee2b94bfdd95ee7ddf925b2c7`, the focused offline
-recovery/StreamIO/startup-retry/Parent-fault suite passed **114 tests** in
-5.71 s. It exercises synthetic peers and loopback-only sockets. This narrows
-the unverified scope to real SOOP network behavior, long-duration resource
-trends, and live failure timing; it does not replace those tests.
+On current source commit `9ec01654fdaaca6e5b3c02468885fc599de32514`, the
+focused offline recovery/StreamIO/startup-retry/Parent-fault/transport suite
+passed **139 tests** in 7.99 s with the isolated FFmpeg fixture toolchain
+enabled. It exercises synthetic peers and loopback-only sockets, including a
+real local TCP Parent disconnect and overlap recovery. This narrows the
+unverified scope to real SOOP network behavior, long-duration resource trends,
+and live failure timing; it does not replace those tests. Three B-frame fixture
+tests skip when the isolated FFmpeg paths are not configured; they all ran in
+this invocation.
