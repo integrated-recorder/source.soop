@@ -31,6 +31,8 @@ Audit scope: source and bundled code at `b070755ed1f1593714575c3813ace1bc64da221
 * Current full source regression on the exact bundle passed 764 tests, with two existing `libopenh264`-dependent skips. Current bundle regression is recorded separately in `ENDURANCE_RESULT.md`.
 * No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
 
+The literal error-code catalogue, source locations, and coarse retry/fallback/terminal handling classes are in [ERROR_CODE_INVENTORY.md](ERROR_CODE_INVENTORY.md). It is generated from literal `GridError` call sites; dynamically supplied codes and full caller-specific control flow require manual tracing.
+
 ## Primary follow-up risks
 
 1. Obtain lawful, reproducible Type-1 B-picture and MMCO-5 bitstreams and run them through the current production sink/StreamIO path before widening support.

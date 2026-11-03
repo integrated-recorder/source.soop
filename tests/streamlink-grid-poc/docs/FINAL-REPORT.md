@@ -73,6 +73,7 @@ test hashes or claim that historical endurance runs exercised this candidate.
 See `COMPATIBILITY_INVENTORY.md`, `H264_REFERENCE_CONFORMANCE.md`,
 `AAC_AV_SYNC_CONFORMANCE.md`, `TRANSPORT_RECOVERY_CONFORMANCE.md`,
 `ENDURANCE_TEST_PLAN.md`, `ENDURANCE_RESULT.md`, `COMPATIBILITY_MATRIX.md` and
-`RELEASE_READINESS.md` for detail.
+`RELEASE_READINESS.md` for detail. Literal error codes are indexed in
+`ERROR_CODE_INVENTORY.md`.
 
 # Existing report history
