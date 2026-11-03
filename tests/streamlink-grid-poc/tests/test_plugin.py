@@ -67,8 +67,8 @@ def test_streamlink_best_and_original_select_the_same_single_grid_stream(transpo
 
 
 @pytest.mark.parametrize("transport", ["grid", "auto"])
-def test_verified_native_grid_profiles_are_enumerated_and_best_worst_are_numeric(monkeypatch, transport):
-    from soop_grid.quality import profiles_from_viewpreset
+def test_verified_native_grid_profiles_are_enumerated_and_best_worst_are_correct(monkeypatch, transport):
+    from soop_grid.quality import profile_by_name, profiles_from_viewpreset
 
     session = Streamlink()
     session.plugins.load_builtin()
@@ -92,8 +92,11 @@ def test_verified_native_grid_profiles_are_enumerated_and_best_worst_are_numeric
     streams = cls(session, url, options={"transport": transport}).streams()
     assert {"original", "1440p", "1080p", "720p", "540p", "360p", "best", "worst"} <= set(streams)
     assert streams["original"] is streams["1440p"]
-    assert streams["best"] is streams["1440p"]
+    assert streams["best"] is streams["original"] is streams["1440p"]
     assert streams["worst"] is streams["360p"]
+    original_grid = streams["best"].grid if transport == "auto" else streams["best"]
+    assert original_grid.config.grid_quality == "original"
+    assert profile_by_name(original_grid.config.grid_quality).allocation_quality == 1
     grid1080 = streams["1080p"].grid if transport == "auto" else streams["1080p"]
     assert grid1080.config.grid_quality == "1080p"
     assert grid1080.config.expected_grid_height == 1080
@@ -111,6 +114,121 @@ def test_verified_native_grid_profiles_are_enumerated_and_best_worst_are_numeric
     assert grid360.config.expected_grid_height == 360
 
 
+@pytest.mark.parametrize("transport", ["grid", "auto"])
+@pytest.mark.parametrize(
+    ("viewpreset", "worst_name", "worst_code"),
+    [
+        (
+            [
+                {"label": "1440p", "name": "original"},
+                {"label": "1080p", "name": "hd8k"},
+                {"label": "720p", "name": "hd4k"},
+                {"label": "540p", "name": "hd"},
+                {"label": "360p", "name": "sd"},
+            ],
+            "360p",
+            8,
+        ),
+        (
+            [
+                {"label": "1080p", "name": "original"},
+                {"label": "720p", "name": "hd4k"},
+                {"label": "540p", "name": "hd"},
+            ],
+            "540p",
+            4,
+        ),
+        # Conservative metadata-missing policy: original remains the semantic
+        # best; worst is the lowest measured downscaled profile available.
+        ([{"label": "720p", "name": "hd4k"}], "720p", 2),
+    ],
+    ids=["1440p-original", "1080p-original", "unknown-original-height"],
+)
+def test_best_is_original_and_worst_is_lowest_verified_profile(
+    monkeypatch, transport, viewpreset, worst_name, worst_code
+):
+    from soop_grid.quality import profile_by_name, profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(module, "official_grid_profiles", lambda *_args: profiles_from_viewpreset(viewpreset))
+
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": transport},
+    ).streams()
+    assert streams["best"] is streams["original"]
+    assert streams["worst"] is streams[worst_name]
+
+    best_grid = streams["best"].grid if transport == "auto" else streams["best"]
+    worst_grid = streams["worst"].grid if transport == "auto" else streams["worst"]
+    assert best_grid.config.grid_quality == "original"
+    assert profile_by_name(best_grid.config.grid_quality).allocation_quality == 1
+    assert worst_grid.config.grid_quality == worst_name
+    assert profile_by_name(worst_grid.config.grid_quality).allocation_quality == worst_code
+
+
+def test_grid_sorting_excludes_remain_authoritative_for_best(monkeypatch):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "1440p", "name": "original"},
+                {"label": "720p", "name": "hd4k"},
+                {"label": "540p", "name": "hd"},
+            ]
+        ),
+    )
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": "grid"},
+    ).streams(sorting_excludes=[">720p"])
+    # The caller explicitly excluded the original and its 1440p alias from
+    # synonym ranking; Streamlink's remaining eligible best is therefore 720p.
+    assert streams["best"] is streams["720p"]
+    assert streams["original"] is not streams["best"]
+
+
+def test_hls_quality_synonyms_keep_streamlink_default_ranking(monkeypatch):
+    from streamlink.stream.stream import Stream
+
+    class HLS(Stream):
+        __shortname__ = "hls"
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    low, high = HLS(session), HLS(session)
+    monkeypatch.setattr(
+        module,
+        "official_hls_streams",
+        lambda *_args: {"360p": low, "1080p": high},
+    )
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": "hls"},
+    ).streams()
+    assert streams["best"] is streams["1080p"] is high
+    assert streams["worst"] is streams["360p"] is low
+    assert "9999p" not in streams and "original" not in streams
+
+
 def test_grid_profile_discovery_failure_preserves_original_only(monkeypatch):
     from soop_grid.quality import profiles_from_viewpreset
 
@@ -123,6 +241,7 @@ def test_grid_profile_discovery_failure_preserves_original_only(monkeypatch):
         session, "https://play.sooplive.com/fixture_channel/12345", options={"transport": "grid"}
     ).streams()
     assert {"original", "best", "worst"} == set(streams)
+    assert streams["best"] is streams["worst"] is streams["original"]
 
 
 def test_modular_cli_sideload_from_unrelated_directory(tmp_path):

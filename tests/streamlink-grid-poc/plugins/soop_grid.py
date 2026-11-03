@@ -28,6 +28,11 @@ from soop_grid.stream import (
 
 log = logging.getLogger("streamlink.plugins.soop_grid")
 
+# Streamlink ranks quality aliases by their names. Keep the Grid source at a
+# rank above every supported resolution alias, then remove this private alias
+# from the user-visible mapping after Plugin.streams() has built best/worst.
+_GRID_ORIGINAL_RANK_ALIAS = "9999p"
+
 
 def official_hls_streams(session, url, account, password, stream_password, purge_credentials=False):
     # Keep HLS behavior in Streamlink's maintained SOOP plugin. This sideloaded
@@ -136,6 +141,19 @@ class SoopGridPlugin(Plugin):
             return os.environ[compatibility_env]
         return ""
 
+    def streams(self, stream_types=None, sorting_excludes=None):
+        streams = super().streams(stream_types, sorting_excludes)
+        if (self.get_option("transport") or "auto") == "hls":
+            return streams
+
+        # The synthetic ranking alias points at the exact original Grid stream.
+        # Streamlink has already applied stream_types/sorting_excludes and built
+        # its synonyms, so removing the private name preserves its normal API.
+        original = streams.pop(_GRID_ORIGINAL_RANK_ALIAS, None)
+        if original is not None:
+            streams["original"] = original
+        return streams
+
     def _get_streams(self):
         transport = self.get_option("transport") or "auto"
         account_option = self.get_option("grid-username")
@@ -227,6 +245,8 @@ class SoopGridPlugin(Plugin):
                 selected = SoopAutoStream(self.session, grid, fallback)
             else:
                 selected = grid
+            if profile.name == "original":
+                yield _GRID_ORIGINAL_RANK_ALIAS, selected
             yield profile.name, selected
             if profile.name == "original" and profile.original_label:
                 yield profile.original_label.lower(), selected
