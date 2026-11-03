@@ -7,7 +7,9 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
+import threading
 from types import SimpleNamespace
 
 import pytest
@@ -17,7 +19,8 @@ from poc_fixture import rewrite_type0_stream
 from soop_grid.h264clock import parse_pps, parse_slice, parse_sps
 from soop_grid.media import MediaSink, parse_adts
 from soop_grid.mpegts import nals
-from soop_grid.protocol import Frame
+from soop_grid.parent import Parent, receive_media
+from soop_grid.protocol import Frame, parent_packet
 from soop_grid.stream import SoopGridReader, validate_media_output
 
 
@@ -180,7 +183,7 @@ def generated_poc_streams(tmp_path_factory):
 
 
 @pytest.mark.parametrize("poc_type", [0, 1, 2])
-def test_poc_type_full_grid_media_sink_streamio_and_decode(generated_poc_streams, poc_type):
+def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, poc_type, monkeypatch):
     ffmpeg, ffprobe, root, streams, audio_payload = generated_poc_streams
     source_path, source = streams[poc_type]["path"], streams[poc_type]["data"]
     source_sps = streams[poc_type]["sps"]
@@ -220,11 +223,66 @@ def test_poc_type_full_grid_media_sink_streamio_and_decode(generated_poc_streams
 
     stream = SimpleNamespace(config=Config(), buffer_size=2 << 20, timeout=2)
 
+    class LocalParentSocket:
+        def __init__(self):
+            self.wire = bytearray()
+            self.closed = False
+
+        def settimeout(self, _timeout):
+            pass
+
+        def recv(self, size):
+            if self.closed:
+                return b""
+            count = min(size, 13, len(self.wire))
+            result = bytes(self.wire[:count])
+            del self.wire[:count]
+            return result
+
+        def close(self):
+            self.closed = True
+
+    class LocalParentNetwork:
+        def __init__(self):
+            self.stop = threading.Event()
+            self._lock = threading.Lock()
+            self._sockets = set()
+            self.socket = LocalParentSocket()
+            self.requests = []
+
+        def connect(self, _address):
+            with self._lock:
+                self._sockets.add(self.socket)
+            return self.socket
+
+        def send(self, _sock, data):
+            command = struct.unpack_from("<H", data, 2)[0]
+            self.requests.append(command)
+            if command == 0xCB2B:
+                self.stop.set()
+
+        def release(self, sock):
+            with self._lock:
+                self._sockets.discard(sock)
+            sock.close()
+
+        def close(self):
+            self.stop.set()
+            with self._lock:
+                sockets = tuple(self._sockets)
+            for sock in sockets:
+                self.release(sock)
+
+    import soop_grid.stream as grid_stream
+
+    monkeypatch.setattr(grid_stream, "Network", LocalParentNetwork)
+
     def runner(_config, _network, emit, _report, stats):
         sink = MediaSink(emit)
         stats.update(sink.stats)
         sink.stats = stats
         frame_number = 0
+        server_packets = [parent_packet(0xC746), parent_packet(0xC747)]
         for index, group in enumerate(source_groups):
             au = _annexb(group)
             sps_nal = next((unit for unit in group if unit[0] & 31 == 7), None)
@@ -250,15 +308,28 @@ def test_poc_type_full_grid_media_sink_streamio_and_decode(generated_poc_streams
             kind = header.slice_kind if header.slice_kind in ("I", "P", "B") else "I"
             if header.idr:
                 kind = "I"
-            sink.add(
-                Frame(
+            server_packets.append(
+                parent_packet(
                     0xC748,
                     media_body(au, kind, frame_number, BASE + index * FRAME_STEP, composition),
                 )
             )
         audio_timestamp = BASE + round(lead * 10_000_000 / 30)
         frame_number += 1
-        sink.add(Frame(0xC748, media_body(audio_payload, "A", frame_number, audio_timestamp)))
+        server_packets.append(
+            parent_packet(0xC748, media_body(audio_payload, "A", frame_number, audio_timestamp))
+        )
+        server_packets.append(parent_packet(0xC742))
+        _network.socket.wire.extend(b"".join(server_packets))
+        receive_media(
+            _network,
+            [Parent(("127.0.0.1", 9000), quality=1, frame=0)],
+            bno=42,
+            node_key=12345,
+            sink=sink,
+            report=_report,
+        )
+        assert _network.requests == [0xCB2E, 0xCB2F, 0xCB30, 0xCB2B]
         sink.close()
         validate_media_output(sink.stats)
         stats["stop_reason"] = "duration_limit"

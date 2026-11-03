@@ -460,3 +460,16 @@ new test and report do not alter production bundle bytes.
 This adds offline regression evidence only. No SOOP/Grid session, source-
 relative A/V test, live fault recovery, or exact-candidate live 2 h/6 h run
 was possible. Campaign remains **PARTIAL** and Stable remains **NO-GO**.
+
+## Local Parent-wire POC integration — 2026-11-03
+
+The POC Type 0/1/2 synthetic fixture test now feeds its independently decoded
+H.264/AAC media through a local fake Parent socket using the real Parent frame
+parser and `receive_media()` control flow before `MediaSink`/`StreamIO`/TS.
+The exercised request sequence is `CB2E`, `CB2F`, `CB30`, `CB2B`; server
+responses are fragmented to exercise `read_frame()`. All 9 POC E2E cases
+passed, including TS probing, complete FFmpeg decode, and H.264 VCL/AAC AU
+payload identity. The complete source suite passed **794/0 skipped** and
+bundle parity passed **785/0 skipped**. This is a local protocol fixture, not
+a SOOP connection or Native Grid service validation. Production bundle SHA
+remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
