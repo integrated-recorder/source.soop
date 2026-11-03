@@ -335,10 +335,12 @@ def test_poc_type_full_grid_media_sink_streamio_and_decode(generated_poc_streams
     assert actual_raw_aac == expected_raw_aac
 
 
-def test_poc2_streamio_44100_stereo_aac_identity_and_decode(generated_poc_streams, tmp_path):
-    """Exercise a non-48-kHz stereo track through the complete output path."""
+@pytest.mark.parametrize("poc_type", [0, 1, 2])
+def test_poc_type_streamio_44100_stereo_aac_identity_and_decode(generated_poc_streams, poc_type, tmp_path):
+    """Exercise 44.1 kHz stereo with each verified POC structure."""
     ffmpeg, ffprobe, root, streams, _ = generated_poc_streams
-    source = streams[2]["data"]
+    source_path, source = streams[poc_type]["path"], streams[poc_type]["data"]
+    source_sps = streams[poc_type]["sps"]
     source_groups = _aus(source)
     audio_path = root / "tone-44100-stereo.aac"
     _run(
@@ -365,6 +367,27 @@ def test_poc2_streamio_44100_stereo_aac_identity_and_decode(generated_poc_stream
     # fixture closely enough for the independent output-coverage gate.
     audio_frames = audio.frames[:43]
     assert len(audio_frames) == 43 and all(frame.core_samples == 1024 for frame in audio_frames)
+    if poc_type in (0, 1):
+        display_frames = json.loads(
+            _run(
+                ffprobe,
+                "-f",
+                "h264",
+                "-show_frames",
+                "-show_entries",
+                "frame=coded_picture_number",
+                "-of",
+                "json",
+                source_path,
+            )
+        )["frames"]
+        display_rank = {int(frame["coded_picture_number"]): rank for rank, frame in enumerate(display_frames)}
+        assert set(display_rank) == set(range(len(source_groups)))
+    else:
+        display_rank = dict(enumerate(range(len(source_groups))))
+    lead = source_sps["max_reorder"]
+    source_units = nals(source)
+    pps = parse_pps(next(unit for unit in source_units if unit[0] & 31 == 8), {source_sps["id"]: source_sps})
 
     class Config:
         diagnostics_dir = None
@@ -383,17 +406,29 @@ def test_poc2_streamio_44100_stereo_aac_identity_and_decode(generated_poc_stream
         for index, group in enumerate(source_groups):
             frame_number += 1
             vcl = next(unit for unit in group if unit[0] & 31 in (1, 5))
-            kind = "I" if vcl[0] & 31 == 5 else "P"
+            header = parse_slice(vcl, source_sps, pps)
+            kind = "I" if header.idr else header.slice_kind
+            offset_frames = display_rank[index] - index + lead
+            assert offset_frames >= 0
+            composition = round(offset_frames * 10_000_000 / 30)
             sink.add(
                 Frame(
                     0xC748,
-                    media_body(_annexb(group), kind, frame_number, BASE + index * FRAME_STEP),
+                    media_body(
+                        _annexb(group),
+                        kind,
+                        frame_number,
+                        BASE + index * FRAME_STEP,
+                        composition,
+                    ),
                 )
             )
         sample_offset = 0
         for audio_frame in audio_frames:
             frame_number += 1
-            timestamp = BASE + sample_offset * 10_000_000 // audio.config.sample_rate
+            timestamp = (
+                BASE + round(lead * 10_000_000 / 30) + sample_offset * 10_000_000 // audio.config.sample_rate
+            )
             sink.add(Frame(0xC748, media_body(bytes(audio_frame.data), "A", frame_number, timestamp)))
             sample_offset += audio_frame.core_samples
         sink.close()
@@ -414,10 +449,10 @@ def test_poc2_streamio_44100_stereo_aac_identity_and_decode(generated_poc_stream
     assert reader.stats["stream_output_drain_complete"] == 1
     assert reader.stats["stream_output_bytes_drained"] == 1
     assert reader.stats["stream_reader_bytes"] == len(output) == reader.stats["stream_emit_bytes"]
-    assert reader.stats["h264_poc_type"] == 2
+    assert reader.stats["h264_poc_type"] == poc_type
     assert reader.stats["audio_output_access_units"] == len(audio_frames)
 
-    ts_path = tmp_path / "poc2-44100-stereo.ts"
+    ts_path = tmp_path / f"poc{poc_type}-44100-stereo.ts"
     ts_path.write_bytes(output)
     probe = json.loads(
         _run(
@@ -436,12 +471,12 @@ def test_poc2_streamio_44100_stereo_aac_identity_and_decode(generated_poc_stream
     assert int(audio_stream["sample_rate"]) == 44100 and int(audio_stream["channels"]) == 2
     _run(ffmpeg, "-xerror", "-i", ts_path, "-f", "null", "-")
 
-    recovered_video = tmp_path / "poc2-44100-video.h264"
+    recovered_video = tmp_path / f"poc{poc_type}-44100-video.h264"
     _run(ffmpeg, "-y", "-i", ts_path, "-map", "0:v:0", "-c", "copy", "-f", "h264", recovered_video)
     assert [unit for unit in nals(recovered_video.read_bytes()) if unit[0] & 31 in (1, 5)] == [
         unit for unit in nals(source) if unit[0] & 31 in (1, 5)
     ]
-    recovered_audio = tmp_path / "poc2-44100-audio.aac"
+    recovered_audio = tmp_path / f"poc{poc_type}-44100-audio.aac"
     _run(ffmpeg, "-y", "-i", ts_path, "-map", "0:a:0", "-c", "copy", "-f", "adts", recovered_audio)
     expected_aac = [bytes(frame.data[frame.header_bytes :]) for frame in audio_frames]
     actual_aac = [

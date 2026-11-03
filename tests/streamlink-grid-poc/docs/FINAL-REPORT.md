@@ -305,8 +305,8 @@ child timeout); neither was a production receiver failure. The exact 2 h/6 h
 wall-clock/live, source-relative drift, controlled-failure and receiver-only
 resource gates remain NOT_TESTED. Stable remains NO-GO.
 
-After this helper update, final offline regression passed: source **789 passed,
-0 skipped** and bundled parity **780 passed, 0 skipped**, excluding the
+After this helper update, final offline regression passed: source **791 passed,
+0 skipped** and bundled parity **782 passed, 0 skipped**, excluding the
 preserved untracked suffix test. Ruff, tracked-file format, compileall,
 deterministic bundle check, manifest, Streamlink discovery, and diff check
 passed. Production bundle SHA remained

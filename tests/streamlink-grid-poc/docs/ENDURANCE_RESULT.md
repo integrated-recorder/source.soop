@@ -277,14 +277,15 @@ group then passed **139 tests in 7.99 s**, with the isolated FFmpeg fixture
 environment enabled (zero skips). It includes synthetic and local loopback
 fault tests; it is not evidence for remote SOOP failure timing.
 
-An additional `test_poc2_streamio_44100_stereo_aac_identity_and_decode`
-fixture passed: 30 POC-2 video frames and 43 AAC-LC 44.1 kHz stereo access
-units traversed MediaSink/StreamIO/TS, demuxed VCL and AAC payloads matched,
-FFprobe confirmed 320x180 video and 44.1 kHz stereo audio, full FFmpeg decode
-and EOF/drain passed. The first fixture duration intentionally failed the
-track-coverage gate; the corrected 43-AU duration matches the video timeline.
-After this test, full source/bundle regressions passed **789/780**, zero
-skipped. Production bundle bytes remain unchanged.
+An additional `test_poc_type_streamio_44100_stereo_aac_identity_and_decode`
+fixture now covers 30-frame video for POC 0/1/2 with 43 AAC-LC 44.1 kHz stereo
+access units. Type 0/1 composition follows FFprobe display order and the
+parsed reorder bound; Type 2 uses decode order. Demuxed VCL and AAC payloads
+matched, FFprobe confirmed 320x180 video and 44.1 kHz stereo audio, full
+FFmpeg decode and EOF/drain passed. The first single-Type fixture attempt was
+initially too short and correctly failed the track-coverage gate; the final
+43-AU duration matched the video timeline. Full source/bundle regressions then
+passed **791/782**, zero skipped. Production bundle bytes remain unchanged.
 
 Ruff, tracked-file format, compileall, deterministic bundle check, SHA256
 manifest verification, Streamlink plugin discovery, and `git diff --check`

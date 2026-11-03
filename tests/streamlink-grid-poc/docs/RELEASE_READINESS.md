@@ -110,7 +110,7 @@ harness-inclusive offline measurement, not product-only memory trend evidence.
 The corrected run completed 21,600 media seconds in 1,067.107 wall seconds,
 with 216,000 VCL NALs and 1,012,501 AAC AUs identical across input/output and
 full TS/decode/EOF checks passing. Current source/bundle regressions are
-789/780 passed, zero skipped. The offline suite also covers a 44.1 kHz stereo
-AAC end-to-end fixture and confirms the soak timeout terminates its child
+791/782 passed, zero skipped. The offline suite also covers 44.1 kHz stereo
+AAC end-to-end fixtures across POC 0/1/2 and confirms the soak timeout terminates its child
 process. This does not satisfy live or wall-clock
 endurance. Stable remains NO-GO.
