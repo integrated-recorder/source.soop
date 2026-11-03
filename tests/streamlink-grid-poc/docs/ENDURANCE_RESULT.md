@@ -66,6 +66,17 @@ bundle construction/loading tests. The test used only generated local media;
 no SOOP endpoint was contacted. Live, 2 h, 6 h and live controlled-failure
 stages remain NOT TESTED.
 
+## Current-HEAD offline recovery rerun — 2026-11-03
+
+On commit `69b2cce2a6f45dbee2b94bfdd95ee7ddf925b2c7`, the focused synthetic
+transport suite (`test_recovery.py`, `test_streamio.py`,
+`test_live_fault_inject.py`, `test_startup_retry.py`) passed: **114 passed** in
+5.71 s. It includes local Parent TCP close/cache-overlap recovery, overlap
+rejection, candidate exhaustion, cancellation, output backpressure and reader
+shutdown checks. Loopback was permitted for this run; no SOOP service endpoint
+was contacted. This is not live failure-injection evidence and does not satisfy
+the endurance or Stable gates.
+
 ## Candidate and environment
 
 * Branch: `fix/grid-startup-readiness`
