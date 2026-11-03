@@ -670,6 +670,7 @@ ERROR_CODES = frozenset(
         "h264_memory_management_operation_limit",
         "h264_multiple_pictures_per_grid_chunk",
         "h264_nal_header_invalid",
+        "h264_nal_ref_idc_invalid",
         "h264_parameter_set_missing",
         "h264_poc_cycle_limit",
         "h264_poc_fields_missing",

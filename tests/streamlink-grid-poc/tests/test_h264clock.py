@@ -128,6 +128,22 @@ def test_data_partitioned_vcl_is_rejected_explicitly():
         H264Clock().inspect(b"\0\0\1\x42\x80", 50_000_000, 0)
 
 
+@pytest.mark.parametrize(
+    ("header", "error"),
+    ((0x89, "h264_nal_header_invalid"), (0x29, "h264_nal_ref_idc_invalid")),
+)
+def test_unparsed_aud_header_constraints_are_validated(encoded_bframes, header, error):
+    units = nals(encoded_bframes[0][0])
+    assert units[0][0] & 31 == 9
+    valid = b"".join(b"\0\0\1" + unit for unit in units)
+    assert H264Clock().inspect(valid, 50_000_000, 0) is not None
+
+    units[0] = bytes((header,)) + units[0][1:]
+    malformed = b"".join(b"\0\0\1" + unit for unit in units)
+    with pytest.raises(GridError, match=error):
+        H264Clock().inspect(malformed, 50_000_000, 0)
+
+
 def test_poc1_reference_cycle_and_frame_num_wrap_are_bounded():
     clock = H264Clock()
     sps = {

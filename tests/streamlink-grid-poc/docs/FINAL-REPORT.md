@@ -1,5 +1,24 @@
 # Current offline compatibility update — 2026-11-03
 
+## Additional parser boundary fix — current candidate
+
+The H.264 AU walker previously validated headers only when it parsed that
+NAL's payload syntax. An invalid AUD could therefore pass through beside an
+accepted picture. Common header semantics are now validated for each NAL before
+type dispatch: forbidden bit, unspecified type 0, and the defined
+`nal_ref_idc` constraints for IDR/SPS/PPS/SEI/AUD/end/filler NALs. Valid AUD
+controls remain accepted and media bytes are not rewritten.
+
+* Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+* Source: **773 passed, 0 skipped**; bundled suite: **764 passed, 0 skipped**;
+  standalone single-file tests: **9 passed**.
+* Ruff check/format, compileall, deterministic build, SHA manifest, Streamlink
+  8.6.2 plugin discovery and `git diff --check` pass.
+* User confirmed offline-only: no new live, 2 h, 6 h or controlled live-failure
+  run. Campaign remains **PARTIAL**; Stable remains **NO-GO**.
+
+---
+
 This supplement applies to source commit `c149834f6ad98cdaac52b6559b5067e09efa4fcf` and bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`, based on `b070755ed1f1593714575c3813ace1bc64da221e`. The older campaign report below remains artifact-scoped and is not overwritten.
 
 * Corrected H.264 POC Type 0 MMCO-5 state: after the current picture's order counts are normalized, the next picture uses prior `PicOrderCnt` state `(MSB, LSB)=(0,0)`. Types 1/2 reset prior frame-number/offset state. Duplicate MMCO-5 operations in one marking list fail closed.

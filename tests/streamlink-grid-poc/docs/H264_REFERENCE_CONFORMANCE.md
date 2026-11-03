@@ -9,6 +9,21 @@ Audited source: `soop_grid/h264clock.py`, `soop_grid/media.py`. Normative refere
 * VCL payload is carried unchanged. Startup may prepend active SPS/PPS to make the output independently decodable; this is parameter-set framing, not VCL rewriting.
 * Each accepted Grid video chunk must describe one supported picture. DTS must increase; PTS must be unique and agree with POC order within the bounded reorder window.
 
+## NAL header validation
+
+Every Annex-B NAL header is checked before the clock classifies or skips the
+unit. The receiver rejects a nonzero `forbidden_zero_bit`, `nal_unit_type=0`,
+and `nal_ref_idc` values that violate the base-profile header constraints:
+types 5/7/8 require a nonzero reference indicator, while types 6/9/10/11/12
+require zero. This closes a pass-through gap where an otherwise unparsed AUD
+could carry an invalid header and still accompany an accepted VCL picture.
+The AUD remains in the preserved input; this check does not rewrite media.
+Deterministic regressions use a valid libx264 AU and alter only its AUD header.
+The clauses on NAL unit header semantics and Table 7-1 of [ITU-T H.264
+(08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S) define these
+constraints. Other NAL payload syntax that the receiver does not parse remains
+outside the claimed support subset.
+
 ## POC types and boundaries
 
 | Type | Implemented order state | Evidence level on documented subset | Remaining boundary |

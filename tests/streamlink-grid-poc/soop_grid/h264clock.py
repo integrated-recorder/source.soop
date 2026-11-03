@@ -92,6 +92,16 @@ def rbsp(nal):
     return bytes(out)
 
 
+def _validate_nal_header(nal):
+    """Validate header constraints even for NAL units whose RBSP is opaque here."""
+    if len(nal) < 2 or nal[0] & 0x80 or nal[0] & 31 == 0:
+        raise GridError("h264_nal_header_invalid")
+    nal_type = nal[0] & 31
+    nal_ref_idc = (nal[0] >> 5) & 3
+    if (nal_type in (5, 7, 8) and nal_ref_idc == 0) or (nal_type in (6, 9, 10, 11, 12) and nal_ref_idc != 0):
+        raise GridError("h264_nal_ref_idc_invalid")
+
+
 def skip_scaling_list(reader, size):
     last = nxt = 8
     for _ in range(size):
@@ -980,6 +990,7 @@ class H264Clock:
         seen_primary_picture = False
         sei_nal_count = 0
         for nal in units:
+            _validate_nal_header(nal)
             kind = nal[0] & 31
             if kind in (1, 5):
                 seen_primary_picture = True

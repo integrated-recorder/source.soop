@@ -1,5 +1,15 @@
 # Current offline candidate supplement — 2026-11-03
 
+## Offline NAL-header hardening candidate — 2026-11-03
+
+* Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+* Added common H.264 NAL-header validation before type-specific handling. A valid libx264 access unit with its initial AUD header changed to set `forbidden_zero_bit`, or an illegal nonzero `nal_ref_idc`, is rejected. The unmodified AUD control passes. The payload is not rewritten.
+* Exact-candidate source regression: **773 passed, 0 skipped**. Exact-candidate bundled parity suite: **764 passed, 0 skipped**. Single-file tests: **9 passed**. Ruff check, Ruff format, compileall, deterministic builder check, manifest and Streamlink 8.6.2 discovery passed.
+* The first sandboxed full run had 14 loopback/socketpair `EPERM` failures; rerunning outside the network-restricted sandbox passed. One diagnostics allowlist omission and one stale-bundle mismatch were fixed before the final runs.
+* No live source was available per user confirmation. 2 h, 6 h and live controlled-failure tests remain **NOT TESTED**; historical live evidence belongs to other bundle hashes. Stable remains **NO-GO**.
+
+---
+
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
 * Candidate source commit: `c149834f6ad98cdaac52b6559b5067e09efa4fcf` (pushed to origin).
 * Candidate bundle: `dist/soop_grid.py`, SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`.
