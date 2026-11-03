@@ -23,6 +23,14 @@ exercise SOOP/Grid networking, source-relative A/V synchronization,
 Parent/Cache recovery or controlled failures; the live 6 h gate remains
 NOT_TESTED.
 
+At documentation HEAD `55c2031f4f204f168e61df4d76f70cf3eacb7e92`, full
+source regression passed **793/0 skipped** and bundle parity passed **784/0
+skipped**. The loopback framing/identity/Parent recovery tests passed with
+local socket permission; Ruff, tracked Python format, compileall, deterministic
+bundle check, SHA manifest and `git diff --check` passed. Bundle bytes remain
+unchanged. This confirms offline regression on current HEAD; live gates remain
+NOT_TESTED.
+
 ## Latest offline candidate — 2026-11-03
 
 H.264 V16 SEI envelope regressions were added for opaque payload types 213–215

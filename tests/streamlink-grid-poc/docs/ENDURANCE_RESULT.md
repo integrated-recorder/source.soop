@@ -392,3 +392,27 @@ Parent/Cache/failover, production Streamlink capture from a real stream,
 source-relative sync markers, quality negotiation or controlled failures.
 Therefore the six-hour live/Grid Stable gate remains NOT TESTED even though
 the local paced soak passed. No SOOP endpoint was contacted.
+
+## Current-HEAD offline regression and local fault checks — 2026-11-03
+
+After documentation commit `55c2031f4f204f168e61df4d76f70cf3eacb7e92`,
+the full tracked source suite passed **793 tests, zero skipped** and static
+bundle parity passed **784 tests, zero skipped**. The preserved untracked
+`tests/test_suffix_latejoin.py` was excluded and not modified. The source run
+included loopback protocol framing, identity-probe and Parent recovery cases;
+the isolated real loopback Parent disconnect/Cache overlap recovery test also
+passed on its own. These tests use local synthetic peers and do not contact
+SOOP.
+
+An initial sandboxed attempt reported 14 `EPERM` failures because this
+environment blocks local socket creation. The same full suite was rerun with
+permission for local test sockets and passed. Ruff check, Ruff format check
+for tracked Python files, compileall, deterministic bundle `--check`, bundle
+SHA manifest, `git diff --check`, and Streamlink 8.6.2 version/plugin test
+coverage passed. Production bundle SHA remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+This strengthens current-HEAD offline regression and local fault-injection
+evidence. It does not establish SOOP live/Parent behavior, current-build
+source-relative synchronization, or live 2 h/6 h endurance. Stable remains
+**NO-GO**.
