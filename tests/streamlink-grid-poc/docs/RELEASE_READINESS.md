@@ -101,3 +101,14 @@ wall-clock operation and does not satisfy live, pacing, sync, recovery, or
 receiver-only resource-trend gates. The user confirmed no authorized test
 broadcast is currently available. Campaign remains PARTIAL and Stable remains
 NO-GO.
+
+The corrected helper lowers fixture working-set pressure by parsing one
+continuous AAC source and processing 10-minute video chunks; its 21,600-second
+synthetic run passed with 467,568 KiB sampled process RSS. This remains a
+harness-inclusive offline measurement, not product-only memory trend evidence.
+
+The corrected run completed 21,600 media seconds in 1,067.107 wall seconds,
+with 216,000 VCL NALs and 1,012,501 AAC AUs identical across input/output and
+full TS/decode/EOF checks passing. Current source/bundle regressions are
+787/778 passed, zero skipped. This does not satisfy live or wall-clock
+endurance. Stable remains NO-GO.

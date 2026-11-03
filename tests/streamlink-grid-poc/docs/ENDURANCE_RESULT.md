@@ -180,28 +180,44 @@ progressive Baseline, POC Type 2, zero reorder.
 | 600 s | 30.401 s | PASS; 6,000 video AUs/VCL NALs and 28,126 AAC AUs preserved; 203,076 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 38,164 bytes. |
 | 1,800 s | 89.335 s | PASS; 18,000 video AUs/VCL NALs and 84,376 AAC AUs preserved; 609,196 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 48,880 bytes. |
 | 7,200 s | 356.393 s | PASS; 72,000 video AUs/VCL NALs and 337,501 AAC AUs preserved; generated elementary inputs 404,199,257 bytes; output 458,091,516 bytes / 2,436,657 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 49,444 bytes. |
-| 21,600 s | 1,079.679 s | PASS; 216,000 video AUs/VCL NALs and 1,012,503 AAC AUs preserved; generated inputs 1,212,597,771 bytes; output 1,374,274,548 bytes / 7,309,971 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 58,656 bytes. |
+| 21,600 s (first helper version) | 1,079.679 s | Historical PASS; see corrected bounded-helper run below. |
+| 21,600 s (corrected helper) | 1,067.107 s | PASS; 216,000 video AUs/VCL NALs and 1,012,501 AAC AUs preserved; generated inputs 1,213,152,070 bytes; output 1,374,398,628 bytes / 7,310,631 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 89,488 bytes. |
 
 Output VCL and ADTS payload identities matched generated inputs. The 600 s
 fixture's FFmpeg coverage-boundary offset change was 21.333 ms; the verifier
 labels this as boundary coverage, not source-clock drift or perceptual sync.
 The 1,800 s accelerated harness sampled RSS up to 301,156 KiB; the 7,200 s
-run peaked at 1,082,268 KiB and the 21,600 s run at 1,397,572 KiB. The harness retains generated elementary streams
-and parsed AUs in memory, so these figures measure the test harness as well as
-the receiver and are not receiver leak/trend results. The first smoke run exposed a test-tool
+run peaked at 1,082,268 KiB, the first 21,600 s helper peaked at 1,397,572 KiB,
+and the corrected 21,600 s run peaked at 467,568 KiB. RSS includes the test
+harness and generated data handling; it is not receiver-only leak/trend
+evidence. The first smoke run exposed a test-tool
 assumption error: libx264 emitted POC Type 2, while the helper expected Type 0
 and used the wrong SPS result key. The helper was corrected to assert the
 observed `poc_type=2`; production code did not change.
 
-The 21,600-second row is a six-hour *media timeline* processed in 1,079.679
-seconds of wall time. It is not a six-hour live or wall-clock run. None of
+The corrected 21,600-second row is a six-hour *media timeline* processed in
+1,067.107 seconds of wall time. It is not a six-hour live or wall-clock run. None of
 these accelerated runs exercises SOOP, real-time pacing, Parent/Cache, network
 failure, or source-relative sync. The user confirmed live tests are unavailable
 for this continuation. Current-candidate live status remains NOT TESTED; 2 h,
 6 h wall-clock, controlled-failure live endurance and Stable gates remain
 unpassed.
 
+The corrected helper now processes video fixtures in 10-minute chunks while
+encoding AAC once for the continuous timeline, partitions ADTS only at frame
+boundaries, and applies one wall-clock deadline to generation, StreamIO, and
+verification. An attempted independently encoded AAC file per video chunk
+accumulated encoder tail padding and correctly failed the track-coverage gate;
+that fixture construction was replaced. A subsequent 300-second child timeout
+was too short for the single six-hour AAC encode; the fixed per-child cap was
+removed in favor of the overall 3,600-second limit. The corrected run above
+then passed. These were offline harness defects, not production receiver
+failures.
+
 ## Six-hour synthetic timeline and final offline regression — 2026-11-03
+
+The original entry in this section was superseded by the corrected bounded
+helper run below; retain the old source/bundle suite counts as historical.
 
 The extended helper and six-hour synthetic run were performed from the
 `0a981c3a28916d38221d0a4379f2ce714ca844c3` checkout with the worktree-only
@@ -224,3 +240,34 @@ After that run, using the isolated FFmpeg 6.1.1-3ubuntu5 toolchain, Streamlink
 No SOOP endpoint was contacted. This adds offline synthetic evidence only.
 Live 2 h/6 h wall-clock runs, source-relative long-run sync, and live controlled
 recovery remain NOT_TESTED; Stable remains **NO-GO**.
+
+## Corrected soak tool and final offline regression — 2026-11-03
+
+The earlier 21,600-second entry above is superseded by the corrected tool
+result below. Code was run from the worktree based on commit
+`93e53147f3cf2a43c9a08133c0c416d478dfb3c5`; only the offline helper/tests/docs
+changed, and production bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+* Six-hour synthetic media timeline: **21,600 s in 1,067.107 wall seconds**.
+  POC-2 zero-reorder 320x180 Baseline video; AAC-LC 48 kHz.
+* Input/output identity: 216,000 VCL NALs, 1,012,501 ADTS AUs;
+  VCL SHA-256 `fe2c226b284a8695c5d586e8ea7363ba186d014835da2f252f98eec8ca812cc9`;
+  AAC SHA-256 `af7003b104b201918ba2740a62fe1c30aeb39c07d8147e6fc4db392284421062`.
+* Output: 1,374,398,628 bytes, SHA-256
+  `eb7393bb04bf0902a06af4d0a98cfeaa73d89d9d86914aba2cbc6cf5955852fb`,
+  7,310,631 TS packets; continuity errors 0, PSI CRC errors 0, max PCR value
+  gap 100 ms. Full FFmpeg decode, StreamIO accounting, EOF/drain passed; FD
+  count 4 before/after; peak StreamIO buffer 89,488 bytes.
+* Sampled process RSS peak: 467,568 KiB, including the runner and fixture
+  handling; not receiver-only or leak-trend evidence. Decoded A/V boundary
+  coverage change was 21.333 ms, not source-clock drift/perceptual sync.
+* Final source tests: **787 passed, 0 skipped**. Bundled parity: **778 passed,
+  0 skipped**. Preserved untracked suffix test excluded and untouched. Ruff,
+  tracked format, compileall, deterministic bundle, manifest, plugin discovery,
+  and diff checks passed.
+
+This is accelerated synthetic media-time validation, not live or six-hour
+wall-clock endurance. Live 2 h/6 h, real-time sync, Parent/Cache network
+recovery and controlled live failures remain NOT_TESTED; Stable remains
+**NO-GO**.

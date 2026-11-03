@@ -40,14 +40,21 @@ SAMPLE_RATE = 48_000
 MAX_MEDIA_BYTES = 2 << 30
 MAX_FIXTURE_BYTES = 512 << 20
 MAX_TOTAL_FIXTURE_BYTES = 2 << 30
-MAX_SEGMENT_MINUTES = 120
+MAX_SEGMENT_MINUTES = 10
 
 
-def _run(binary, args, timeout):
+def _remaining_timeout(deadline, *, now=None):
+    remaining = deadline - (time.monotonic() if now is None else now)
+    if remaining <= 0:
+        raise subprocess.TimeoutExpired("offline_media_soak", timeout=0)
+    return remaining
+
+
+def _run(binary, args, deadline):
     result = subprocess.run(
         [str(binary), "-v", "error", "-nostdin", *map(str, args)],
         capture_output=True,
-        timeout=timeout,
+        timeout=_remaining_timeout(deadline),
     )
     if result.returncode:
         raise RuntimeError("fixture_generation_failed")
@@ -70,31 +77,104 @@ def _access_units(data, expected_count):
     return [b"".join(b"\x00\x00\x00\x01" + unit for unit in group) for group in groups]
 
 
-def _adts_frames(path):
-    data = path.read_bytes()
+def _scan_adts(path, segment_seconds=()):
+    """Hash one AAC encode and locate sample-clock segment boundaries boundedly."""
+    digest = hashlib.sha256()
+    boundaries = [0]
+    segment_counts = []
+    target_counts = []
+    elapsed = 0
+    for seconds in segment_seconds[:-1]:
+        elapsed += seconds
+        target_counts.append((elapsed * SAMPLE_RATE + 1023) // 1024)
+    target_index = previous_target = frame_count = 0
+    config = None
+    with path.open("rb") as source, mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as mapped:
+        cursor = 0
+        while cursor < len(mapped):
+            batch_start = cursor
+            frame_ends = []
+            while (
+                cursor < len(mapped)
+                and len(frame_ends) < MAX_ADTS_FRAMES
+                and cursor - batch_start < MAX_ADTS_BYTES
+            ):
+                if len(mapped) - cursor < 7:
+                    raise ValueError("generated_adts_truncated")
+                header = mapped[cursor : cursor + 7]
+                size = ((header[3] & 3) << 11) | (header[4] << 3) | (header[5] >> 5)
+                if size < 7 or size > len(mapped) - cursor or size > MAX_ADTS_BYTES:
+                    raise ValueError("generated_adts_length_invalid")
+                if frame_ends and cursor + size - batch_start > MAX_ADTS_BYTES:
+                    break
+                cursor += size
+                frame_ends.append(cursor)
+            batch = parse_adts(memoryview(mapped)[batch_start:cursor])
+            if (
+                batch.config_changed
+                or batch.config.sample_rate != SAMPLE_RATE
+                or batch.config.audio_object_type != 2
+            ):
+                raise ValueError("generated_aac_config_invalid")
+            if config is None:
+                config = batch.config
+            elif batch.config != config:
+                raise ValueError("generated_aac_config_changed")
+            for frame, end in zip(batch.frames, frame_ends, strict=True):
+                if frame.raw_data_blocks != 1:
+                    raise ValueError("generated_aac_blocks_unsupported")
+                digest.update(frame.data)
+                frame_count += 1
+                if target_index < len(target_counts) and frame_count == target_counts[target_index]:
+                    boundaries.append(end)
+                    segment_counts.append(frame_count - previous_target)
+                    previous_target = frame_count
+                    target_index += 1
+            del frame, batch
+        if target_index != len(target_counts) or not frame_count:
+            raise ValueError("generated_adts_empty_or_short")
+        boundaries.append(len(mapped))
+    segment_counts.append(frame_count - previous_target)
+    ranges = list(zip(boundaries, boundaries[1:], strict=False))
+    if segment_seconds and len(ranges) != len(segment_seconds):
+        raise ValueError("generated_adts_segment_count_invalid")
+    return {
+        "frame_count": frame_count,
+        "digest": digest.hexdigest(),
+        "config": config,
+        "ranges": ranges,
+        "segment_counts": segment_counts,
+    }
+
+
+def _adts_frames_range(mapped, start, end):
     frames = []
-    offset = 0
-    while offset < len(data):
-        end = offset
-        count = 0
-        while end < len(data) and count < MAX_ADTS_FRAMES:
-            if len(data) - end < 7:
+    cursor = start
+    while cursor < end:
+        batch_start = cursor
+        frame_ends = []
+        while cursor < end and len(frame_ends) < MAX_ADTS_FRAMES and cursor - batch_start < MAX_ADTS_BYTES:
+            if end - cursor < 7:
                 raise ValueError("generated_adts_truncated")
-            header = data[end : end + 7]
+            header = mapped[cursor : cursor + 7]
             size = ((header[3] & 3) << 11) | (header[4] << 3) | (header[5] >> 5)
-            if size < 7 or size > len(data) - end:
+            if size < 7 or size > end - cursor or size > MAX_ADTS_BYTES:
                 raise ValueError("generated_adts_length_invalid")
-            if count and end + size - offset > MAX_ADTS_BYTES:
+            if frame_ends and cursor + size - batch_start > MAX_ADTS_BYTES:
                 break
-            end += size
-            count += 1
-        parsed = parse_adts(memoryview(data)[offset:end])
-        if parsed.config.sample_rate != SAMPLE_RATE or parsed.config.audio_object_type != 2:
+            cursor += size
+            frame_ends.append(cursor)
+        parsed = parse_adts(memoryview(mapped)[batch_start:cursor])
+        if (
+            parsed.config_changed
+            or parsed.config.sample_rate != SAMPLE_RATE
+            or parsed.config.audio_object_type != 2
+        ):
             raise ValueError("generated_aac_config_invalid")
+        if any(frame.raw_data_blocks != 1 for frame in parsed.frames):
+            raise ValueError("generated_aac_blocks_unsupported")
         frames.extend(bytes(frame.data) for frame in parsed.frames)
-        offset = end
-    if not frames:
-        raise ValueError("generated_adts_empty")
+        del parsed
     return frames
 
 
@@ -164,6 +244,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
     if output_cap < 1 << 20 or output_cap > MAX_MEDIA_BYTES:
         raise ValueError("output_cap_invalid")
     started = time.monotonic()
+    deadline = started + timeout
     with tempfile.TemporaryDirectory(prefix="soop-grid-offline-soak-") as temp:
         work = Path(temp)
         output_path = work / "output.ts"
@@ -171,14 +252,38 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
         generated_input_bytes = 0
         source_video_digest = hashlib.sha256()
         source_video_count = 0
-        source_audio_digest = hashlib.sha256()
         sps_info = None
+        audio_path = work / "source.aac"
+        _run(
+            ffmpeg,
+            [
+                "-f",
+                "lavfi",
+                "-i",
+                f"sine=frequency=440:sample_rate={SAMPLE_RATE}:duration={duration}",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "96k",
+                "-f",
+                "adts",
+                audio_path,
+            ],
+            deadline,
+        )
+        segment_seconds = [
+            min(MAX_SEGMENT_MINUTES, minutes - start) * 60 for start in range(0, minutes, MAX_SEGMENT_MINUTES)
+        ]
+        audio_facts = _scan_adts(audio_path, segment_seconds)
+        source_audio_digest_hex = audio_facts["digest"]
+        generated_input_bytes = audio_path.stat().st_size
+        if generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
+            raise RuntimeError("soak_fixture_size_limit")
 
         for segment_start in range(0, minutes, MAX_SEGMENT_MINUTES):
             segment_minutes = min(MAX_SEGMENT_MINUTES, minutes - segment_start)
             segment_duration = segment_minutes * 60
             video_path = work / f"source-{segment_start:03d}.h264"
-            audio_path = work / f"source-{segment_start:03d}.aac"
             video_frames_expected = segment_duration * FPS
             _run(
                 ffmpeg,
@@ -204,27 +309,9 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
                     "h264",
                     video_path,
                 ],
-                min(timeout, 300),
+                deadline,
             )
-            _run(
-                ffmpeg,
-                [
-                    "-f",
-                    "lavfi",
-                    "-i",
-                    f"sine=frequency=440:sample_rate={SAMPLE_RATE}:duration={segment_duration}",
-                    "-c:a",
-                    "aac",
-                    "-b:a",
-                    "96k",
-                    "-f",
-                    "adts",
-                    audio_path,
-                ],
-                min(timeout, 300),
-            )
-
-            segment_input_bytes = video_path.stat().st_size + audio_path.stat().st_size
+            segment_input_bytes = video_path.stat().st_size
             generated_input_bytes += segment_input_bytes
             if segment_input_bytes > MAX_FIXTURE_BYTES or generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
                 raise RuntimeError("soak_fixture_size_limit")
@@ -242,22 +329,20 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
                 sps_info = current_sps
             elif current_sps != sps_info:
                 raise ValueError("generated_sps_changed_between_segments")
-            audio_frames = _adts_frames(audio_path)
             source_video_count += _update_payload_identity(source_video_digest, video_data, kinds=(1, 5))
-            for frame in audio_frames:
-                source_audio_digest.update(frame)
+            audio_start, audio_end = audio_facts["ranges"][len(chunks)]
             chunks.append(
                 {
                     "video_path": video_path,
-                    "audio_path": audio_path,
                     "video_frames": len(video_aus),
-                    "audio_frames": len(audio_frames),
+                    "audio_start": audio_start,
+                    "audio_end": audio_end,
+                    "audio_frames": audio_facts["segment_counts"][len(chunks)],
                 }
             )
-            del video_aus, video_data, audio_frames
+            del video_aus, video_data
 
         source_video_identity = source_video_count, source_video_digest.hexdigest()
-        source_audio_digest_hex = source_audio_digest.hexdigest()
 
         class Config:
             diagnostics_dir = None
@@ -266,10 +351,9 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             def clear():
                 pass
 
-        # Parsing a generated two-hour chunk runs in the receiver worker before
-        # the first output becomes ready. Give this offline harness a finite,
-        # explicit preparation window; this does not change production limits.
-        stream = SimpleNamespace(config=Config(), buffer_size=2 << 20, timeout=min(timeout, 300))
+        # Give the offline reader a finite readiness window bounded by the
+        # remaining overall deadline; production timeout policy is unchanged.
+        stream = SimpleNamespace(config=Config(), buffer_size=2 << 20, timeout=_remaining_timeout(deadline))
 
         def runner(_config, _network, emit, _report, stats):
             sink = MediaSink(emit, synchronize_startup=True)
@@ -277,36 +361,42 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             sink.stats = stats
             video_index = audio_index = frame_number = 0
             try:
-                for chunk in chunks:
-                    video_aus = _access_units(chunk["video_path"].read_bytes(), chunk["video_frames"])
-                    audio_frames = _adts_frames(chunk["audio_path"])
-                    chunk_video_index = chunk_audio_index = 0
-                    while chunk_video_index < len(video_aus) or chunk_audio_index < len(audio_frames):
-                        video_time = (
-                            BASE_TIMESTAMP + video_index * 10_000_000 // FPS
-                            if chunk_video_index < len(video_aus)
-                            else None
-                        )
-                        audio_time = (
-                            BASE_TIMESTAMP + audio_index * 1024 * 10_000_000 // SAMPLE_RATE
-                            if chunk_audio_index < len(audio_frames)
-                            else None
-                        )
-                        if video_time is not None and (audio_time is None or video_time <= audio_time):
-                            payload = video_aus[chunk_video_index]
-                            kind = "I" if any(unit[0] & 31 == 5 for unit in nals(payload)) else "P"
-                            timestamp = video_time
-                            chunk_video_index += 1
-                            video_index += 1
-                        else:
-                            payload = audio_frames[chunk_audio_index]
-                            kind = "A"
-                            timestamp = audio_time
-                            chunk_audio_index += 1
-                            audio_index += 1
-                        frame_number += 1
-                        sink.add(Frame(0xC748, _body(payload, kind, frame_number, timestamp)))
-                    del video_aus, audio_frames
+                with (
+                    audio_path.open("rb") as source,
+                    mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as audio_map,
+                ):
+                    for chunk in chunks:
+                        video_aus = _access_units(chunk["video_path"].read_bytes(), chunk["video_frames"])
+                        audio_frames = _adts_frames_range(audio_map, chunk["audio_start"], chunk["audio_end"])
+                        if len(audio_frames) != chunk["audio_frames"]:
+                            raise ValueError("generated_aac_segment_count_invalid")
+                        chunk_video_index = chunk_audio_index = 0
+                        while chunk_video_index < len(video_aus) or chunk_audio_index < len(audio_frames):
+                            video_time = (
+                                BASE_TIMESTAMP + video_index * 10_000_000 // FPS
+                                if chunk_video_index < len(video_aus)
+                                else None
+                            )
+                            audio_time = (
+                                BASE_TIMESTAMP + audio_index * 1024 * 10_000_000 // SAMPLE_RATE
+                                if chunk_audio_index < len(audio_frames)
+                                else None
+                            )
+                            if video_time is not None and (audio_time is None or video_time <= audio_time):
+                                payload = video_aus[chunk_video_index]
+                                kind = "I" if any(unit[0] & 31 == 5 for unit in nals(payload)) else "P"
+                                timestamp = video_time
+                                chunk_video_index += 1
+                                video_index += 1
+                            else:
+                                payload = audio_frames[chunk_audio_index]
+                                kind = "A"
+                                timestamp = audio_time
+                                chunk_audio_index += 1
+                                audio_index += 1
+                            frame_number += 1
+                            sink.add(Frame(0xC748, _body(payload, kind, frame_number, timestamp)))
+                        del video_aus, audio_frames
                 sink.close()
                 validate_media_output(sink.stats)
                 stats["stop_reason"] = "duration_limit"
@@ -323,6 +413,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
         try:
             with output_path.open("xb") as output:
                 while True:
+                    _remaining_timeout(deadline)
                     block = reader.read(64 << 10)
                     if not block:
                         break
@@ -359,7 +450,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             output_path,
             ffprobe=ffprobe,
             ffmpeg=ffmpeg,
-            timeout=timeout,
+            timeout=_remaining_timeout(deadline),
             minimum_duration=duration - 2,
         )
         if not validation["passed"]:
@@ -370,12 +461,12 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
         _run(
             ffmpeg,
             ["-i", output_path, "-map", "0:v:0", "-c:v", "copy", "-f", "h264", demux_video],
-            min(timeout, 300),
+            deadline,
         )
         _run(
             ffmpeg,
             ["-i", output_path, "-map", "0:a:0", "-c:a", "copy", "-f", "adts", demux_audio],
-            min(timeout, 300),
+            deadline,
         )
         with (
             demux_video.open("rb") as source,
@@ -384,12 +475,10 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             output_video_identity = _payload_identity(mapped, kinds=(1, 5))
         if output_video_identity != source_video_identity:
             raise RuntimeError("soak_video_vcl_identity_mismatch")
-        output_audio_frames = _adts_frames(demux_audio)
-        output_audio_digest = hashlib.sha256(b"".join(output_audio_frames)).hexdigest()
-        expected_audio_frames = sum(chunk["audio_frames"] for chunk in chunks)
+        output_audio_facts = _scan_adts(demux_audio)
         if (
-            output_audio_digest != source_audio_digest_hex
-            or len(output_audio_frames) != expected_audio_frames
+            output_audio_facts["digest"] != source_audio_digest_hex
+            or output_audio_facts["frame_count"] != audio_facts["frame_count"]
         ):
             raise RuntimeError("soak_aac_identity_mismatch")
 
@@ -412,8 +501,8 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             },
             "audio": {
                 "sample_rate": SAMPLE_RATE,
-                "input_adts_frames": sum(chunk["audio_frames"] for chunk in chunks),
-                "output_adts_frames": len(output_audio_frames),
+                "input_adts_frames": audio_facts["frame_count"],
+                "output_adts_frames": output_audio_facts["frame_count"],
                 "identity_sha256": source_audio_digest_hex,
             },
             "video": {

@@ -8,10 +8,12 @@ This plan applies to one immutable candidate identified by commit SHA and Bundle
 `MediaSink -> SoopGridReader/StreamIO -> MPEG-TS` path using locally generated
 H.264/AAC. It applies media timestamps faster than real time and checks
 EOF/drain, byte accounting, VCL/AAC identity, TS structure and FFmpeg decode.
-The tool bounds duration to 360 media minutes in chunks of at most 120 minutes,
+The tool bounds duration to 360 media minutes in chunks of at most 10 minutes,
 each generated chunk to 512 MiB, aggregate generated input to 2 GiB, output to
-2 GiB, subprocess time and uses temporary files. The six-hour synthetic run
-exercised this limit in one continuous StreamIO session across three chunks.
+2 GiB, and all fixture generation, StreamIO reading and verification under
+one caller-specified wall-clock deadline (at most 3,600 seconds). Temporary
+files are automatically removed. The six-hour synthetic run uses one
+continuous StreamIO session across all chunks.
 
 This is supplementary offline validation only. It does not exercise SOOP,
 network pacing, authentication, Parent/Cache recovery, controlled failures,

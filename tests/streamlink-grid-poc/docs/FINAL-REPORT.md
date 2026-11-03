@@ -290,4 +290,26 @@ source format, compileall, deterministic bundle check, checksum manifest, and
 diff check passed. No SOOP endpoint was contacted. The live broadcast,
 wall-clock 2 h/6 h, and controlled-live-failure gates remain NOT_TESTED.
 
+## Bounded soak harness correction — 2026-11-03
+
+The six-hour media-timeline soak was rerun after reducing video-fixture chunks
+to 10 minutes, encoding AAC once across the full timeline, and applying one
+global timeout. The corrected run processed 21,600 media seconds in 1,067.107
+wall seconds; 216,000 VCL NALs and 1,012,501 AAC AUs matched input/output,
+7,310,631 TS packets had zero continuity/PSI CRC errors, maximum PCR value
+gap was 100 ms, full FFmpeg decode passed, StreamIO drained, and FD count
+returned to baseline. Sampled process RSS peaked at 467,568 KiB including the
+test harness and fixture handling. Two failed interim harness attempts exposed
+independent test-fixture issues (per-chunk AAC tail padding and a 300-second
+child timeout); neither was a production receiver failure. The exact 2 h/6 h
+wall-clock/live, source-relative drift, controlled-failure and receiver-only
+resource gates remain NOT_TESTED. Stable remains NO-GO.
+
+After this helper update, final offline regression passed: source **787 passed,
+0 skipped** and bundled parity **778 passed, 0 skipped**, excluding the
+preserved untracked suffix test. Ruff, tracked-file format, compileall,
+deterministic bundle check, manifest, Streamlink discovery, and diff check
+passed. Production bundle SHA remained
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
 # Existing report history
