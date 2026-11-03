@@ -9,9 +9,11 @@ information. The receiver's generic bounded SEI envelope already skips these
 non-timing payload bodies; it does not interpret their H.274/VSEI semantics.
 Added six source regressions for bounded opaque handling, AU byte preservation
 and truncated-envelope rejection. These synthetic payloads test the envelope,
-not VSEI semantic conformance. The POC/DPB/MMCO-5 core clauses were not
-subjected to a full V15-to-V16 textual diff, so no new conformance claim is made
-for those changes. See `H264_REFERENCE_CONFORMANCE.md`.
+not VSEI semantic conformance. A targeted V15/V16 text comparison of the
+frame-number, Type-2 restriction and MMCO-5 clauses exercised by the current
+subset found the relevant rules unchanged; it did not cover the full
+DPB/reference-list/HRD text or every minor correction. See
+`H264_REFERENCE_CONFORMANCE.md`.
 
 * Targeted new tests: **6 passed**.
 * This change is test and documentation only; production source and bundle are

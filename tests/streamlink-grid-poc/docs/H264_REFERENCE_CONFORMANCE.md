@@ -10,7 +10,11 @@ The inspected official V16 PDF artifact was 15,530,891 bytes, SHA-256 `028cf2cfe
 
 The receiver parses and bounds the generic SEI payloadType/payloadSize envelope, semantically interprets only buffering-period, picture-timing and recovery-point messages, and skips other SEI payload bodies as opaque bytes. New payload types 213–215 therefore do not affect coded-sample reconstruction or the Grid-composition clock in this implementation; their VSEI semantics are **not interpreted**. The AU bytes remain unchanged on the raw `video.h264` path. New source tests cover these three envelope paths, bounded opaque handling, input-AU preservation, and truncated-envelope rejection. Their synthetic opaque payloads are not valid VSEI semantic fixtures and do not claim VSEI conformance.
 
-No conclusion is made here that V16 changed—or did not change—the detailed POC, frame-number, DPB, MMCO-5 or HRD rules. Those core clauses have not received a full edition-to-edition textual comparison, and the existing subset evidence is still tied to its previously audited clauses and fixtures.
+### Targeted V15-to-V16 core-clause comparison
+
+A targeted text comparison was made for the rules most directly exercised by this receiver and its recent regressions: SPS `pic_order_cnt_type` constraints and MaxFrameNum (clause 7.4.2.1), `PrevRefFrameNum`/`gaps_in_frame_num_value_allowed_flag` and frame-number gap constraints (clause 7.4.3.1), and the POC/MMCO-5 reset path in clause 8.2.1 and its type-specific derivations. The inspected V16 text retains the V15 rules relevant to the accepted progressive-frame subset: Type 2 forbids the listed consecutive non-reference-picture patterns; `gaps_in_frame_num_value_allowed_flag` controls the normative gap process and does not authorize fabricated coded pictures; MMCO-5 normalizes the current picture order counts and resets subsequent frame-number/POC derivations as described by the type-specific process. The V15 passages are available in the [official V15 PDF](https://www.itu.int/rec/dologin_pub.asp?id=T-REC-H.264-202408-I%21%21PDF-E&lang=e&type=items); corresponding text was checked in the official V16 PDF whose hash is recorded above.
+
+This targeted comparison found no change requiring a production-code adjustment in those paths. It is not a full V15/V16 diff of all DPB marking, reference-list, HRD, profile, extension-NAL or minor-correction clauses. Those remain outside this comparison; no blanket current-edition conformance claim follows.
 
 ## Production invariants
 
