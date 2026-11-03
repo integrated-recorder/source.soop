@@ -110,5 +110,6 @@ harness-inclusive offline measurement, not product-only memory trend evidence.
 The corrected run completed 21,600 media seconds in 1,067.107 wall seconds,
 with 216,000 VCL NALs and 1,012,501 AAC AUs identical across input/output and
 full TS/decode/EOF checks passing. Current source/bundle regressions are
-787/778 passed, zero skipped. This does not satisfy live or wall-clock
+788/779 passed, zero skipped. A new local regression also confirms the global
+soak timeout terminates its child process. This does not satisfy live or wall-clock
 endurance. Stable remains NO-GO.

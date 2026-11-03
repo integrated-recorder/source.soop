@@ -4,7 +4,7 @@ Base audit scope: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c
 
 Current offline source supplement (2026-11-03): every NAL header is validated, including opaque pass-through AUD/filler units. Fixed-seed robustness tests cover 768 arbitrary malformed inputs, 1,024 near-valid SPS/PPS/IDR mutations, 1,024 ADTS framing mutations based on real encoded frames, and a separate deterministic 64-file TS mutation smoke. A 64-session StreamIO lifecycle smoke checks byte accounting, worker shutdown and FD baseline. These are bounded checks, not comprehensive fuzzing or long-duration endurance. ADTS mutations validate framing and accounting only, not decoded quality or CRC values. The V16 SEI tests cover bounded envelope handling for types 213–215, not VSEI semantics. ITU's 06/2026 H.264 edition is in force; the published SEI delta and relevant Annex D clauses were reviewed, while no complete V15-to-V16 textual audit of POC/DPB/MMCO-5 clauses is claimed. See `H264_REFERENCE_CONFORMANCE.md` and the newest sections in `ENDURANCE_RESULT.md`.
 
-Final offline-only follow-up on 2026-11-03 adds three soak deadline tests and a corrected 21,600-second synthetic timeline run. Latest source/bundle suites are **787/778 passed, zero skipped**, excluding the preserved untracked suffix test. The 6-hour media timeline took 1,067.107 wall seconds and passed the POC-2/AAC-LC fixture/TS/decode/EOF gates; it is not wall-clock/live endurance. Details and resource scope are in `ENDURANCE_RESULT.md`.
+Final offline-only follow-up on 2026-11-03 adds four soak deadline tests, including child-process termination at the global timeout, and a corrected 21,600-second synthetic timeline run. Latest source/bundle suites are **788/779 passed, zero skipped**, excluding the preserved untracked suffix test. The 6-hour media timeline took 1,067.107 wall seconds and passed the POC-2/AAC-LC fixture/TS/decode/EOF gates; it is not wall-clock/live endurance. Details and resource scope are in `ENDURANCE_RESULT.md`.
 
 ## Classification
 
@@ -32,7 +32,7 @@ Final offline-only follow-up on 2026-11-03 adds three soak deadline tests and a 
 
 * The production timestamp source is Grid composition, not the historical HRD-derived PTS model. `RELIABILITY.md` was corrected in this audit to remove a stale contradictory description.
 * The current quality code includes q=32/1080p. `LIMITATIONS.md` was corrected; earlier text naming only q=1/2/4/8 was stale.
-* Historical offline counts 767/758, 771/762, 774/765, 780/771, 781/772, 782/773, 783/774 and 784/775 refer to earlier source/bundle states. Latest offline run has **787 passed, 0 skipped** and bundle parity **778 passed, 0 skipped**; see `ENDURANCE_RESULT.md`.
+* Historical offline counts 767/758, 771/762, 774/765, 780/771, 781/772, 782/773, 783/774, 784/775 and 787/778 refer to earlier source/bundle states. Latest offline run has **788 passed, 0 skipped** and bundle parity **779 passed, 0 skipped**; see `ENDURANCE_RESULT.md`.
 * No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
 
 The literal error-code catalogue, source locations, and coarse retry/fallback/terminal handling classes are in [ERROR_CODE_INVENTORY.md](ERROR_CODE_INVENTORY.md). It is generated from literal `GridError` call sites; dynamically supplied codes and full caller-specific control flow require manual tracing.

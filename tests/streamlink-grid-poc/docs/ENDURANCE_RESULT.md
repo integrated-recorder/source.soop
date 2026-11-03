@@ -262,10 +262,17 @@ changed, and production bundle SHA-256 remains
 * Sampled process RSS peak: 467,568 KiB, including the runner and fixture
   handling; not receiver-only or leak-trend evidence. Decoded A/V boundary
   coverage change was 21.333 ms, not source-clock drift/perceptual sync.
-* Final source tests: **787 passed, 0 skipped**. Bundled parity: **778 passed,
-  0 skipped**. Preserved untracked suffix test excluded and untouched. Ruff,
-  tracked format, compileall, deterministic bundle, manifest, plugin discovery,
-  and diff checks passed.
+* Final source tests before the deadline child-termination assertion: **787
+  passed, 0 skipped**. Bundled parity: **778 passed, 0 skipped**. A separate
+  focused rerun after adding that assertion passed 4 soak-helper tests.
+
+The timeout regression creates a slow local child fixture, verifies the
+expected `TimeoutExpired`, and confirms it terminates in under two seconds.
+Latest full offline source tests: **788 passed, 0 skipped**; bundled parity:
+**779 passed, 0 skipped**. The preserved untracked suffix test was excluded
+and untouched. Ruff check, tracked-file format check, compileall, deterministic
+bundle check, SHA256 manifest verification, Streamlink plugin discovery, and
+`git diff --check` passed after the test and document update.
 
 This is accelerated synthetic media-time validation, not live or six-hour
 wall-clock endurance. Live 2 h/6 h, real-time sync, Parent/Cache network
