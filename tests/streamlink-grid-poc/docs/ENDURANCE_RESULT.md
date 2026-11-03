@@ -279,8 +279,9 @@ fault tests; it is not evidence for remote SOOP failure timing.
 
 An additional `test_poc_type_streamio_44100_stereo_aac_identity_and_decode`
 fixture now covers 30-frame video for POC 0/1/2 with 43 AAC-LC 44.1 kHz stereo
-access units. Type 0/1 composition follows FFprobe display order and the
-parsed reorder bound; Type 2 uses decode order. Demuxed VCL and AAC payloads
+access units, packet-interleaved by media timestamp. Type 0/1 composition
+follows FFprobe display order and the parsed reorder bound; Type 2 uses decode
+order. Demuxed VCL and AAC payloads
 matched, FFprobe confirmed 320x180 video and 44.1 kHz stereo audio, full
 FFmpeg decode and EOF/drain passed. The first single-Type fixture attempt was
 initially too short and correctly failed the track-coverage gate; the final

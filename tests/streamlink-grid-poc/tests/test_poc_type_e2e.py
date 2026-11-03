@@ -388,6 +388,32 @@ def test_poc_type_streamio_44100_stereo_aac_identity_and_decode(generated_poc_st
     lead = source_sps["max_reorder"]
     source_units = nals(source)
     pps = parse_pps(next(unit for unit in source_units if unit[0] & 31 == 8), {source_sps["id"]: source_sps})
+    events = []
+    for index, group in enumerate(source_groups):
+        vcl = next(unit for unit in group if unit[0] & 31 in (1, 5))
+        header = parse_slice(vcl, source_sps, pps)
+        offset_frames = display_rank[index] - index + lead
+        assert offset_frames >= 0
+        composition = round(offset_frames * 10_000_000 / 30)
+        events.append(
+            (
+                BASE + index * FRAME_STEP,
+                0,
+                "video",
+                _annexb(group),
+                "I" if header.idr else header.slice_kind,
+                composition,
+            )
+        )
+    sample_offset = 0
+    for audio_frame in audio_frames:
+        timestamp = (
+            BASE + round(lead * 10_000_000 / 30) + sample_offset * 10_000_000 // audio.config.sample_rate
+        )
+        events.append((timestamp, 1, "audio", bytes(audio_frame.data), "A", 0))
+        sample_offset += audio_frame.core_samples
+    events.sort(key=lambda event: (event[0], event[1]))
+    assert sum(left[2] != right[2] for left, right in zip(events, events[1:], strict=False)) >= 20
 
     class Config:
         diagnostics_dir = None
@@ -403,34 +429,20 @@ def test_poc_type_streamio_44100_stereo_aac_identity_and_decode(generated_poc_st
         stats.update(sink.stats)
         sink.stats = stats
         frame_number = 0
-        for index, group in enumerate(source_groups):
+        for timestamp, _priority, _track, payload, kind, composition in events:
             frame_number += 1
-            vcl = next(unit for unit in group if unit[0] & 31 in (1, 5))
-            header = parse_slice(vcl, source_sps, pps)
-            kind = "I" if header.idr else header.slice_kind
-            offset_frames = display_rank[index] - index + lead
-            assert offset_frames >= 0
-            composition = round(offset_frames * 10_000_000 / 30)
             sink.add(
                 Frame(
                     0xC748,
                     media_body(
-                        _annexb(group),
+                        payload,
                         kind,
                         frame_number,
-                        BASE + index * FRAME_STEP,
+                        timestamp,
                         composition,
                     ),
                 )
             )
-        sample_offset = 0
-        for audio_frame in audio_frames:
-            frame_number += 1
-            timestamp = (
-                BASE + round(lead * 10_000_000 / 30) + sample_offset * 10_000_000 // audio.config.sample_rate
-            )
-            sink.add(Frame(0xC748, media_body(bytes(audio_frame.data), "A", frame_number, timestamp)))
-            sample_offset += audio_frame.core_samples
         sink.close()
         validate_media_output(sink.stats)
         stats["stop_reason"] = "duration_limit"
