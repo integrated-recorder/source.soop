@@ -10,15 +10,23 @@ type dispatch: forbidden bit, unspecified type 0, and the defined
 controls remain accepted and media bytes are not rewritten.
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; current branch HEAD `35b2d2baa6105faff0c2de073170958201facf71` is documentation-only after that tested source revision.
 * Source: **774 passed, 0 skipped**; bundled suite: **765 passed, 0 skipped**;
   standalone single-file tests: **9 passed**.
 * A fixed-seed 768-input parser robustness smoke test exercises malformed media and H.264 input; it found no unexpected Python exceptions. This is not coverage-guided fuzzing.
 * Ruff check/format, compileall, deterministic build, SHA manifest, Streamlink
   8.6.2 plugin discovery and `git diff --check` pass.
+* In the follow-up documentation pass, Python 3.12 `compileall` passed. A fresh
+  pytest/Ruff/Streamlink/FFmpeg rerun was unavailable because those executables
+  and pytest/pip modules are absent from the current execution environment; the
+  774/765 results above are the recorded exact-candidate runs, not reruns from
+  this documentation-only continuation.
 * User confirmed offline-only: no new live, 2 h, 6 h or controlled live-failure
   run. Campaign remains **PARTIAL**; Stable remains **NO-GO**.
 
 ---
+
+## Historical MMCO-5 candidate supplement — source `c149834` / bundle `00af277`
 
 This supplement applies to source commit `c149834f6ad98cdaac52b6559b5067e09efa4fcf` and bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`, based on `b070755ed1f1593714575c3813ace1bc64da221e`. The older campaign report below remains artifact-scoped and is not overwritten.
 

@@ -10,6 +10,7 @@
 
 ## Deterministic parser robustness smoke — 2026-11-03
 
+* Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`. Current branch HEAD `35b2d2baa6105faff0c2de073170958201facf71` contains only subsequent documentation corrections; the production bundle is unchanged.
 * Added a fixed-seed test that submits 768 malformed/random byte inputs to `H264Clock.inspect()` and `parse_media()`, including inserted Annex-B start codes. It asserts malformed inputs either return or fail with the documented `GridError` family, never an unexpected Python exception. This is a bounded parser robustness smoke test, not coverage-guided fuzzing or a proof of parser safety.
 * The test is source-only; production bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 * Latest source suite: **774 passed, 0 skipped**. Bundled parity: **765 passed, 0 skipped**. The untracked suffix experiment remains excluded.
