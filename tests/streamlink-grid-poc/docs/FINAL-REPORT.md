@@ -238,4 +238,23 @@ See `COMPATIBILITY_INVENTORY.md`, `H264_REFERENCE_CONFORMANCE.md`,
 `RELEASE_READINESS.md` for detail. Literal error codes are indexed in
 `ERROR_CODE_INVENTORY.md`.
 
+## Latest offline-only continuation — 2026-11-03
+
+The user confirmed no authorized test broadcast is currently available;
+verification continued offline without contacting SOOP. On HEAD
+`b1adbfc419ce834315ddab3ea864ca3a1cc2d0f6`, source tests pass **784/784** and
+bundle parity tests pass **775/775**, with zero skips. Streamlink 8.6.2
+discovers and loads `soop_grid`; Ruff, format, compileall, deterministic bundle
+check and manifest validation pass. Bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+A new bounded local synthetic-media runner passed 60-second and 600-second
+media timelines through production MediaSink, StreamIO and MPEG-TS, with VCL
+and ADTS payload identity, FFmpeg full decode, no TS continuity or PSI CRC
+errors, a 100 ms maximum PCR value gap, exact StreamIO byte accounting, EOF and
+drain. These accelerated synthetic runs do not establish real-time pacing,
+live server compatibility, multi-hour resource trends, or Parent/Cache
+recovery. Current-build live, 2-hour, 6-hour and controlled-failure endurance
+remain NOT TESTED. Campaign status is **PARTIAL** and Stable is **NO-GO**.
+
 # Existing report history

@@ -36,6 +36,18 @@ long-duration test.
 
 **Campaign: PARTIAL. Stable: NO-GO.** This is an offline hardening candidate; it does not replace current-build live or endurance gates.
 
+## Offline timeline-soak follow-up — 2026-11-03
+
+Current branch HEAD: `b1adbfc419ce834315ddab3ea864ca3a1cc2d0f6`. The production
+bundle is unchanged at SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Offline source/bundle regressions pass 784/775 with zero skips. A separate
+generated 10-minute POC Type-2/AAC timeline passed StreamIO drain, payload
+identity, full FFmpeg decode, TS continuity/PSI/PCR checks and unchanged FD
+count. This is not a real-time or live soak. The user currently cannot provide
+an authorized test broadcast, so exact-current-build live, 2-hour, 6-hour and
+controlled-failure stages remain NOT TESTED. **Campaign PARTIAL; Stable NO-GO.**
+
 ## Historical MMCO-5 candidate — superseded
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.

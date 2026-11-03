@@ -2,6 +2,20 @@
 
 This plan applies to one immutable candidate identified by commit SHA and Bundle SHA-256. Historical runs on other hashes are context only. Use an authorized self-broadcast or other expressly permitted source; never retain broadcast media longer than required for private verification.
 
+## Offline generated-media timeline soak
+
+`tools/offline_media_soak.py --minutes N` exercises the production
+`MediaSink -> SoopGridReader/StreamIO -> MPEG-TS` path using locally generated
+H.264/AAC. It applies media timestamps faster than real time and checks
+EOF/drain, byte accounting, VCL/AAC identity, TS structure and FFmpeg decode.
+The tool bounds duration, output size and subprocess time and uses temporary
+files.
+
+This is supplementary offline validation only. It does not exercise SOOP,
+network pacing, authentication, Parent/Cache recovery, controlled failures,
+real-time A/V drift, or hours of wall-clock resource behavior. Its synthetic
+timeline duration must not be counted as a live endurance stage.
+
 ## Gates and stages
 
 1. **Offline compatibility smoke (15–30 s fixtures):** risk-based combinations covering POC 0/1/2, B/no-B, AAC 44.1/48 kHz, quality profiles, normal EOF and StreamIO drain. Validate actual SPS, AU identity, TS continuity/PSI/PCR, FFprobe and full decode. Keep parser-negative fixtures separate.

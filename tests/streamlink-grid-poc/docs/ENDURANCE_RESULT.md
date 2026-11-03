@@ -162,3 +162,30 @@ Prior long-run and 30-minute reports concern other bundle hashes. They are usefu
 ## Result
 
 This candidate passes the executed offline regression gates and has passed 120 s, 600 s, and 1,800 s authorized synthetic self-broadcast captures on the exact bundle. The 30 min receiver and publisher both exited cleanly. Coded media identity, TS/PES, independent timestamps, full decoding, EOF/drain, and source-relative A/V timing over the common event interval passed. Startup/finite-capture event edges remain measured exclusions; the strict full-coverage A/V gate is not green. No production code changed. The user has since confirmed no further test broadcast is currently available, so 2 h, 6 h, and controlled-failure live endurance remain untested. Stable remains **NO-GO**.
+
+## Offline generated-media timeline soak — 2026-11-03
+
+After the user confirmed that no authorized live test source is currently
+available, ran `tools/offline_media_soak.py` on the code at HEAD
+`b1adbfc419ce834315ddab3ea864ca3a1cc2d0f6`. No SOOP endpoint was contacted.
+The generated SPS was parsed; this FFmpeg/libx264 build emitted 320x180
+progressive Baseline, POC Type 2, zero reorder.
+
+| Synthetic media timeline | Wall time | Result |
+|---|---:|---|
+| 60 s | 3.856 s | PASS; 600 video AUs/VCL NALs and 2,814 AAC AUs preserved; 20,384 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 42,112 bytes. |
+| 600 s | 30.401 s | PASS; 6,000 video AUs/VCL NALs and 28,126 AAC AUs preserved; 203,076 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 38,164 bytes. |
+
+Output VCL and ADTS payload identities matched generated inputs. The 600 s
+fixture's FFmpeg coverage-boundary offset change was 21.333 ms; the verifier
+labels this as boundary coverage, not source-clock drift or perceptual sync.
+RSS sampled during the accelerated run peaked at 126,820 KiB, which is not a
+long-duration leak/trend result. The first smoke run exposed a test-tool
+assumption error: libx264 emitted POC Type 2, while the helper expected Type 0
+and used the wrong SPS result key. The helper was corrected to assert the
+observed `poc_type=2`; production code did not change.
+
+These accelerated runs are not live, real-time, Parent/Cache, network-failure
+or 2 h/6 h evidence. The user's latest confirmation makes live tests unavailable
+for this continuation. Current-candidate live status remains NOT TESTED; 2 h,
+6 h, controlled-failure live endurance and Stable gates remain unpassed.
