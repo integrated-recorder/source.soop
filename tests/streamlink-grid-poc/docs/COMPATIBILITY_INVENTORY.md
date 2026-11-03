@@ -40,7 +40,7 @@ remain NOT_TESTED.
 
 * The production timestamp source is Grid composition, not the historical HRD-derived PTS model. `RELIABILITY.md` was corrected in this audit to remove a stale contradictory description.
 * The current quality code includes q=32/1080p. `LIMITATIONS.md` was corrected; earlier text naming only q=1/2/4/8 was stale.
-* Historical offline counts 767/758, 771/762, 774/765, 780/771, 781/772, 782/773, 783/774, 784/775, 787/778, 788/779, 789/780 and 791/782 refer to earlier source/bundle states. Latest offline run has **793 passed, 0 skipped** and bundle parity **784 passed, 0 skipped**; see `ENDURANCE_RESULT.md`.
+* Historical offline counts 767/758, 771/762, 774/765, 780/771, 781/772, 782/773, 783/774, 784/775, 787/778, 788/779, 789/780, 791/782 and 793/784 refer to earlier source/bundle states. At HEAD `f3e55cf84fd8171883cb178382898bfdb25f9b60`, latest offline run has **794 passed, 0 skipped** and bundle parity **785 passed, 0 skipped**; see `ENDURANCE_RESULT.md`. Production bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 * No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
 
 The literal error-code catalogue, source locations, and coarse retry/fallback/terminal handling classes are in [ERROR_CODE_INVENTORY.md](ERROR_CODE_INVENTORY.md). It is generated from literal `GridError` call sites; dynamically supplied codes and full caller-specific control flow require manual tracing.
