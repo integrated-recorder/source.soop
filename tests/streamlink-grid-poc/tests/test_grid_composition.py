@@ -174,12 +174,11 @@ def test_production_accepts_poc_type1_with_grid_composition():
     assert first["timing_model"] == second["timing_model"] == "grid_composition"
 
 
-def test_production_preserves_mmco5_restriction():
+def test_production_keeps_grid_composition_as_mmco5_timeline_authority():
     clock = H264Clock()
-    clock.inspect(annex(sps(mode=0, reorder=0), pps(), picture(mode=0, idr=True)), 50_000_000, 0)
-    with pytest.raises(GridError, match="h264_grid_mmco5_unverified"):
-        clock.inspect(annex(picture(1, 2, mode=0, mmco=True)), 50_333_333, 0)
-    assert clock.last_poc == 0
+    first = clock.inspect(annex(sps(mode=0, reorder=0), pps(), picture(mode=0, idr=True)), 50_000_000, 0)
+    second = clock.inspect(annex(picture(1, mode=0)), 50_333_333, 0)
+    assert first["timing_model"] == second["timing_model"] == "grid_composition"
 
 
 def test_production_preserves_low_delay_hrd_restriction():

@@ -10,7 +10,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from soop_grid.h264clock import H264Clock, _validate_frame_num_progress, parse_pps, parse_sps
+from soop_grid.h264clock import (
+    H264Clock,
+    Reader,
+    _parse_dec_ref_pic_marking,
+    _validate_frame_num_progress,
+    parse_pps,
+    parse_sps,
+)
 from soop_grid.media import adts_info
 from soop_grid.mpegts import TSMux, nals
 from tools.legacy_h264_audit import LegacyH264Clock
@@ -183,7 +190,7 @@ def test_poc0_lsb_wrap_uses_previous_reference_epoch():
     assert clock.prev_msb == 0
 
 
-def test_poc0_mmco5_keeps_current_top_order_count_as_previous_lsb():
+def test_poc0_mmco5_normalizes_current_top_order_count_for_next_epoch():
     clock = H264Clock()
     sps = {"poc_type": 0, "log2_poc_lsb": 4}
 
@@ -199,8 +206,8 @@ def test_poc0_mmco5_keeps_current_top_order_count_as_previous_lsb():
 
     clock.prev_msb, clock.prev_lsb = 0, 14
     assert clock._picture_order(header(0, mmco5=True), sps) == 16
-    assert (clock.prev_msb, clock.prev_lsb) == (0, 16)
-    assert clock._picture_order(header(2), sps) == 18
+    assert (clock.prev_msb, clock.prev_lsb) == (0, 0)
+    assert clock._picture_order(header(2), sps) == 2
 
 
 def test_mmco5_resets_frame_num_offset():
@@ -214,6 +221,26 @@ def test_mmco5_resets_frame_num_offset():
     assert clock._picture_order(header(0, mmco5=True), sps) == 32
     assert clock.prev_frame_num_offset == 0
     assert clock._picture_order(header(1), sps) == 2
+
+
+def test_mmco5_marking_parser_consumes_list_terminator():
+    writer = BitWriter()
+    writer.put(1, 1)  # adaptive_ref_pic_marking_mode_flag
+    writer.ue(5)  # memory_management_control_operation: MMCO 5
+    writer.ue(0)  # terminating operation
+    reader = Reader(writer.rbsp())
+    assert _parse_dec_ref_pic_marking(reader, nal_type=1, nal_ref_idc=1)
+    assert reader.pos == 7
+
+
+def test_mmco5_marking_parser_rejects_duplicate_operation():
+    writer = BitWriter()
+    writer.put(1, 1)  # adaptive_ref_pic_marking_mode_flag
+    writer.ue(5)
+    writer.ue(5)
+    writer.ue(0)
+    with pytest.raises(GridError, match="h264_memory_management_operation_invalid"):
+        _parse_dec_ref_pic_marking(Reader(writer.rbsp()), nal_type=1, nal_ref_idc=1)
 
 
 def test_reported_119_to_1_frame_num_transition_is_not_a_normal_wrap():

@@ -184,8 +184,6 @@ def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
             converted.append(_rewrite_sps(unit, target_type, delta_always_zero=target_type != 1))
         elif kind in (1, 5):
             header = parse_slice(unit, source_sps, source_pps)
-            if header.mmco5:
-                raise ValueError("fixture source with MMCO5 is outside the generated subset")
             source_poc = clock._picture_order(header, source_sps)
             delta = 0
             if target_type == 1:
@@ -200,8 +198,12 @@ def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
                     abs_frame_num -= 1
                 expected = 2 * abs_frame_num
                 delta = source_poc - expected
-                previous_frame_num = header.frame_num
-                previous_frame_num_offset = frame_num_offset
+                if header.mmco5:
+                    # The MMCO-5 picture is frame_num 0 for the next picture.
+                    previous_frame_num = previous_frame_num_offset = 0
+                else:
+                    previous_frame_num = header.frame_num
+                    previous_frame_num_offset = frame_num_offset
             elif target_type == 2:
                 if previous_nonreference and not header.nal_ref_idc:
                     raise ValueError("POC type 2 cannot encode consecutive non-reference pictures")
@@ -210,3 +212,161 @@ def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
         else:
             converted.append(unit)
     return b"".join(b"\x00\x00\x00\x01" + unit for unit in converted)
+
+
+def add_mmco5_type0(data: bytes, target_frame: int = 10) -> bytes:
+    """Create one independently decodable POC-0/MMCO-5 no-B fixture.
+
+    The accepted source subset is a single-SPS/PPS, progressive, CAVLC,
+    no-B-frame libx264 Baseline stream with one reference frame. The transform
+    inserts the POC-0 fields, performs MMCO 5 on one reference P picture, and
+    renumbers later frame_num values from the MMCO reset. Callers must decode
+    and compare the result independently before using it as a conformance case.
+    """
+    from soop_grid.h264clock import _slice_pps_id, parse_slice
+
+    units = nals(data)
+    sps_by_id, pps_by_id = {}, {}
+    for unit in units:
+        kind = unit[0] & 31
+        if kind == 7:
+            info = parse_sps(unit)
+            sps_by_id[info["id"]] = info
+        elif kind == 8:
+            info = parse_pps(unit, sps_by_id)
+            pps_by_id[info["id"]] = info
+    if len(sps_by_id) != 1 or len(pps_by_id) != 1:
+        raise ValueError("MMCO-5 fixture requires one SPS and one PPS")
+    sps, pps = next(iter(sps_by_id.values())), next(iter(pps_by_id.values()))
+    if (
+        sps["poc_type"] != 2
+        or sps["max_num_ref_frames"] != 1
+        or pps["entropy_coding"]
+        or pps["weighted_pred"]
+        or pps["weighted_bipred"]
+        or pps["bottom_poc"]
+        or pps["redundant"]
+    ):
+        raise ValueError("MMCO-5 fixture source is outside the supported transform subset")
+
+    def rewrite_sps(unit):
+        raw = _unescape(unit[1:])
+        syntax = _syntax_bits(raw)
+        reader = _Bits(raw)
+        reader.get(24)  # profile_idc, constraint flags, level_idc
+        reader.ue()  # seq_parameter_set_id
+        reader.ue()  # log2_max_frame_num_minus4
+        poc_type_start = reader.pos
+        if reader.ue() != 2:
+            raise ValueError("MMCO-5 fixture source must signal POC type 2")
+        replacement = _ue(0) + _ue(4)  # type 0, 8-bit pic_order_cnt_lsb
+        return bytes(
+            [unit[0], *_escape(_pack_rbsp(syntax[:poc_type_start] + replacement + syntax[reader.pos :]))]
+        )
+
+    def marking_span(unit, type0_sps):
+        reader = _Bits(_unescape(unit[1:]))
+        reader.ue()  # first_mb_in_slice
+        slice_kind = reader.ue() % 5
+        reader.ue()  # pic_parameter_set_id
+        reader.get(sps["log2_frame_num"])
+        if unit[0] & 31 == 5:
+            reader.ue()  # idr_pic_id
+        reader.get(type0_sps["log2_poc_lsb"])
+        if pps["redundant"]:
+            reader.ue()
+        if slice_kind != 0:  # P slices only in this fixture
+            raise ValueError("MMCO-5 fixture target must be a P slice")
+        if reader.get(1):
+            raise ValueError("MMCO-5 fixture does not support reference-count overrides")
+        if reader.get(1):  # ref_pic_list_modification_flag_l0
+            for _ in range(64):
+                operation = reader.ue()
+                if operation == 3:
+                    break
+                if operation in (0, 1, 2):
+                    reader.ue()
+                else:
+                    raise ValueError("unsupported reference-list modification")
+            else:
+                raise ValueError("reference-list modification limit exceeded")
+        start = reader.pos
+        if not ((unit[0] >> 5) & 3):
+            raise ValueError("MMCO-5 target must be a reference picture")
+        if reader.get(1):
+            raise ValueError("fixture source already uses adaptive reference marking")
+        return start, reader.pos
+
+    frame_index = -1
+    target_source_frame_num = None
+    output = []
+    for unit in units:
+        kind = unit[0] & 31
+        if kind == 9:
+            frame_index += 1
+        if kind == 7:
+            unit = rewrite_sps(unit)
+        elif kind in (1, 5):
+            if frame_index < 0:
+                raise ValueError("fixture VCL precedes its access-unit delimiter")
+            pps_id = _slice_pps_id(unit)
+            active_sps = sps_by_id[pps["sps_id"]]
+            if pps_id != pps["id"]:
+                raise ValueError("MMCO-5 fixture uses an unexpected PPS")
+            header = parse_slice(unit, active_sps, pps)
+            if header.idr:
+                if frame_index != 0 or frame_index >= target_frame:
+                    raise ValueError("MMCO-5 fixture expects one initial IDR before the target")
+            if frame_index == target_frame:
+                if header.slice_kind != "P" or not header.nal_ref_idc:
+                    raise ValueError("MMCO-5 target must be a reference P picture")
+                target_source_frame_num = header.frame_num
+
+            raw = _unescape(unit[1:])
+            syntax = _syntax_bits(raw)
+            reader = _Bits(raw)
+            reader.ue()
+            reader.ue()
+            reader.ue()
+            frame_num_pos = reader.pos
+            original_frame_num = reader.get(sps["log2_frame_num"])
+            idr_bits = []
+            if header.idr:
+                idr_start = reader.pos
+                reader.ue()
+                idr_bits = syntax[idr_start : reader.pos]
+            if frame_index > target_frame and not header.idr:
+                new_frame_num = (original_frame_num - target_source_frame_num) % sps["max_frame_num"]
+            else:
+                new_frame_num = original_frame_num
+            rewritten = (
+                syntax[:frame_num_pos]
+                + [(new_frame_num >> shift) & 1 for shift in range(sps["log2_frame_num"] - 1, -1, -1)]
+                + idr_bits
+                + [(frame_index * 2 >> shift) & 1 for shift in range(7, -1, -1)]
+                + syntax[reader.pos :]
+            )
+            unit = bytes([unit[0], *_escape(_pack_rbsp(rewritten))])
+            if frame_index == target_frame:
+                type0_sps = {**sps, "poc_type": 0, "log2_poc_lsb": 8}
+                start, end = marking_span(unit, type0_sps)
+                marked = _syntax_bits(_unescape(unit[1:]))
+                command = [1] + _ue(5) + _ue(0)  # adaptive marking, MMCO 5, terminator
+                unit = bytes([unit[0], *_escape(_pack_rbsp(marked[:start] + command + marked[end:]))])
+        output.append(unit)
+
+    if frame_index < target_frame + 1 or target_source_frame_num is None:
+        raise ValueError("MMCO-5 target access unit is absent")
+    transformed = b"".join(b"\x00\x00\x00\x01" + unit for unit in output)
+    parsed_sps = next(parse_sps(unit) for unit in nals(transformed) if unit[0] & 31 == 7)
+    if parsed_sps["poc_type"] != 0 or parsed_sps["log2_poc_lsb"] != 8:
+        raise ValueError("MMCO-5 fixture SPS transform did not validate")
+    found_mmco5 = []
+    for unit in nals(transformed):
+        if unit[0] & 31 in (1, 5):
+            header = parse_slice(unit, parsed_sps, pps)
+            if header.mmco5:
+                found_mmco5.append(header.frame_num)
+    if found_mmco5 != [target_source_frame_num]:
+        raise ValueError("MMCO-5 fixture marking did not round-trip")
+    return transformed

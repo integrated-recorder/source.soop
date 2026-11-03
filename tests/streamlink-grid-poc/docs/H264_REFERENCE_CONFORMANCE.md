@@ -13,15 +13,17 @@ Audited source: `soop_grid/h264clock.py`, `soop_grid/media.py`. Normative refere
 
 | Type | Implemented order state | Evidence level on documented subset | Remaining boundary |
 |---:|---|---|---|
-| 0 | Previous-reference POC LSB/MSB wrap; IDR epoch; reference marking; bounded reorder | Parser + offline StreamIO/TS/decode + historical short self-broadcast with B pictures | MMCO 5 remains rejected; unusual DPB transitions and current-hash live run unverified |
-| 1 | `FrameNumOffset`, `AbsFrameNum`, cycle offsets, non-reference offset and slice deltas | Parser + offline valid B-picture stream + historical short live no-reorder self-broadcast | Live B-picture, arbitrary cycles/deltas and MMCO 5 unverified |
-| 2 | `FrameNumOffset` and `frame_num`; zero-reorder subset | Parser + offline decode + historical short low-delay/no-B self-broadcast | Reorder unsupported; adjacent non-reference picture sequence forbidden by SPS type-2 constraints; MMCO 5 unverified |
+| 0 | Previous-reference POC LSB/MSB wrap; IDR epoch; reference marking; bounded reorder; MMCO-5 resets prior POC state to normalized zero | Parser + offline StreamIO/TS/decode + historical short self-broadcast with B pictures; new MMCO-5 fixture | Tested MMCO-5 subset is progressive/no-B/one-reference; live MMCO-5 and unusual DPB transitions unverified |
+| 1 | `FrameNumOffset`, `AbsFrameNum`, cycle offsets, non-reference offset and slice deltas; MMCO-5 resets previous frame number/offset | Parser + offline valid B-picture and MMCO-5 streams + historical short live no-reorder self-broadcast | Live B-picture/MMCO-5, arbitrary cycles/deltas unverified |
+| 2 | `FrameNumOffset` and `frame_num`; zero-reorder subset; MMCO-5 reset | Parser + offline decode + historical short low-delay/no-B self-broadcast; new MMCO-5 fixture | Reorder unsupported; adjacent non-reference picture sequence forbidden by SPS type-2 constraints; live MMCO-5 unverified |
 
 `gaps_in_frame_num_value_allowed_flag=1` permits the decoder's normative non-existing reference-picture process; it is not proof that the transport delivered those coded pictures. This receiver does not invent VCL AUs. When gaps are disallowed, a reference-state successor mismatch fails with `h264_frame_num_gap`. For `MaxFrameNum=128`, 119→1 is not a modulo wrap; normal wrap is 127→0. Exact source SPS, slice/reference state and AU bytes from the community report are unavailable.
 
 ## MMCO 5
 
-The parser detects MMCO 5 and some internal POC/reference reset bookkeeping exists. Production rejects the Grid timing transition as `h264_grid_mmco5_unverified`; it is not claimed supported. Full validation must establish the reset picture's decoded-reference state, subsequent `PrevRefFrameNum`, POC/FrameNumOffset and Grid composition output epoch together. Existing unit checks of isolated helper arithmetic do not satisfy this gate.
+For frame-coded pictures, H.264 (08/2024) clauses 8.2.1 and 8.2.1.1–8.2.1.3 normalize the current MMCO-5 picture's field order counts by subtracting `PicOrderCnt(CurrPic)`. Subsequent uses of that picture therefore use normalized POC 0. Type 0 also seeds the next reference POC state from the normalized top-field order count (0 for this frame-only subset); Types 1/2 use the post-MMCO frame-number state. Production now applies those resets, starts a new POC comparison epoch at the next picture, and still derives output PTS exclusively from Grid composition. Duplicate MMCO-5 operations in one marking list are rejected under the standard's at-most-one constraint.
+
+Evidence is limited to a generated progressive, CAVLC, no-B, one-reference stream with one MMCO-5 reference P picture. Type 0/1/2 variants independently decode to the same frame hashes as the source. Each passes production `MediaSink`→`StreamIO`→MPEG-TS, preserves every VCL NAL, fully decodes with FFmpeg, and drains EOF. This verifies a narrow syntax/state subset, not full DPB/list-management conformance or live Grid behavior. MMCO-5 outside this tested subset, arbitrary reference-management combinations, and live MMCO-5 remain unverified.
 
 ## Other explicit limits
 

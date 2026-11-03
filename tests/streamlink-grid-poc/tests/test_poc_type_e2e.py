@@ -333,3 +333,114 @@ def test_poc_type_full_grid_media_sink_streamio_and_decode(generated_poc_streams
         bytes(frame.data[frame.header_bytes :]) for frame in parse_adts(recovered_audio.read_bytes()).frames
     ]
     assert actual_raw_aac == expected_raw_aac
+
+
+@pytest.mark.parametrize("poc_type", [0, 1, 2])
+def test_mmco5_progressive_grid_composition_streamio_and_decode(encoded_mmco5_poc0, poc_type, tmp_path):
+    ffmpeg, ffprobe, source_path, type0_path, type0_data = encoded_mmco5_poc0
+    if poc_type == 0:
+        transformed_path, transformed = type0_path, type0_data
+    else:
+        from poc_fixture import rewrite_type0_stream
+
+        transformed = rewrite_type0_stream(type0_data, poc_type)
+        transformed_path = tmp_path / f"mmco5-poc{poc_type}.h264"
+        transformed_path.write_bytes(transformed)
+    assert _video_decode_hashes(ffmpeg, source_path) == _video_decode_hashes(ffmpeg, transformed_path)
+
+    units = nals(transformed, max_units=2048)
+    groups = _aus(transformed)
+    assert len(groups) == 60
+    sps_nal = next(unit for unit in units if unit[0] & 31 == 7)
+    pps_nal = next(unit for unit in units if unit[0] & 31 == 8)
+    sps = parse_sps(sps_nal)
+    pps = parse_pps(pps_nal, {sps["id"]: sps})
+    headers = [
+        parse_slice(next(unit for unit in group if unit[0] & 31 in (1, 5)), sps, pps) for group in groups
+    ]
+    assert sps["poc_type"] == poc_type
+    assert [index for index, header in enumerate(headers) if header.mmco5] == [10]
+    assert headers[10].frame_num == 10 and headers[11].frame_num == 1
+    if poc_type == 0:
+        assert headers[10].poc_lsb == 20 and headers[11].poc_lsb == 22
+    else:
+        assert headers[10].poc_lsb is None and headers[11].poc_lsb is None
+
+    audio_path = tmp_path / "mmco-audio.aac"
+    _run(
+        ffmpeg,
+        "-y",
+        "-v",
+        "error",
+        "-nostdin",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=440:sample_rate=48000:duration=2.1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-f",
+        "adts",
+        audio_path,
+    )
+    audio_frames = parse_adts(audio_path.read_bytes()).frames[:94]
+    assert len(audio_frames) == 94
+
+    class Config:
+        diagnostics_dir = None
+
+        @staticmethod
+        def clear():
+            pass
+
+    stream = SimpleNamespace(config=Config(), buffer_size=2 << 20, timeout=2)
+
+    def runner(_config, _network, emit, _report, stats):
+        sink = MediaSink(emit)
+        stats.update(sink.stats)
+        sink.stats = stats
+        for index, (group, header) in enumerate(zip(groups, headers, strict=True)):
+            kind = "I" if header.idr else header.slice_kind
+            sink.add(
+                Frame(
+                    0xC748,
+                    media_body(_annexb(group), kind, index + 1, BASE + index * FRAME_STEP, 0),
+                )
+            )
+        for index, frame in enumerate(audio_frames):
+            timestamp = BASE + index * 1024 * 10_000_000 // 48_000
+            sink.add(Frame(0xC748, media_body(bytes(frame.data), "A", 61 + index, timestamp)))
+        sink.close()
+        validate_media_output(sink.stats)
+        stats["stop_reason"] = "duration_limit"
+
+    reader = SoopGridReader(stream, runner=runner)
+    output = bytearray()
+    try:
+        reader.open()
+        while block := reader.read(64 << 10):
+            output.extend(block)
+    finally:
+        reader.close()
+
+    assert output and len(output) % 188 == 0
+    assert reader.stats["reader_eof_observed"] == 1
+    assert reader.stats["stream_output_drain_complete"] == 1
+    assert reader.stats["stream_reader_bytes"] == len(output) == reader.stats["stream_emit_bytes"]
+    assert reader.stats["h264_poc_type"] == poc_type
+    assert reader.stats["video_output_frames"] == 60
+    assert reader.stats["audio_output_access_units"] == 94
+
+    ts_path = tmp_path / f"poc{poc_type}-mmco5.ts"
+    ts_path.write_bytes(output)
+    _run(ffmpeg, "-v", "error", "-xerror", "-i", ts_path, "-map", "0:v:0", "-map", "0:a:0", "-f", "null", "-")
+    output_video = tmp_path / f"poc{poc_type}-mmco5-demux.h264"
+    _run(
+        ffmpeg, "-y", "-v", "error", "-i", ts_path, "-map", "0:v:0", "-c", "copy", "-f", "h264", output_video
+    )
+    expected_vcl = [unit for unit in units if unit[0] & 31 in (1, 5)]
+    actual_vcl = [unit for unit in nals(output_video.read_bytes()) if unit[0] & 31 in (1, 5)]
+    assert actual_vcl == expected_vcl
+    assert _video_decode_hashes(ffmpeg, ts_path) == _video_decode_hashes(ffmpeg, transformed_path)

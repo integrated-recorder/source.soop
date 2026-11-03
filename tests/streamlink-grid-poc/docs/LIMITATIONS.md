@@ -1,4 +1,4 @@
-Current model: [Grid composition timing](GRID_COMPOSITION_TIMING.md). Historical HRD-based results below retain their original revision scope. Production now uses explicit nonnegative Grid composition, common startup origin and unchanged sample-count AAC timing. POC types 0/1/2 are supported for validated progressive subsets; Grid MMCO5 remains unsupported. No AU insertion/deletion, resampling, wall-clock synchronization, or universal perceptual sync guarantee is provided.
+Current model: [Grid composition timing](GRID_COMPOSITION_TIMING.md). Historical HRD-based results below retain their original revision scope. Production now uses explicit nonnegative Grid composition, common startup origin and unchanged sample-count AAC timing. POC types 0/1/2 are supported for validated progressive subsets; a narrow progressive/no-B/one-reference Grid MMCO5 subset is now offline verified, while live and general DPB cases remain unverified. No AU insertion/deletion, resampling, wall-clock synchronization, or universal perceptual sync guarantee is provided.
 
 # Limitations, support boundaries, and licensing
 
@@ -50,7 +50,7 @@ perceptual A/V synchronization test has been performed.
   error.
 - H.264 support is limited to progressive Annex-B streams with parsed POC types
   0/1/2, one supported picture per Grid video chunk, and validated syntax. POC type 1
-  now passes offline StreamIO and short live Grid validation for a no-reorder subset; live Type-1 B-frame behavior remains unverified. MMCO5 remains fail-closed. The former 1 ms
+  now passes offline StreamIO and short live Grid validation for a no-reorder subset; live Type-1 B-frame behavior remains unverified. The tested progressive/no-B/one-reference MMCO5 subset is accepted; live and general DPB/reference-list cases remain unverified. The former 1 ms
   Grid/HRD equality test was an unsupported receiver assumption and was removed.
   Grid composition/POC contradictions remain fail-closed. HRD streams with
   `low_delay_hrd_flag=1`, interlace, FMO, unsupported slice layouts, HEVC, and
@@ -109,7 +109,7 @@ of this PoC.
 
 ## Legacy HRD retirement
 
-Production requires explicit Grid composition and cannot fall back to HRD or no-reorder PTS estimation. Historical timing comparisons are isolated in the [offline audit tool](LEGACY_HRD_AUDIT.md). SPS/VUI/SEI syntax and POC–PTS checks remain in production. Grid MMCO5, interlace, low-delay HRD, nonzero pic_struct and negative composition remain unsupported. POC 0/1/2 support is limited to the validated progressive subsets in the [support matrix](POC_TYPE_SUPPORT_MATRIX.md).
+Production requires explicit Grid composition and cannot fall back to HRD or no-reorder PTS estimation. Historical timing comparisons are isolated in the [offline audit tool](LEGACY_HRD_AUDIT.md). SPS/VUI/SEI syntax and POC–PTS checks remain in production. General Grid MMCO5 DPB/reference-list combinations, interlace, low-delay HRD, nonzero pic_struct and negative composition remain unsupported or unverified. POC 0/1/2 support is limited to the validated progressive subsets in the [support matrix](POC_TYPE_SUPPORT_MATRIX.md).
 
 The prior 600.447-second Grid-only run remains LIVE PARTIAL: 18,057 video pictures (no B pictures), 25,905 AAC AUs at 44.1 kHz, full TS decode/structure checks and complete output drain. Raw Grid wire was not retained; source-to-PES identity and perceptual lip-sync were not established for that run. No new live session is part of this refactor.
 

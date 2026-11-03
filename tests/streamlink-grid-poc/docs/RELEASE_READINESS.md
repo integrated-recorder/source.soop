@@ -1,30 +1,26 @@
 # Release readiness
 
-Candidate evaluated: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`.
+## Current offline candidate
 
-## Gate
+* Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
+* Bundle SHA-256: `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`.
+* This candidate fixes the MMCO-5 POC reset state for the tested frame-coded subset and adds independent synthetic POC 0/1/2 StreamIO, TS, payload identity and decode tests.
 
 | Gate | Status | Evidence / gap |
 |---|---|---|
-| Source full regression | PASS | Supplemental run: 767 passed, 0 skipped; former libopenh264-dependent fixture now uses validated libx264 POC-2 output |
-| Bundle full regression | PASS | Supplemental run: 758 passed, 0 skipped; production candidate bundle hash unchanged |
-| Ruff / format / compileall / deterministic build | PASS on tracked project files | Untracked `tests/test_suffix_latejoin.py` was preserved and excluded from format check |
-| POC 0/1/2 documented subsets | PARTIAL | Historical short live evidence uses older bundle; Type 1 live B picture absent |
-| MMCO 5 | NO-GO | Production intentionally rejects pending complete state/timeline proof |
-| AAC and TS integrity | PASS for 30 min exact bundle | 3,144,607 TS packets; 3,602 PSI sections CRC-valid; full H.264/AAC decode and independent PES checks pass |
-| Source-relative A/V sync | PASS over 30 min common event overlap; strict full-edge gate not met | 1,929 events / 1,799.167 s; added offset median 0.333 ms, max/p95 0.667 ms; drift −0.002615 ppm. Receiver-start/finite-tail events are censored; detector extras 11 vs 16 in source baseline. |
-| Parent recovery | PARTIAL | Deterministic tests and historical controlled case; repeated natural failures not established |
-| 2 h and 6 h exact-candidate endurance | NO-GO | User currently cannot provide a test broadcast; not run |
-| Current-hash RSS/FD/thread trend | PASS for 30 min clean run | RSS peak 59,364 KiB; FD 13; threads 3; no recovery events |
-| 10 min exact-bundle live self-broadcast | PASS (capture) | Receiver exited 0; full TS, H.264/AAC identity and timestamp checks pass. Publisher cleanup hit harness wait limit, but reference covered the captured interval. |
-| 30 min endurance | PASS WITH MEASURED EDGE LIMITS | Exact-bundle self-broadcast; full decode and byte identity pass; strict A/V edge gate remains false |
-| 2 h / 6 h endurance | NO-GO pending | Not run; no further authorized test broadcast is currently available |
-| Remote branch verification/push | BLOCKED at this inspection | GitHub DNS failed in restricted environment; retry only after local report/tests finalized |
+| Source full regression | PASS | 771 passed, 0 skipped; preserved untracked suffix test excluded |
+| Bundle full regression | PASS | Exact final bundle: 762 passed, 0 skipped; standalone bundle tests: 9 passed |
+| Ruff / format / compileall / deterministic build | PASS | Changed tracked files formatted; deterministic SHA check and manifest pass; untracked suffix file untouched |
+| MMCO-5 offline | PASS for narrow subset | POC 0/1/2, one progressive no-B/one-reference fixture; independent decode/hash, StreamIO/TS, VCL identity, EOF/drain |
+| MMCO-5 live / arbitrary DPB | NOT TESTED | User confirmed offline-only; no arbitrary reference-list proof |
+| Previous 30-minute live run | Historical PASS WITH MEASURED EDGE LIMITS | It was performed on bundle `5c1657d5…`, not this candidate; strict A/V full-edge gate was false |
+| 2 h / 6 h exact-candidate endurance | NOT TESTED | User cannot provide a test broadcast; offline-only |
+| Controlled live recovery | NOT TESTED | Requires an authorized broadcast session |
 
 ## Decision
 
-**Stable: NO-GO.** Exact-candidate 30-minute live capture, full decode, TS/PES checks, source media identity, and overlap A/V sync now exist. The strict A/V boundary gate remains false due measured start/tail censorship and detector artifacts. 2-hour/6-hour endurance and controlled recovery remain untested because no further test broadcast is currently available. The clean synthetic self-broadcast does not exercise recovery or establish arbitrary-broadcast compatibility.
+**Stable: NO-GO.** This candidate has new offline MMCO-5 evidence but no current-hash live or endurance evidence. The previous 30-minute run is on another bundle, its strict full-edge A/V gate remained false, and 2-hour, 6-hour and controlled live recovery stages are unrun.
 
-**Beta: CONDITIONAL.** Existing experimental/Beta use may continue only with the documented supported subset, explicit Grid/Auto/HLS semantics, fail-closed behavior and bounded capture settings. Do not advertise MMCO 5, all H.264 structures, long-run stability, or universal A/V sync.
+**Beta: CONDITIONAL** for the previously validated bounded subset. Do not imply live MMCO-5 support, arbitrary H.264/DPB support, or long-run stability from the new synthetic fixture.
 
-Before reconsidering Stable, execute the staged plan in `ENDURANCE_TEST_PLAN.md` on one immutable bundle and publish only scrubbed metrics with exact hashes.
+Reconsider Stable only after 2-hour and 6-hour tests on one immutable candidate, full decode and integrity checks, source-relative sync, resource trend, EOF/drain and controlled recovery.

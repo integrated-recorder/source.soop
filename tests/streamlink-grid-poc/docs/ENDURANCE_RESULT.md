@@ -1,3 +1,16 @@
+# Current offline candidate supplement — 2026-11-03
+
+* Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
+* Candidate bundle: `dist/soop_grid.py`, SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`.
+* Environment: Linux x86_64, Python 3.12.3, Streamlink 8.6.2, FFmpeg/FFprobe 6.1.1 with libx264.
+* Source tests: **771 passed, 0 skipped** (`tests/test_suffix_latejoin.py` excluded and preserved). Bundle tests against the final regenerated bundle: **762 passed, 0 skipped** (47.12 s).
+* MMCO-5 generated offline fixture: one progressive Baseline/CAVLC, no-B, one-reference stream; exactly one reference P picture at AU 10 carries MMCO-5. Three variants signal POC types 0/1/2. FFmpeg independently decodes each transformed elementary stream with frame hashes matching its source.
+* Each variant traverses production `MediaSink` → `SoopGridReader.open/read/close` → MPEG-TS; 60 video AUs and 94 AAC-LC AUs are emitted, VCL NAL bytes match, StreamIO byte accounting and EOF/drain complete, and FFmpeg fully decodes the output TS.
+* Ruff check, changed-tracked-file format check, compileall, deterministic bundle `--check`, SHA manifest verification, `git diff --check`, and Streamlink 8.6.2 plugin discovery (`soop` and `soop_grid`) pass. Standalone bundle tests: 9 passed. No new SOOP live session was run, per user availability. This does not alter previous-hash 30-minute evidence. 2 h, 6 h and live controlled-failure endurance remain NOT TESTED.
+* This is a narrow synthetic conformance case, not proof of arbitrary MMCO/DPB behavior or current-hash live behavior. Stable remains **NO-GO**.
+
+---
+
 # Exact-candidate endurance result
 
 ## Candidate and environment

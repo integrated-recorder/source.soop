@@ -20,7 +20,7 @@ PTS = round((startTime + composition - origin) * 90000 / 10000000) + 90000
 
 HRD Picture Timing은 구조적으로 파싱하지만 생산 Grid 경로에서는 DPB delay로 PTS를 생성하지 않는다. SPS/PPS/SEI/slice/Access Unit, POC wrap, POC와 PTS 순서, 재정렬 한도, IDR epoch 순서, 엄격한 DTS 증가와 MPEG-TS 검증은 유지한다. 동일 picture epoch의 중복 PTS도 거부한다.
 
-현재 생산 Grid 경로는 검증된 progressive POC type 0/1/2 subset을 지원한다. Type 1은 offline B-frame과 live no-reorder sample을 검증했다. Grid MMCO5, low_delay_hrd, interlace, 미지원 slice 구조 및 midstream codec 변경은 여전히 거부한다. 생산 H264Clock은 composition 입력을 필수로 요구하며 HRD/no-reorder PTS fallback을 제공하지 않는다. 역사적 분석 API는 [독립 감사 도구](LEGACY_HRD_AUDIT.md)로 분리하고 생산 번들에서 제외한다. 지원 경계는 [POC support matrix](POC_TYPE_SUPPORT_MATRIX.md)를 참고한다.
+현재 생산 Grid 경로는 검증된 progressive POC type 0/1/2 subset을 지원한다. Type 1은 offline B-frame과 live no-reorder sample을 검증했다. 검증된 progressive/no-B/one-reference MMCO5 subset은 오프라인으로 지원하며, live 및 일반 DPB/reference-list 조합은 미검증이다. low_delay_hrd, interlace, 미지원 slice 구조 및 midstream codec 변경은 여전히 거부한다. 생산 H264Clock은 composition 입력을 필수로 요구하며 HRD/no-reorder PTS fallback을 제공하지 않는다. 역사적 분석 API는 [독립 감사 도구](LEGACY_HRD_AUDIT.md)로 분리하고 생산 번들에서 제외한다. 지원 경계는 [POC support matrix](POC_TYPE_SUPPORT_MATRIX.md)를 참고한다.
 
 AAC-LC의 AU sample 수와 샘플레이트로 정확하게 누적 시간을 계산한다. chunk timestamp의 bounded residual 검사는 그대로 유지하며 매 묶음에서 원점을 바꾸지 않는다. AU 삽입/제거, 무음 생성, resampling이나 임의 A/V 보정은 하지 않는다.
 

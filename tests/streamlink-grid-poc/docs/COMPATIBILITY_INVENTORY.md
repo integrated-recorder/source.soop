@@ -1,6 +1,6 @@
 # Native Grid compatibility inventory
 
-Audit scope: source and bundled code at `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`. This is a code/test inventory, not a claim of broad live compatibility. The exact community V3/V5/V8 inputs are not available.
+Base audit scope: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`. Supplemental offline candidate: bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`; it corrects MMCO-5 POC reset state and adds all-three-POC StreamIO/decode fixtures. Current code/test evidence is read with that supplement. This is a code/test inventory, not a claim of broad live compatibility. The exact community V3/V5/V8 inputs are not available.
 
 ## Classification
 
@@ -8,7 +8,7 @@ Audit scope: source and bundled code at `b070755ed1f1593714575c3813ace1bc64da221
 |---|---|---|
 | H.264 profile and syntax | Progressive frame-coded Annex-B subset; parsed SPS/PPS/slice/SEI, bounded NAL and parameter-set sizes; unsupported profiles, interlace, FMO, unsupported slice syntax, midstream codec changes, unsupported `pic_struct`, and malformed RBSP fail closed. See `soop_grid/h264clock.py`, `tests/test_h264_audit.py`. | Unsupported normal structures are explicit; malformed syntax must be rejected. Not a general H.264 decoder. |
 | POC 0/1/2 | Enabled for tested progressive subsets. POC checks order; Grid composition supplies production PTS. Type 0 live evidence has B pictures; Type 1 live evidence is no-reorder, while Type 1 B-picture is offline-only; Type 2 live evidence is no-reorder/zero-reorder. `docs/POC_TYPE_SUPPORT_MATRIX.md`. | Verified for subsets. Type 1 live B-picture and arbitrary DPB/reference structures remain unverified. |
-| MMCO 5 | Parsed and represented in state, but production rejects with `h264_grid_mmco5_unverified`. `tests/test_grid_composition.py`. | Deliberate fail-closed unsupported syntax pending a valid end-to-end fixture and epoch proof. |
+| MMCO 5 | Production accepts a bounded progressive/no-B/one-reference subset for POC 0/1/2; independent decode, StreamIO/TS output, VCL identity and EOF/drain fixture in `tests/test_poc_type_e2e.py`. | Offline subset verified; arbitrary DPB/reference-list structures and live Grid behavior remain unverified. |
 | `frame_num` gaps | With gaps disallowed, non-successor relative to the previous reference picture raises `h264_frame_num_gap`, with bounded numeric diagnostics. With gaps allowed, the parser does not synthesize access units; the downstream conforming decoder handles any non-existing-reference semantics. | Exact V8 `119→1` input remains unverified. Grid sequence continuity does not establish coded-picture/reference continuity. |
 | POC / composition | Increasing Grid DTS, PTS from Grid timestamp plus nonnegative composition; POC/PTS order, duplicate PTS, reorder bound, IDR epoch and fixed resource bounds are checked. | Verified synthetic and short historical live subsets; current-hash long-run source-clock/perceptual sync not tested. |
 | HRD / SEI | Syntax and applicable buffering-period/picture-timing constraints are checked; HRD delay is not used as production PTS. Low-delay HRD and unsupported timing combinations fail closed. | Supported only within documented parsed subset; see `H264_COMPATIBILITY_AUDIT.md`. |
@@ -28,7 +28,7 @@ Audit scope: source and bundled code at `b070755ed1f1593714575c3813ace1bc64da221
 
 * The production timestamp source is Grid composition, not the historical HRD-derived PTS model. `RELIABILITY.md` was corrected in this audit to remove a stale contradictory description.
 * The current quality code includes q=32/1080p. `LIMITATIONS.md` was corrected; earlier text naming only q=1/2/4/8 was stale.
-* Supplemental offline regression after replacing the legacy `libopenh264`-dependent POC-2 fixture: Source **767 passed, 0 skipped**; bundled production-code suite **758 passed, 0 skipped**. The production bundle hash is unchanged. Exact commands and scope are in `ENDURANCE_RESULT.md`.
+* Prior candidate supplemental offline regression after replacing the legacy `libopenh264`-dependent POC-2 fixture: Source **767 passed, 0 skipped**; bundle **758 passed, 0 skipped**. The newer MMCO-5 candidate results are recorded in `ENDURANCE_RESULT.md`. The production bundle hash is unchanged. Exact commands and scope are in `ENDURANCE_RESULT.md`.
 * No production-code defect was established by this read-only compatibility pass. Do not treat the missing exact community captures or the absence of current-build long endurance as fixed.
 
 The literal error-code catalogue, source locations, and coarse retry/fallback/terminal handling classes are in [ERROR_CODE_INVENTORY.md](ERROR_CODE_INVENTORY.md). It is generated from literal `GridError` call sites; dynamically supplied codes and full caller-specific control flow require manual tracing.

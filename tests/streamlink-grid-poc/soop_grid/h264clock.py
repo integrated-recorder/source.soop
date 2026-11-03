@@ -690,10 +690,11 @@ def _parse_dec_ref_pic_marking(reader, nal_type, nal_ref_idc):
         return False
     if not reader.bit():
         return False
+    mmco5 = False
     for _ in range(64):
         operation = reader.ue()
         if operation == 0:
-            return False
+            return mmco5
         if operation in (1, 3):
             reader.ue()
         if operation == 2:
@@ -703,7 +704,9 @@ def _parse_dec_ref_pic_marking(reader, nal_type, nal_ref_idc):
         if operation == 4:
             reader.ue()
         if operation == 5:
-            return True
+            if mmco5:
+                raise GridError("h264_memory_management_operation_invalid")
+            mmco5 = True
         if operation > 6:
             raise GridError("h264_memory_management_operation_invalid")
     raise GridError("h264_memory_management_operation_limit")
@@ -902,9 +905,11 @@ class H264Clock:
             poc = min(top, bottom)
             if header.nal_ref_idc:
                 if header.mmco5:
-                    # H.264 8.2.1.1: after MMCO 5 the previous MSB is zero,
-                    # while previous LSB is the current TopFieldOrderCnt.
-                    self.prev_msb, self.prev_lsb = 0, top
+                    # H.264 8.2.1: the MMCO-5 picture's field order counts
+                    # are normalized by subtracting PicOrderCnt(CurrPic).
+                    # For this frame-coded subset TopFieldOrderCnt is zero
+                    # after that normalization and seeds the next POC epoch.
+                    self.prev_msb = self.prev_lsb = 0
                 else:
                     self.prev_msb, self.prev_lsb = msb, lsb
             return poc
@@ -1179,7 +1184,8 @@ class H264Clock:
                     probe = copy(self)
                     error.safe_facts["h264_current_poc"] = probe._picture_order(header, sps)
                 raise
-        self._validate_timing_subset(header, sps)
+        # MMCO-5 reference/POC resets are represented by _picture_order(); the
+        # Grid composition timestamp remains the presentation-time authority.
         poc = self._picture_order(header, sps)
         self.last_observation["h264_current_poc"] = poc
         # H.264 7.4.2.1 forbids pic_order_cnt_type == 2 for a coded video
@@ -1299,11 +1305,6 @@ class H264Clock:
             raise GridError("grid_composition_offset_unsupported")
         if grid_timestamp + composition_offset >= 1 << 64:
             raise GridError("media_timestamp_bounds")
-
-    @staticmethod
-    def _validate_timing_subset(header, sps):
-        if header.mmco5:
-            raise GridError("h264_grid_mmco5_unverified")
 
     def _presentation_time(self, header, sps, sei, poc, dts, grid_timestamp, composition_offset):
         pts = self._rescale(grid_timestamp + composition_offset - self.origin_dts) + 90_000

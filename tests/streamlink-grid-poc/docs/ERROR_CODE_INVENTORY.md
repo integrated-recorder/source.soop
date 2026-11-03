@@ -83,7 +83,7 @@ Found 280 literal call sites, 212 distinct codes.
 | `h264_frame_num_gap` | Protocol/media validation; fail closed, no retry/fallback | soop_grid/h264clock.py:738 |
 | `h264_frame_num_invalid` | Protocol/media validation; fail closed, no retry/fallback | soop_grid/h264clock.py:1142 |
 | `h264_golomb_limit` | Configuration/resource/lifecycle bound; terminal except explicit deadline stop | soop_grid/h264clock.py:44 |
-| `h264_grid_mmco5_unverified` | Protocol/media validation; fail closed, no retry/fallback | soop_grid/h264clock.py:1306 |
+
 | `h264_header_truncated` | Protocol/media validation; fail closed, no retry/fallback | soop_grid/h264clock.py:26 |
 | `h264_hrd_initial_delay_invalid` | Protocol/media validation; fail closed, no retry/fallback | soop_grid/h264clock.py:427 |
 | `h264_hrd_limit` | Configuration/resource/lifecycle bound; terminal except explicit deadline stop | soop_grid/h264clock.py:107 |

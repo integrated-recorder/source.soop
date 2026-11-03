@@ -10,7 +10,7 @@
 | POC type 2 adjacent nonref pictures with duplicate POC | Type 2 unsupported | Rejected | Rejected | Deterministic negative parser probe. |
 | POC type 1 in production Grid timeline | Unsupported | Parsed but `h264_grid_poc_type_unverified` | Accepted for tested progressive/Grid-composition subset | Offline B-frame StreamIO E2E and short live no-reorder Grid sample; see POC docs. |
 | POC types 0/1/2 full production StreamIO | Type 0-only subset | Type 0/2 subset; Type 1 rejected | All three tested subsets pass | Offline full TS/decode/payload check and short live self-broadcast per type; MMCO5 excluded. |
-| MMCO5 in production Grid timeline | Not parsed | `h264_grid_mmco5_unverified` | Same | Parser/state unit coverage; production still fail-closed. |
+| MMCO5 in production Grid timeline | Not parsed | `h264_grid_mmco5_unverified` | Narrow progressive/no-B/one-reference subset accepted | Three POC types pass independent decode/hash, StreamIO/TS, VCL identity and EOF/drain; arbitrary DPB and live remain unverified. |
 | 231 ms DTS/PCR gap | No interpolation | Bounded interpolation up to 2 s | Same | Independent PSI/PES/PCR verifier, payload SHA comparisons, FFmpeg full decode. |
 | >2 s PCR time gap / PCR regression | No equivalent two-second guard | Rejected | Rejected | State remains unchanged on rejection. |
 | Grid duplicate and sequence identity | Older path | Identity/overlap filtering before H.264 clock | Same | Three exact duplicates skipped in the retained capture; no identity conflict. |

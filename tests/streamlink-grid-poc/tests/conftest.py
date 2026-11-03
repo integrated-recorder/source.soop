@@ -246,3 +246,58 @@ def encoded_poc2_no_vui(tmp_path_factory):
                 header = parse_slice(nal, sps[pps[pps_id]["sps_id"]], pps[pps_id])
                 assert header.slice_kind != "B"
     return result_units
+
+
+@pytest.fixture(scope="module")
+def encoded_mmco5_poc0(tmp_path_factory):
+    """Return an x264-generated, independently decodable POC-0/MMCO-5 stream."""
+    ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
+    ffprobe = os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe")
+    if not ffmpeg or not ffprobe:
+        pytest.skip("FFmpeg and ffprobe are required for the MMCO-5 bitstream fixture")
+    root = tmp_path_factory.mktemp("h264-mmco5")
+    source = root / "source-poc2.h264"
+    transformed = root / "poc0-mmco5.h264"
+    result = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-v",
+            "error",
+            "-nostdin",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=160x96:rate=30",
+            "-frames:v",
+            "60",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-profile:v",
+            "baseline",
+            "-bf",
+            "0",
+            "-x264-params",
+            "aud=1:repeat-headers=1:bframes=0:ref=1:keyint=60:min-keyint=60:scenecut=0",
+            "-b:v",
+            "300k",
+            "-f",
+            "h264",
+            str(source),
+        ],
+        capture_output=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+
+    from poc_fixture import add_mmco5_type0
+    from soop_grid.h264clock import parse_sps
+    from soop_grid.mpegts import nals
+
+    data = add_mmco5_type0(source.read_bytes(), target_frame=10)
+    transformed.write_bytes(data)
+    sps = parse_sps(next(unit for unit in nals(data) if unit[0] & 31 == 7))
+    assert sps["poc_type"] == 0 and sps["max_reorder"] == 0
+    assert sps["max_num_ref_frames"] == 1 and not sps["timing_fixed"]
+    return ffmpeg, ffprobe, source, transformed, data

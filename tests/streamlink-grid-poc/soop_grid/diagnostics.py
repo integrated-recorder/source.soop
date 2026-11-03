@@ -723,7 +723,6 @@ ERROR_CODES = frozenset(
         "media_timestamp_bounds",
         "media_startup_limit",
         "h264_grid_poc_type_unverified",
-        "h264_grid_mmco5_unverified",
         "network_read_failed",
         "network_read_timeout",
         "network_write_failed",

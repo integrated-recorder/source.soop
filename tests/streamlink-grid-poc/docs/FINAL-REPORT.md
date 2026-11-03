@@ -1,3 +1,16 @@
+# Current offline compatibility update — 2026-11-03
+
+This supplement applies to bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`, built from the working changes based on `b070755ed1f1593714575c3813ace1bc64da221e`. The older campaign report below remains artifact-scoped and is not overwritten.
+
+* Corrected H.264 POC Type 0 MMCO-5 state: after the current picture's order counts are normalized, the next picture uses prior `PicOrderCnt` state `(MSB, LSB)=(0,0)`. Types 1/2 reset prior frame-number/offset state. Duplicate MMCO-5 operations in one marking list fail closed.
+* Added generated, independently decoded MMCO-5 bitstreams for POC 0/1/2 in a narrow progressive CAVLC/no-B/one-reference subset. All pass production MediaSink/StreamIO/MPEG-TS, preserve VCL NAL bytes, fully decode and drain EOF. This is offline subset evidence only; no live broadcast was available.
+* Source suite: **771 passed, 0 skipped**. Bundle suite: **762 passed, 0 skipped** on the final bundle; single-file construction/loading tests: **9 passed**. Ruff check/format, compileall, deterministic bundle check, SHA manifest, `git diff --check`, and Streamlink 8.6.2 discovery of both `soop` and `soop_grid` passed.
+* User confirmed there is currently no authorized test broadcast to use. No new live, 2-hour, 6-hour or controlled live-failure test was run. Historical 30-minute evidence applies to bundle `5c1657d5…`, not this candidate.
+
+**Current campaign status: PARTIAL. Stable: NO-GO.** Offline source/bundle regression and artifact checks pass; live/endurance work remains unavailable. See `ENDURANCE_RESULT.md`, `COMPATIBILITY_MATRIX.md`, and `RELEASE_READINESS.md`.
+
+---
+
 # Comprehensive compatibility campaign — 2026-11-03 final update
 
 This update applies to code candidate `b070755ed1f1593714575c3813ace1bc64da221e`
