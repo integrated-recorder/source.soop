@@ -180,19 +180,47 @@ progressive Baseline, POC Type 2, zero reorder.
 | 600 s | 30.401 s | PASS; 6,000 video AUs/VCL NALs and 28,126 AAC AUs preserved; 203,076 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 38,164 bytes. |
 | 1,800 s | 89.335 s | PASS; 18,000 video AUs/VCL NALs and 84,376 AAC AUs preserved; 609,196 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 48,880 bytes. |
 | 7,200 s | 356.393 s | PASS; 72,000 video AUs/VCL NALs and 337,501 AAC AUs preserved; generated elementary inputs 404,199,257 bytes; output 458,091,516 bytes / 2,436,657 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 49,444 bytes. |
+| 21,600 s | 1,079.679 s | PASS; 216,000 video AUs/VCL NALs and 1,012,503 AAC AUs preserved; generated inputs 1,212,597,771 bytes; output 1,374,274,548 bytes / 7,309,971 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 58,656 bytes. |
 
 Output VCL and ADTS payload identities matched generated inputs. The 600 s
 fixture's FFmpeg coverage-boundary offset change was 21.333 ms; the verifier
 labels this as boundary coverage, not source-clock drift or perceptual sync.
 The 1,800 s accelerated harness sampled RSS up to 301,156 KiB; the 7,200 s
-run peaked at 1,082,268 KiB. The harness retains generated elementary streams
+run peaked at 1,082,268 KiB and the 21,600 s run at 1,397,572 KiB. The harness retains generated elementary streams
 and parsed AUs in memory, so these figures measure the test harness as well as
 the receiver and are not receiver leak/trend results. The first smoke run exposed a test-tool
 assumption error: libx264 emitted POC Type 2, while the helper expected Type 0
 and used the wrong SPS result key. The helper was corrected to assert the
 observed `poc_type=2`; production code did not change.
 
-These accelerated runs are not live, real-time, Parent/Cache, network-failure
-or 2 h/6 h evidence. The user's latest confirmation makes live tests unavailable
+The 21,600-second row is a six-hour *media timeline* processed in 1,079.679
+seconds of wall time. It is not a six-hour live or wall-clock run. None of
+these accelerated runs exercises SOOP, real-time pacing, Parent/Cache, network
+failure, or source-relative sync. The user confirmed live tests are unavailable
 for this continuation. Current-candidate live status remains NOT TESTED; 2 h,
-6 h, controlled-failure live endurance and Stable gates remain unpassed.
+6 h wall-clock, controlled-failure live endurance and Stable gates remain
+unpassed.
+
+## Six-hour synthetic timeline and final offline regression — 2026-11-03
+
+The extended helper and six-hour synthetic run were performed from the
+`0a981c3a28916d38221d0a4379f2ce714ca844c3` checkout with the worktree-only
+helper change; production bundle SHA-256 remained
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. The
+21,600-second generated timeline passed in 1,079.679 wall seconds (details
+above). It is accelerated offline media-time coverage, not wall-clock or live
+endurance.
+
+After that run, using the isolated FFmpeg 6.1.1-3ubuntu5 toolchain, Streamlink
+8.6.2, and the permitted local loopback test environment:
+
+* Source suite: **784 passed, 0 skipped**; untracked
+  `tests/test_suffix_latejoin.py` explicitly excluded and untouched.
+* Bundled parity suite: **775 passed, 0 skipped**; same exclusion.
+* Ruff check passed; Ruff format check passed for 55 tracked source/test Python
+  files (generated single-file distribution excluded); compileall, deterministic
+  bundle check, manifest validation, and `git diff --check` passed.
+
+No SOOP endpoint was contacted. This adds offline synthetic evidence only.
+Live 2 h/6 h wall-clock runs, source-relative long-run sync, and live controlled
+recovery remain NOT_TESTED; Stable remains **NO-GO**.

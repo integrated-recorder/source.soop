@@ -272,4 +272,22 @@ TS integrity, PCR spacing, EOF/drain and byte accounting passed. Its
 AU lists. This supplies long media-timestamp coverage only; it is not live or
 wall-clock endurance evidence and does not change the release gate.
 
+The helper was extended to a 21,600-second synthetic media timeline in one
+continuous StreamIO/MediaSink session. It passed in 1,079.679 seconds wall
+time, preserving 216,000 VCL AUs and 1,012,503 AAC AUs, with full TS checks,
+FFmpeg decoding, byte accounting and EOF/drain. Its 1,397,572 KiB sampled RSS
+peak includes the harness's retained generated media and parsed AUs, so it is
+not receiver-only resource evidence. This is not a six-hour wall-clock or live
+test. The user confirmed live testing is currently unavailable; 2 h/6 h
+wall-clock and controlled-failure gates remain NOT_TESTED, campaign remains
+PARTIAL, and Stable remains NO-GO.
+
+Final offline regression for this continuation used the isolated FFmpeg
+6.1.1-3ubuntu5 toolchain and Streamlink 8.6.2: source **784 passed / 0
+skipped**, bundled parity **775 passed / 0 skipped**. The preserved untracked
+`tests/test_suffix_latejoin.py` was excluded and left untouched. Ruff, tracked
+source format, compileall, deterministic bundle check, checksum manifest, and
+diff check passed. No SOOP endpoint was contacted. The live broadcast,
+wall-clock 2 h/6 h, and controlled-live-failure gates remain NOT_TESTED.
+
 # Existing report history

@@ -10,6 +10,7 @@ and is not live-network or real-time pacing evidence.
 import argparse
 import hashlib
 import json
+import mmap
 import os
 from pathlib import Path
 import shutil
@@ -19,6 +20,8 @@ import sys
 import tempfile
 import time
 from types import SimpleNamespace
+
+from streamlink.exceptions import StreamError
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -34,8 +37,10 @@ from tools.verify_recording import verify  # noqa: E402
 BASE_TIMESTAMP = 50_000_000
 FPS = 10
 SAMPLE_RATE = 48_000
-MAX_MEDIA_BYTES = 1 << 30
+MAX_MEDIA_BYTES = 2 << 30
 MAX_FIXTURE_BYTES = 512 << 20
+MAX_TOTAL_FIXTURE_BYTES = 2 << 30
+MAX_SEGMENT_MINUTES = 120
 
 
 def _run(binary, args, timeout):
@@ -103,14 +108,34 @@ def _body(payload, kind, frame_number, timestamp):
     return bytes(body)
 
 
-def _payload_identity(data, *, kinds):
-    digest = hashlib.sha256()
-    count = 0
-    for unit in nals(data, max_units=2_000_000):
-        if unit[0] & 31 in kinds:
+def _update_payload_identity(digest, data, *, kinds):
+    import re
+
+    count = starts = 0
+    previous = None
+    for match in re.finditer(b"\x00\x00(?:\x00)?\x01", data):
+        starts += 1
+        if starts > 2_000_000:
+            raise GridError("h264_nal_count_limit")
+        if previous is not None:
+            unit = data[previous.end() : match.start()]
+            if unit and unit[0] & 31 in kinds:
+                digest.update(len(unit).to_bytes(4, "big"))
+                digest.update(unit)
+                count += 1
+        previous = match
+    if previous is not None:
+        unit = data[previous.end() : len(data)]
+        if unit and unit[0] & 31 in kinds:
             digest.update(len(unit).to_bytes(4, "big"))
             digest.update(unit)
             count += 1
+    return count
+
+
+def _payload_identity(data, *, kinds):
+    digest = hashlib.sha256()
+    count = _update_payload_identity(digest, data, kinds=kinds)
     return count, digest.hexdigest()
 
 
@@ -133,79 +158,106 @@ def _fd_count():
 
 
 def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
-    if not 1 <= minutes <= 120:
+    if not 1 <= minutes <= 360:
         raise ValueError("timeline_duration_invalid")
     duration = minutes * 60
-    video_frames_expected = duration * FPS
     if output_cap < 1 << 20 or output_cap > MAX_MEDIA_BYTES:
         raise ValueError("output_cap_invalid")
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="soop-grid-offline-soak-") as temp:
         work = Path(temp)
-        video_path = work / "source.h264"
-        audio_path = work / "source.aac"
         output_path = work / "output.ts"
-        _run(
-            ffmpeg,
-            [
-                "-f",
-                "lavfi",
-                "-i",
-                f"testsrc2=size=320x180:rate={FPS}",
-                "-frames:v",
-                video_frames_expected,
-                "-an",
-                "-c:v",
-                "libx264",
-                "-preset",
-                "ultrafast",
-                "-profile:v",
-                "baseline",
-                "-b:v",
-                "350k",
-                "-x264-params",
-                "aud=1:repeat-headers=1:bframes=0:keyint=100:min-keyint=100:scenecut=0",
-                "-f",
-                "h264",
-                video_path,
-            ],
-            min(timeout, 300),
-        )
-        _run(
-            ffmpeg,
-            [
-                "-f",
-                "lavfi",
-                "-i",
-                f"sine=frequency=440:sample_rate={SAMPLE_RATE}:duration={duration}",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "96k",
-                "-f",
-                "adts",
-                audio_path,
-            ],
-            min(timeout, 300),
-        )
+        chunks = []
+        generated_input_bytes = 0
+        source_video_digest = hashlib.sha256()
+        source_video_count = 0
+        source_audio_digest = hashlib.sha256()
+        sps_info = None
 
-        generated_input_bytes = video_path.stat().st_size + audio_path.stat().st_size
-        if generated_input_bytes > MAX_FIXTURE_BYTES:
-            raise RuntimeError("soak_fixture_size_limit")
-        video_data = video_path.read_bytes()
-        video_aus = _access_units(video_data, video_frames_expected)
-        sps = next((unit for unit in nals(video_data) if unit[0] & 31 == 7), None)
-        if sps is None:
-            raise ValueError("generated_sps_missing")
-        sps_info = parse_sps(sps)
-        # This installed libx264 emits POC Type 2 for the no-B-frame
-        # Baseline stream. Record and enforce the observed SPS, rather than
-        # claiming Type 0 based on encoder options that do not select POC.
-        if sps_info["poc_type"] != 2 or sps_info["height"] != 180 or sps_info["width"] != 320:
-            raise ValueError("generated_sps_unexpected")
-        audio_frames = _adts_frames(audio_path)
-        source_video_identity = _payload_identity(video_data, kinds=(1, 5))
-        source_audio_digest = hashlib.sha256(b"".join(audio_frames)).hexdigest()
+        for segment_start in range(0, minutes, MAX_SEGMENT_MINUTES):
+            segment_minutes = min(MAX_SEGMENT_MINUTES, minutes - segment_start)
+            segment_duration = segment_minutes * 60
+            video_path = work / f"source-{segment_start:03d}.h264"
+            audio_path = work / f"source-{segment_start:03d}.aac"
+            video_frames_expected = segment_duration * FPS
+            _run(
+                ffmpeg,
+                [
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    f"testsrc2=size=320x180:rate={FPS}",
+                    "-frames:v",
+                    video_frames_expected,
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "ultrafast",
+                    "-profile:v",
+                    "baseline",
+                    "-b:v",
+                    "350k",
+                    "-x264-params",
+                    "aud=1:repeat-headers=1:bframes=0:keyint=100:min-keyint=100:scenecut=0",
+                    "-f",
+                    "h264",
+                    video_path,
+                ],
+                min(timeout, 300),
+            )
+            _run(
+                ffmpeg,
+                [
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    f"sine=frequency=440:sample_rate={SAMPLE_RATE}:duration={segment_duration}",
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "96k",
+                    "-f",
+                    "adts",
+                    audio_path,
+                ],
+                min(timeout, 300),
+            )
+
+            segment_input_bytes = video_path.stat().st_size + audio_path.stat().st_size
+            generated_input_bytes += segment_input_bytes
+            if segment_input_bytes > MAX_FIXTURE_BYTES or generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
+                raise RuntimeError("soak_fixture_size_limit")
+            video_data = video_path.read_bytes()
+            video_aus = _access_units(video_data, video_frames_expected)
+            sps = next((unit for unit in nals(video_data) if unit[0] & 31 == 7), None)
+            if sps is None:
+                raise ValueError("generated_sps_missing")
+            current_sps = parse_sps(sps)
+            # This libx264 build emits POC Type 2 for the no-B-frame Baseline
+            # stream. Assert the actual SPS instead of inferring it from flags.
+            if current_sps["poc_type"] != 2 or current_sps["height"] != 180 or current_sps["width"] != 320:
+                raise ValueError("generated_sps_unexpected")
+            if sps_info is None:
+                sps_info = current_sps
+            elif current_sps != sps_info:
+                raise ValueError("generated_sps_changed_between_segments")
+            audio_frames = _adts_frames(audio_path)
+            source_video_count += _update_payload_identity(source_video_digest, video_data, kinds=(1, 5))
+            for frame in audio_frames:
+                source_audio_digest.update(frame)
+            chunks.append(
+                {
+                    "video_path": video_path,
+                    "audio_path": audio_path,
+                    "video_frames": len(video_aus),
+                    "audio_frames": len(audio_frames),
+                }
+            )
+            del video_aus, video_data, audio_frames
+
+        source_video_identity = source_video_count, source_video_digest.hexdigest()
+        source_audio_digest_hex = source_audio_digest.hexdigest()
 
         class Config:
             diagnostics_dir = None
@@ -214,7 +266,10 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             def clear():
                 pass
 
-        stream = SimpleNamespace(config=Config(), buffer_size=2 << 20, timeout=5)
+        # Parsing a generated two-hour chunk runs in the receiver worker before
+        # the first output becomes ready. Give this offline harness a finite,
+        # explicit preparation window; this does not change production limits.
+        stream = SimpleNamespace(config=Config(), buffer_size=2 << 20, timeout=min(timeout, 300))
 
         def runner(_config, _network, emit, _report, stats):
             sink = MediaSink(emit, synchronize_startup=True)
@@ -222,29 +277,36 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             sink.stats = stats
             video_index = audio_index = frame_number = 0
             try:
-                while video_index < len(video_aus) or audio_index < len(audio_frames):
-                    video_time = (
-                        BASE_TIMESTAMP + video_index * 10_000_000 // FPS
-                        if video_index < len(video_aus)
-                        else None
-                    )
-                    audio_time = (
-                        BASE_TIMESTAMP + audio_index * 1024 * 10_000_000 // SAMPLE_RATE
-                        if audio_index < len(audio_frames)
-                        else None
-                    )
-                    if video_time is not None and (audio_time is None or video_time <= audio_time):
-                        payload = video_aus[video_index]
-                        kind = "I" if any(unit[0] & 31 == 5 for unit in nals(payload)) else "P"
-                        timestamp = video_time
-                        video_index += 1
-                    else:
-                        payload = audio_frames[audio_index]
-                        kind = "A"
-                        timestamp = audio_time
-                        audio_index += 1
-                    frame_number += 1
-                    sink.add(Frame(0xC748, _body(payload, kind, frame_number, timestamp)))
+                for chunk in chunks:
+                    video_aus = _access_units(chunk["video_path"].read_bytes(), chunk["video_frames"])
+                    audio_frames = _adts_frames(chunk["audio_path"])
+                    chunk_video_index = chunk_audio_index = 0
+                    while chunk_video_index < len(video_aus) or chunk_audio_index < len(audio_frames):
+                        video_time = (
+                            BASE_TIMESTAMP + video_index * 10_000_000 // FPS
+                            if chunk_video_index < len(video_aus)
+                            else None
+                        )
+                        audio_time = (
+                            BASE_TIMESTAMP + audio_index * 1024 * 10_000_000 // SAMPLE_RATE
+                            if chunk_audio_index < len(audio_frames)
+                            else None
+                        )
+                        if video_time is not None and (audio_time is None or video_time <= audio_time):
+                            payload = video_aus[chunk_video_index]
+                            kind = "I" if any(unit[0] & 31 == 5 for unit in nals(payload)) else "P"
+                            timestamp = video_time
+                            chunk_video_index += 1
+                            video_index += 1
+                        else:
+                            payload = audio_frames[chunk_audio_index]
+                            kind = "A"
+                            timestamp = audio_time
+                            chunk_audio_index += 1
+                            audio_index += 1
+                        frame_number += 1
+                        sink.add(Frame(0xC748, _body(payload, kind, frame_number, timestamp)))
+                    del video_aus, audio_frames
                 sink.close()
                 validate_media_output(sink.stats)
                 stats["stop_reason"] = "duration_limit"
@@ -315,12 +377,20 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             ["-i", output_path, "-map", "0:a:0", "-c:a", "copy", "-f", "adts", demux_audio],
             min(timeout, 300),
         )
-        output_video_identity = _payload_identity(demux_video.read_bytes(), kinds=(1, 5))
+        with (
+            demux_video.open("rb") as source,
+            mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as mapped,
+        ):
+            output_video_identity = _payload_identity(mapped, kinds=(1, 5))
         if output_video_identity != source_video_identity:
             raise RuntimeError("soak_video_vcl_identity_mismatch")
         output_audio_frames = _adts_frames(demux_audio)
         output_audio_digest = hashlib.sha256(b"".join(output_audio_frames)).hexdigest()
-        if output_audio_digest != source_audio_digest or len(output_audio_frames) != len(audio_frames):
+        expected_audio_frames = sum(chunk["audio_frames"] for chunk in chunks)
+        if (
+            output_audio_digest != source_audio_digest_hex
+            or len(output_audio_frames) != expected_audio_frames
+        ):
             raise RuntimeError("soak_aac_identity_mismatch")
 
         after_fds = _fd_count()
@@ -342,12 +412,12 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             },
             "audio": {
                 "sample_rate": SAMPLE_RATE,
-                "input_adts_frames": len(audio_frames),
+                "input_adts_frames": sum(chunk["audio_frames"] for chunk in chunks),
                 "output_adts_frames": len(output_audio_frames),
-                "identity_sha256": source_audio_digest,
+                "identity_sha256": source_audio_digest_hex,
             },
             "video": {
-                "input_access_units": len(video_aus),
+                "input_access_units": sum(chunk["video_frames"] for chunk in chunks),
                 "input_vcl_nals": source_video_identity[0],
                 "output_vcl_nals": output_video_identity[0],
                 "identity_sha256": source_video_identity[1],
@@ -370,11 +440,11 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--minutes", type=int, default=10, choices=range(1, 121))
+    parser.add_argument("--minutes", type=int, default=10, choices=range(1, 361))
     parser.add_argument("--ffmpeg", default=os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg"))
     parser.add_argument("--ffprobe", default=os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe"))
     parser.add_argument("--timeout", type=float, default=900)
-    parser.add_argument("--max-output-mib", type=int, default=512)
+    parser.add_argument("--max-output-mib", type=int, default=512, choices=range(1, 2049))
     args = parser.parse_args()
     if not args.ffmpeg or not args.ffprobe:
         parser.error("FFmpeg and FFprobe are required")
@@ -388,7 +458,7 @@ def main():
             args.timeout,
             args.max_output_mib << 20,
         )
-    except (GridError, OSError, RuntimeError, ValueError, subprocess.TimeoutExpired):
+    except (GridError, OSError, RuntimeError, StreamError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({"verdict": "fail", "error": "offline_media_soak_failed"}))
         return 1
     print(json.dumps(summary, sort_keys=True))

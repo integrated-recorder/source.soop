@@ -90,3 +90,14 @@ This section records an earlier candidate and its evidence; the latest candidate
 **Beta: CONDITIONAL** for the previously validated bounded subset. Do not imply live MMCO-5 support, arbitrary H.264/DPB support, or long-run stability from the new synthetic fixture.
 
 Reconsider Stable only after 2-hour and 6-hour tests on one immutable candidate, full decode and integrity checks, source-relative sync, resource trend, EOF/drain and controlled recovery.
+
+## Offline-only six-hour timeline follow-up — 2026-11-03
+
+The latest bounded offline helper processed 21,600 seconds of generated POC-2
+H.264/AAC media in 1,079.679 seconds wall time through one continuous
+StreamIO/MediaSink run. Payload identity, full TS checks, FFmpeg decode and
+EOF/drain passed (details in `ENDURANCE_RESULT.md`). This is not six hours of
+wall-clock operation and does not satisfy live, pacing, sync, recovery, or
+receiver-only resource-trend gates. The user confirmed no authorized test
+broadcast is currently available. Campaign remains PARTIAL and Stable remains
+NO-GO.
