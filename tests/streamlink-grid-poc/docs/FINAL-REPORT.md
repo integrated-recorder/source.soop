@@ -1,5 +1,33 @@
 # Current offline compatibility update — 2026-11-03
 
+## ITU-T H.264 V16 SEI boundary review
+
+Reviewed the in-force H.264 V16 (06/2026) public change summary and Annex D
+SEI dispatch/processing-order clauses. V16's H.264 layer names payload types
+213–215 for processing-order, processing-order-nesting and encoder-optimization
+information. The receiver's generic bounded SEI envelope already skips these
+non-timing payload bodies; it does not interpret their H.274/VSEI semantics.
+Added six source regressions for bounded opaque handling, AU byte preservation
+and truncated-envelope rejection. These synthetic payloads test the envelope,
+not VSEI semantic conformance. The POC/DPB/MMCO-5 core clauses were not
+subjected to a full V15-to-V16 textual diff, so no new conformance claim is made
+for those changes. See `H264_REFERENCE_CONFORMANCE.md`.
+
+* Targeted new tests: **6 passed**.
+* This change is test and documentation only; production source and bundle are
+  unchanged. Full source: **780 passed, 0 skipped**; bundled parity: **771
+  passed, 0 skipped**. The source count includes the 9 single-file construction
+  tests. Bundle SHA-256 remains
+  `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+* Ruff check/format (tracked Python sources; generated bundle and preserved
+  untracked suffix experiment excluded), compileall, deterministic bundle
+  check, SHA manifest, source/single-file Streamlink 8.6.2 discovery and
+  `git diff --check` passed. The first sandboxed full run had 14 loopback
+  `EPERM` failures; rerunning with local socket permission passed. No SOOP
+  endpoint was contacted.
+* Campaign remains **PARTIAL**; 2 h, 6 h and live controlled-failure stages
+  remain **NOT TESTED**, and Stable remains **NO-GO**.
+
 ## Additional parser boundary fix — current candidate
 
 The H.264 AU walker previously validated headers only when it parsed that

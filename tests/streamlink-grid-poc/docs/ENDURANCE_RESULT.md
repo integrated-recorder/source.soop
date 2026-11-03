@@ -40,6 +40,20 @@
 
 # Exact-candidate endurance result
 
+## Offline-only follow-up — H.264 V16 SEI envelope
+
+No live test source is available, so this follow-up is offline. Six new tests
+exercise H.264 V16 SEI payload types 213–215 through the generic bounded parser
+and MediaSink's raw AU capture, plus malformed-length rejection. They do not
+validate H.274/VSEI payload semantics. Production code and bundle bytes are
+unchanged. Source pytest: **780 passed, 0 skipped**; bundle parity: **771
+passed, 0 skipped**. The source count includes the 9 single-file construction
+tests. Ruff check/format, compileall, deterministic bundle check, manifest,
+Streamlink discovery and `git diff --check` passed. The initial sandbox run
+failed 14 local socket cases with `EPERM`; the permission-enabled offline rerun
+passed. No SOOP endpoint was contacted. The 2 h, 6 h and live controlled-failure
+stages remain NOT TESTED.
+
 ## Candidate and environment
 
 * Branch: `fix/grid-startup-readiness`

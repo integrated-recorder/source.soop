@@ -2,6 +2,11 @@
 
 ## Latest offline candidate — 2026-11-03
 
+H.264 V16 SEI envelope regressions were added for opaque payload types 213–215
+and malformed lengths. These test common framing and byte preservation only;
+the new H.274/VSEI metadata semantics are not interpreted. No production
+source or bundle change results. See `H264_REFERENCE_CONFORMANCE.md`.
+
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 * Tested source commit: `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; subsequent branch commits are documentation-only.
 * Latest source tests: 774 passed, 0 skipped; bundled parity: 765 passed, 0 skipped; single-file tests: 9 passed.
@@ -9,6 +14,16 @@
 * A deterministic 768-input malformed-parser smoke test produces no unexpected exceptions; broader coverage-guided fuzzing is not claimed.
 * Ruff, format, compileall, deterministic builder, manifest and Streamlink 8.6.2 plugin discovery pass.
 * No live source is currently available. 2 h, 6 h, live controlled-recovery and current-hash live verification remain NOT TESTED.
+
+### Latest test-only follow-up
+
+After adding six bounded H.264 V16 SEI-envelope tests (payload types 213–215),
+source pytest is **780 passed, 0 skipped** and bundled parity is **771 passed,
+0 skipped**. The source count includes nine single-file construction tests.
+The production bundle remains SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+VSEI payload semantics are not interpreted. No live or endurance evidence was
+added; Stable remains **NO-GO**.
 
 **Campaign: PARTIAL. Stable: NO-GO.** This is an offline hardening candidate; it does not replace current-build live or endurance gates.
 

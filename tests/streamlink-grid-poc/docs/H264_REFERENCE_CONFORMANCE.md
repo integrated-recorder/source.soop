@@ -1,6 +1,16 @@
 # H.264 reference, POC, DPB and timing conformance
 
-Audited source: `soop_grid/h264clock.py`, `soop_grid/media.py`. The detailed clause checks below used [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S). ITU now lists [H.264 (06/2026)](https://www.itu.int/rec/T-REC-H.264-202606-I) as the in-force edition. The 2026 revision's delta has not been fully reviewed here, so conformance against the current edition is **UNVERIFIED**. This is an implementation-subset assessment, not full decoder conformance.
+Audited source: `soop_grid/h264clock.py`, `soop_grid/media.py`. The state-machine clause review below was based on [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S). The in-force [H.264 (06/2026), V16](https://www.itu.int/rec/T-REC-H.264-202606-I) delta was then reviewed for its published changes and the SEI interface clauses relevant to this parser. This is not a complete V15-to-V16 clause-by-clause diff; any effect of V16's miscellaneous defect corrections on unreviewed syntax remains **UNVERIFIED**. This is an implementation-subset assessment, not full decoder conformance.
+
+## H.264 V16 (06/2026) delta review
+
+The ITU recommendation database describes V16 as adding interfaces for eleven VSEI messages, extended film-grain and neural-network post-filter activation interfaces, a future-extension mechanism, and corrections to minor defects in prior text. In the H.264 Annex D payload dispatch, V16 explicitly adds payload types 213 (`sei_processing_order`), 214 (`processing_order_nesting`) and 215 (`encoder_optimization_info`); clauses D.3.6–D.3.8 define interpretation constraints for processing order/nesting and encoder optimization information. VSEI owns the application-specific payload syntax. The normative H.264 references for the V16 delta are [the in-force edition](https://www.itu.int/rec/T-REC-H.264-202606-I) and the [ITU recommendation database/history](https://www.itu.int/ITU-T/recommendations/rec.aspx?rec=H.264).
+
+The inspected official V16 PDF artifact was 15,530,891 bytes, SHA-256 `028cf2cfefd6083ced98d3acb0b586d9328e1631c13d6f21057ad54c569b1b79`.
+
+The receiver parses and bounds the generic SEI payloadType/payloadSize envelope, semantically interprets only buffering-period, picture-timing and recovery-point messages, and skips other SEI payload bodies as opaque bytes. New payload types 213–215 therefore do not affect coded-sample reconstruction or the Grid-composition clock in this implementation; their VSEI semantics are **not interpreted**. The AU bytes remain unchanged on the raw `video.h264` path. New source tests cover these three envelope paths, bounded opaque handling, input-AU preservation, and truncated-envelope rejection. Their synthetic opaque payloads are not valid VSEI semantic fixtures and do not claim VSEI conformance.
+
+No conclusion is made here that V16 changed—or did not change—the detailed POC, frame-number, DPB, MMCO-5 or HRD rules. Those core clauses have not received a full edition-to-edition textual comparison, and the existing subset evidence is still tied to its previously audited clauses and fixtures.
 
 ## Production invariants
 

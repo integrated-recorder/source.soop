@@ -1055,6 +1055,32 @@ def test_truncated_sei_envelope_or_missing_rbsp_trailer_is_rejected(data):
         parse_sei(escape(6, data), parse_sps(sps(hrd=True)))
 
 
+@pytest.mark.parametrize("payload_type", [213, 214, 215])
+def test_h264_v16_sei_types_are_bounded_opaque_and_preserved(payload_type, tmp_path):
+    # H.264 V16 adds these SEI interfaces. This synthetic payload exercises
+    # only the common SEI envelope: it does not claim to validate H.274 syntax.
+    opaque_sei = sei_message(payload_type, b"\x00\x5a\xff")
+    sequence = sps(mode=2, fixed=False, hrd=False)
+    decoded_sps = parse_sps(sequence)
+    assert parse_sei(opaque_sei, decoded_sps) == {}
+
+    access_unit = annex(sequence, pps(), opaque_sei, picture(idr=True, mode=2))
+    emitted = []
+    sink = MediaSink(emitted.append, capture_dir=tmp_path / f"sei-{payload_type}")
+    sink.add(Frame(0xC748, media_body(access_unit, "I", 1, 50_000_000)))
+    sink.close()
+
+    assert emitted
+    assert (tmp_path / f"sei-{payload_type}" / "video.h264").read_bytes() == access_unit
+
+
+@pytest.mark.parametrize("payload_type", [213, 214, 215])
+def test_h264_v16_sei_types_still_reject_truncated_envelopes(payload_type):
+    malformed = bytes((payload_type, 4, 0x00, 0x5A)) + b"\x80"
+    with pytest.raises(GridError, match="h264_sei_truncated"):
+        parse_sei(escape(6, malformed), parse_sps(sps(hrd=False)))
+
+
 def test_malformed_picture_timing_alignment_cannot_supply_pts():
     # 000 010 is CPB=0, DPB=2; remaining 00 lacks payload_bit_equal_to_one.
     seq = sps(hrd=True)
