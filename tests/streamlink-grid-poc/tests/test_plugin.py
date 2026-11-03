@@ -202,6 +202,207 @@ def test_grid_sorting_excludes_remain_authoritative_for_best(monkeypatch):
     assert streams["original"] is not streams["best"]
 
 
+def test_internal_rank_alias_reproduces_base_streamlink_exclusion_bypass(monkeypatch):
+    from streamlink.plugin import Plugin
+
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "1440p", "name": "original"},
+                {"label": "1080p", "name": "hd8k"},
+                {"label": "720p", "name": "hd4k"},
+            ]
+        ),
+    )
+    plugin = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": "grid"},
+    )
+
+    base_streamlink_result = Plugin.streams(plugin, sorting_excludes=["1440p"])
+    assert base_streamlink_result["best"] is base_streamlink_result["9999p"]
+    assert base_streamlink_result["best"] is base_streamlink_result["original"]
+
+    corrected_result = plugin.streams(sorting_excludes=["1440p"])
+    assert corrected_result["best"] is corrected_result["1080p"]
+    assert "9999p" not in corrected_result
+
+
+@pytest.mark.parametrize(
+    ("excludes", "best_name", "worst_name"),
+    [
+        (["1440p"], "1080p", "360p"),
+        # Streamlink filters ranked names, so "original" (weight group none)
+        # doesn't exclude the ranked 1440p alias of the same stream.
+        (["original"], "original", "360p"),
+        ([">720p"], "720p", "360p"),
+        ([">=720p"], "540p", "360p"),
+        (["<720p"], "original", "720p"),
+        (["<=720p"], "original", "1080p"),
+        (["1440p", "1080p"], "720p", "360p"),
+    ],
+    ids=["name", "unweighted-original-name", "gt", "gte", "lt", "lte", "multiple"],
+)
+@pytest.mark.parametrize("transport", ["grid", "auto"])
+def test_grid_sorting_excludes_use_original_public_rank(
+    monkeypatch, excludes, best_name, worst_name, transport
+):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "1440p", "name": "original"},
+                {"label": "1080p", "name": "hd8k"},
+                {"label": "720p", "name": "hd4k"},
+                {"label": "540p", "name": "hd"},
+                {"label": "360p", "name": "sd"},
+            ]
+        ),
+    )
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": transport},
+    ).streams(sorting_excludes=excludes)
+
+    assert streams["best"] is streams[best_name]
+    assert streams["worst"] is streams[worst_name]
+    assert "9999p" not in streams
+    if best_name == "original":
+        assert streams["best"] is streams["1440p"]
+
+
+def test_grid_callable_sorting_excludes_never_sees_internal_alias(monkeypatch):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "1440p", "name": "original"},
+                {"label": "1080p", "name": "hd8k"},
+                {"label": "720p", "name": "hd4k"},
+            ]
+        ),
+    )
+    seen = []
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": "grid"},
+    ).streams(sorting_excludes=lambda name: seen.append(name) or name != "1440p")
+
+    assert streams["best"] is streams["1080p"]
+    assert "9999p" not in seen
+    assert "9999p" not in streams
+
+
+@pytest.mark.parametrize("transport", ["grid", "auto"])
+def test_grid_sorting_excludes_unknown_original_and_all_filtered_candidates(monkeypatch, transport):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "720p", "name": "hd4k"},
+                {"label": "540p", "name": "hd"},
+            ]
+        ),
+    )
+    url = "https://play.sooplive.com/fixture_channel/12345"
+    streams = cls(session, url, options={"transport": transport}).streams(sorting_excludes=["<720p"])
+    assert streams["best"] is streams["original"]
+    assert streams["worst"] is streams["720p"]
+
+    streams = cls(session, url, options={"transport": transport}).streams(sorting_excludes=["original"])
+    assert streams["best"] is streams["720p"]
+    assert streams["worst"] is streams["540p"]
+
+    monkeypatch.setattr(
+        module,
+        "official_grid_profiles",
+        lambda *_args: profiles_from_viewpreset(
+            [
+                {"label": "1440p", "name": "original"},
+                {"label": "720p", "name": "hd4k"},
+                {"label": "540p", "name": "hd"},
+            ]
+        ),
+    )
+    streams = cls(session, url, options={"transport": transport}).streams(sorting_excludes=["<=9999p"])
+    assert streams["best-unfiltered"] is streams["original"]
+    assert streams["worst-unfiltered"] is streams["540p"]
+
+
+def test_grid_original_only_excluded_returns_streamlink_unfiltered_synonyms(monkeypatch):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(module, "official_grid_profiles", lambda *_args: profiles_from_viewpreset(None))
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": "grid"},
+    ).streams(sorting_excludes=["original"])
+
+    assert streams["best-unfiltered"] is streams["original"]
+    assert streams["worst-unfiltered"] is streams["original"]
+    assert "9999p" not in streams
+
+
+def test_grid_stream_types_filtering_does_not_leak_internal_alias(monkeypatch):
+    from soop_grid.quality import profiles_from_viewpreset
+
+    session = Streamlink()
+    session.plugins.load_builtin()
+    session.plugins.load_path(str(ROOT / "plugins"))
+    cls = session.plugins.get_loaded()["soop_grid"]
+    module = sys.modules[cls.__module__]
+    monkeypatch.setattr(module, "official_grid_profiles", lambda *_args: profiles_from_viewpreset(None))
+
+    streams = cls(
+        session,
+        "https://play.sooplive.com/fixture_channel/12345",
+        options={"transport": "grid"},
+    ).streams(stream_types=["hls"])
+    assert streams == {}
+
+
 def test_hls_quality_synonyms_keep_streamlink_default_ranking(monkeypatch):
     from streamlink.stream.stream import Stream
 

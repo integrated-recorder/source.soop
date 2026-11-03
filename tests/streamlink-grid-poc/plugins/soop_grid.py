@@ -14,6 +14,7 @@ import logging
 
 from streamlink.exceptions import PluginError
 from streamlink.plugin import Plugin, pluginargument, pluginmatcher
+from streamlink.plugin.plugin import stream_sorting_filter
 
 from soop_grid.bootstrap import Config
 from soop_grid.protocol import GridError
@@ -142,7 +143,33 @@ class SoopGridPlugin(Plugin):
         return ""
 
     def streams(self, stream_types=None, sorting_excludes=None):
-        streams = super().streams(stream_types, sorting_excludes)
+        self._grid_original_sort_name = None
+        effective_sorting_excludes = sorting_excludes
+        if isinstance(sorting_excludes, list):
+            # The hidden rank alias must inherit the public original profile's
+            # weight for filters; its synthetic 9999p weight would bypass names
+            # and invert range filters. Unknown height maps to unweighted original.
+            filters = tuple(stream_sorting_filter(expr, self.stream_weight) for expr in sorting_excludes)
+
+            def filter_grid_quality(name):
+                candidates = (
+                    (self._grid_original_sort_name or "original",)
+                    if name == _GRID_ORIGINAL_RANK_ALIAS
+                    else (name,)
+                )
+                return all(filter_func(candidate) for candidate in candidates for filter_func in filters)
+
+            effective_sorting_excludes = filter_grid_quality
+        elif callable(sorting_excludes):
+
+            def filter_grid_quality(name):
+                if name == _GRID_ORIGINAL_RANK_ALIAS:
+                    name = self._grid_original_sort_name or "original"
+                return sorting_excludes(name)
+
+            effective_sorting_excludes = filter_grid_quality
+
+        streams = super().streams(stream_types, effective_sorting_excludes)
         if (self.get_option("transport") or "auto") == "hls":
             return streams
 
@@ -246,6 +273,9 @@ class SoopGridPlugin(Plugin):
             else:
                 selected = grid
             if profile.name == "original":
+                self._grid_original_sort_name = (
+                    profile.original_label.lower() if profile.original_label else "original"
+                )
                 yield _GRID_ORIGINAL_RANK_ALIAS, selected
             yield profile.name, selected
             if profile.name == "original" and profile.original_label:
