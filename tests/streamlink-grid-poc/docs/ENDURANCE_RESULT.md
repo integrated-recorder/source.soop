@@ -8,6 +8,12 @@
 * The first sandboxed full run had 14 loopback/socketpair `EPERM` failures; rerunning outside the network-restricted sandbox passed. One diagnostics allowlist omission and one stale-bundle mismatch were fixed before the final runs.
 * No live source was available per user confirmation. 2 h, 6 h and live controlled-failure tests remain **NOT TESTED**; historical live evidence belongs to other bundle hashes. Stable remains **NO-GO**.
 
+## Deterministic parser robustness smoke — 2026-11-03
+
+* Added a fixed-seed test that submits 768 malformed/random byte inputs to `H264Clock.inspect()` and `parse_media()`, including inserted Annex-B start codes. It asserts malformed inputs either return or fail with the documented `GridError` family, never an unexpected Python exception. This is a bounded parser robustness smoke test, not coverage-guided fuzzing or a proof of parser safety.
+* The test is source-only; production bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+* Latest source suite: **774 passed, 0 skipped**. Bundled parity: **765 passed, 0 skipped**. The untracked suffix experiment remains excluded.
+
 ---
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.

@@ -3,8 +3,9 @@
 ## Latest offline candidate — 2026-11-03
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
-* Source tests: 773 passed, 0 skipped; bundled parity: 764 passed, 0 skipped; single-file tests: 9 passed.
+* Latest source tests: 774 passed, 0 skipped; bundled parity: 765 passed, 0 skipped; single-file tests: 9 passed.
 * All NAL headers, including opaque pass-through units, now receive common H.264 header validation. The malformed-AUD regression and valid control pass.
+* A deterministic 768-input malformed-parser smoke test produces no unexpected exceptions; broader coverage-guided fuzzing is not claimed.
 * Ruff, format, compileall, deterministic builder, manifest and Streamlink 8.6.2 plugin discovery pass.
 * No live source is currently available. 2 h, 6 h, live controlled-recovery and current-hash live verification remain NOT TESTED.
 

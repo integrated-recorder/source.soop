@@ -24,6 +24,13 @@ The clauses on NAL unit header semantics and Table 7-1 of [ITU-T H.264
 constraints. Other NAL payload syntax that the receiver does not parse remains
 outside the claimed support subset.
 
+A separate review of NAL type 14 did not add a blanket rejection: Table 7-1
+classifies it as non-VCL for Annex A, and Annex A decoders ignore its contents.
+Extension-profile association rules are outside this receiver's declared
+profile subset; the supported Annex A path continues to preserve the NAL and
+clock the base VCL units as specified. This avoids turning an unproven concern
+into an unnecessary rejection.
+
 ## POC types and boundaries
 
 | Type | Implemented order state | Evidence level on documented subset | Remaining boundary |

@@ -10,8 +10,9 @@ type dispatch: forbidden bit, unspecified type 0, and the defined
 controls remain accepted and media bytes are not rewritten.
 
 * Bundle SHA-256: `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
-* Source: **773 passed, 0 skipped**; bundled suite: **764 passed, 0 skipped**;
+* Source: **774 passed, 0 skipped**; bundled suite: **765 passed, 0 skipped**;
   standalone single-file tests: **9 passed**.
+* A fixed-seed 768-input parser robustness smoke test exercises malformed media and H.264 input; it found no unexpected Python exceptions. This is not coverage-guided fuzzing.
 * Ruff check/format, compileall, deterministic build, SHA manifest, Streamlink
   8.6.2 plugin discovery and `git diff --check` pass.
 * User confirmed offline-only: no new live, 2 h, 6 h or controlled live-failure

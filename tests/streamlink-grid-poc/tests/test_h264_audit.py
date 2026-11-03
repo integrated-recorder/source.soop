@@ -7,6 +7,7 @@ Other vectors are deliberately bounded SPS/PPS/slice-header parser probes.
 
 import json
 import os
+import random
 import subprocess
 from copy import deepcopy
 from fractions import Fraction
@@ -15,7 +16,7 @@ import pytest
 
 from conftest import media_body
 from soop_grid.h264clock import H264Clock, Reader, inferred_reorder, parse_pps, parse_sei, parse_sps, rbsp
-from soop_grid.media import MediaSink
+from soop_grid.media import MediaSink, parse_media
 from soop_grid.mpegts import TSMux, nals
 from tools.legacy_h264_audit import LegacyH264Clock
 from soop_grid.protocol import Frame, GridError
@@ -917,6 +918,26 @@ def test_picture_timing_sei_after_vcl_is_rejected_before_timing_application():
     with pytest.raises(GridError, match="h264_sei_after_vcl"):
         clock.inspect(annex(sps(hrd=True), pps(), picture(idr=True), timing_sei(dpb=2)), 50_000_000, 0)
     assert clock.sps == {}  # Rejected AU did not partially commit its SPS.
+
+
+def test_seeded_malformed_parser_inputs_never_escape_as_unexpected_exceptions():
+    rng = random.Random(0x534F4F50)
+    for index in range(768):
+        data = bytearray(rng.randbytes(rng.randrange(0, 1025)))
+        if index % 2 == 0:
+            start = rng.randrange(len(data) + 1)
+            data[start:start] = b"\x00\x00\x01" + bytes((rng.randrange(256),))
+        payload = bytes(data)
+
+        try:
+            H264Clock().inspect(payload, 50_000_000, 0)
+        except GridError:
+            pass
+
+        try:
+            parse_media(payload)
+        except GridError:
+            pass
 
 
 @pytest.mark.parametrize("later_sei_nal", [False, True])
