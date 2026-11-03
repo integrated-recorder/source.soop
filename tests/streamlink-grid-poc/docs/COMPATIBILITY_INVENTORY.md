@@ -52,3 +52,7 @@ The literal error-code catalogue, source locations, and coarse retry/fallback/te
 3. Measure source-relative A/V drift, memory, descriptors and threads on the same exact build for at least 2 h and 6 h before Stable consideration.
 
 Latest offline regression at working-tree base `8f988a1045837c091dd574ee226e2a62e0f16125` adds local Parent-wire malformed-AU fault injection for POC 0/1/2. The invalid VCL header fails closed and does not enter the output prefix. Source/bundle suites pass 797/788 with zero skips. This does not change the live, source-relative sync, or endurance limitations above; see `ENDURANCE_RESULT.md`.
+
+Current follow-up extends the offline soak harness with an opt-in, SPS-verified POC-0 B-frame timeline mode. Accelerated 10 min, 30 min, 2 h and 6 h synthetic runs passed exact VCL/AAC identity, TS/PSI/PCR checks, full decode and EOF/drain. This increases reordered-picture offline timeline coverage; it does not validate SOOP transport, live timing, or wall-clock resource stability. The final full-suite counts after its regression test are recorded in `ENDURANCE_RESULT.md`.
+
+Final follow-up verification: source suite **798 passed, 0 skipped**; bundle parity **789 passed, 0 skipped**. No production source changed; the deterministic bundle remains byte-identical.

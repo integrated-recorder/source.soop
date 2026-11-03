@@ -179,12 +179,12 @@ def _adts_frames_range(mapped, start, end):
     return frames
 
 
-def _body(payload, kind, frame_number, timestamp):
+def _body(payload, kind, frame_number, timestamp, composition=0):
     body = bytearray(69 + len(payload))
     struct.pack_into("<HHIIQ", body, 0, 1, 69, 0, len(payload), frame_number)
     body[40] = ord(kind)
     struct.pack_into("<Q", body, 41, timestamp)
-    struct.pack_into("<I", body, 57, 0)
+    struct.pack_into("<I", body, 57, composition)
     body[69:] = payload
     return bytes(body)
 
@@ -260,7 +260,7 @@ def _pace_until(network, wall_start, media_timestamp, deadline):
         raise Cancelled("offline_soak_cancelled")
 
 
-def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
+def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=False):
     if not 1 <= minutes <= 360:
         raise ValueError("timeline_duration_invalid")
     duration = minutes * 60
@@ -276,6 +276,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
         source_video_digest = hashlib.sha256()
         source_video_count = 0
         sps_info = None
+        b_picture_count = 0
         audio_path = work / "source.aac"
         _run(
             ffmpeg,
@@ -323,11 +324,13 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
                     "-preset",
                     "ultrafast",
                     "-profile:v",
-                    "baseline",
+                    "main" if b_frames else "baseline",
                     "-b:v",
                     "350k",
                     "-x264-params",
-                    "aud=1:repeat-headers=1:bframes=0:keyint=100:min-keyint=100:scenecut=0",
+                    "aud=1:repeat-headers=1:open-gop=0:bframes=2:b-adapt=0:b-pyramid=none:keyint=100:min-keyint=100:scenecut=0"
+                    if b_frames
+                    else "aud=1:repeat-headers=1:bframes=0:keyint=100:min-keyint=100:scenecut=0",
                     "-f",
                     "h264",
                     video_path,
@@ -344,14 +347,50 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
             if sps is None:
                 raise ValueError("generated_sps_missing")
             current_sps = parse_sps(sps)
-            # This libx264 build emits POC Type 2 for the no-B-frame Baseline
-            # stream. Assert the actual SPS instead of inferring it from flags.
-            if current_sps["poc_type"] != 2 or current_sps["height"] != 180 or current_sps["width"] != 320:
+            expected_poc_type = 0 if b_frames else 2
+            if (
+                current_sps["poc_type"] != expected_poc_type
+                or current_sps["height"] != 180
+                or current_sps["width"] != 320
+            ):
                 raise ValueError("generated_sps_unexpected")
             if sps_info is None:
                 sps_info = current_sps
             elif current_sps != sps_info:
                 raise ValueError("generated_sps_changed_between_segments")
+            composition_offsets = [0] * video_frames_expected
+            if b_frames:
+                probe = subprocess.run(
+                    [
+                        str(ffprobe),
+                        "-v",
+                        "error",
+                        "-f",
+                        "h264",
+                        "-show_frames",
+                        "-show_entries",
+                        "frame=coded_picture_number,pict_type",
+                        "-of",
+                        "json",
+                        str(video_path),
+                    ],
+                    capture_output=True,
+                    timeout=_remaining_timeout(deadline),
+                    check=True,
+                )
+                frame_rows = json.loads(probe.stdout)["frames"]
+                display_rank = {int(row["coded_picture_number"]): rank for rank, row in enumerate(frame_rows)}
+                if set(display_rank) != set(range(video_frames_expected)):
+                    raise ValueError("generated_bframe_order_unverified")
+                b_picture_count += sum(row.get("pict_type") == "B" for row in frame_rows)
+                if not b_picture_count or current_sps["max_reorder"] < 1:
+                    raise ValueError("generated_bframe_sps_mismatch")
+                lead = current_sps["max_reorder"]
+                for coded_index in range(video_frames_expected):
+                    offset_frames = display_rank[coded_index] - coded_index + lead
+                    if offset_frames < 0:
+                        raise ValueError("generated_bframe_composition_negative")
+                    composition_offsets[coded_index] = round(offset_frames * 10_000_000 / FPS)
             source_video_count += _update_payload_identity(source_video_digest, video_data, kinds=(1, 5))
             audio_start, audio_end = audio_facts["ranges"][len(chunks)]
             chunks.append(
@@ -361,6 +400,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
                     "audio_start": audio_start,
                     "audio_end": audio_end,
                     "audio_frames": audio_facts["segment_counts"][len(chunks)],
+                    "composition_offsets": composition_offsets,
                 }
             )
             del video_aus, video_data
@@ -402,7 +442,9 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
                                 else None
                             )
                             audio_time = (
-                                BASE_TIMESTAMP + audio_index * 1024 * 10_000_000 // SAMPLE_RATE
+                                BASE_TIMESTAMP
+                                + sps_info["max_reorder"] * 10_000_000 // FPS
+                                + audio_index * 1024 * 10_000_000 // SAMPLE_RATE
                                 if chunk_audio_index < len(audio_frames)
                                 else None
                             )
@@ -410,18 +452,22 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
                                 payload = video_aus[chunk_video_index]
                                 kind = "I" if any(unit[0] & 31 == 5 for unit in nals(payload)) else "P"
                                 timestamp = video_time
+                                composition = chunk["composition_offsets"][chunk_video_index]
                                 chunk_video_index += 1
                                 video_index += 1
                             else:
                                 payload = audio_frames[chunk_audio_index]
                                 kind = "A"
                                 timestamp = audio_time
+                                composition = 0
                                 chunk_audio_index += 1
                                 audio_index += 1
                             frame_number += 1
                             if realtime:
                                 _pace_until(_network, media_wall_start, timestamp, deadline)
-                            sink.add(Frame(0xC748, _body(payload, kind, frame_number, timestamp)))
+                            sink.add(
+                                Frame(0xC748, _body(payload, kind, frame_number, timestamp, composition))
+                            )
                         del video_aus, audio_frames
                 sink.close()
                 validate_media_output(sink.stats)
@@ -533,6 +579,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
                 "height": sps_info["height"],
                 "poc_type": sps_info["poc_type"],
                 "max_reorder": sps_info["max_reorder"],
+                "b_picture_count": b_picture_count,
             },
             "audio": {
                 "sample_rate": SAMPLE_RATE,
@@ -581,6 +628,11 @@ def main():
         action="store_true",
         help="pace synthetic Grid media in wall-clock time; not a live SOOP test",
     )
+    parser.add_argument(
+        "--b-frames",
+        action="store_true",
+        help="generate and probe POC-Type-0 B pictures, then apply composition timestamps",
+    )
     args = parser.parse_args()
     if not args.ffmpeg or not args.ffprobe:
         parser.error("FFmpeg and FFprobe are required")
@@ -594,6 +646,7 @@ def main():
             args.timeout,
             args.max_output_mib << 20,
             args.realtime,
+            args.b_frames,
         )
     except (GridError, OSError, RuntimeError, StreamError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({"verdict": "fail", "error": "offline_media_soak_failed"}))

@@ -386,8 +386,17 @@ Equivalent packet-level assertions now cover the 44.1 kHz stereo AAC path on
 all three POC types, including all 43 AAC packet PTS values against the
 rational sample clock; the focused tests pass 3/3.
 
-Results: POC E2E **12 passed**; source suite **797 passed, 0 skipped**;
-bundle parity **788 passed, 0 skipped**. Bundle SHA-256 remains
+The bounded soak harness now optionally generates POC-0 B pictures, derives
+composition offsets from FFprobe coded/display order, and verifies the
+production Parent-body→MediaSink/StreamIO/TS path. Accelerated 10 min, 30 min,
+2 h, and 6 h generated timelines passed with exact VCL/AAC identity, zero TS
+continuity/PSI errors, 100 ms max PCR gap, complete decode and EOF/drain. This
+is not SOOP reception or wall-clock endurance; resource samples include the
+harness and are not receiver-only. Full run details are in
+`ENDURANCE_RESULT.md`.
+
+Results: POC E2E **12 passed**; source suite **798 passed, 0 skipped**;
+bundle parity **789 passed, 0 skipped**. Bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 The preserved untracked `tests/test_suffix_latejoin.py` is excluded and
 untouched. No authorized test broadcast is available: live Grid, current-build

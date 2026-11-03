@@ -492,10 +492,45 @@ displayed-video/AAC PTS aligned to the constructed shared start within one
 checks across POC 0/1/2 and checks all 43 AAC packet PTS values against the
 rational sample clock within one 90 kHz tick; those targeted tests passed
 3/3. This is timestamp mapping evidence, not perceptual sync or drift
-measurement. Full source pytest passed **797/0 skipped** and
-static bundle parity passed **788/0 skipped**. Ruff, format, compileall,
-deterministic bundle check, manifest, and `git diff --check` passed. Production bundle SHA-256 remains
+measurement. At that earlier run, source pytest passed **797/0 skipped** and
+static bundle parity passed **788/0 skipped**. The follow-up run below includes
+one additional harness regression test. Production bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 No authorized SOOP test broadcast is available, so campaign status remains
 **PARTIAL** and Stable remains **NO-GO**; current-build live and live 2 h/6 h
 gates remain NOT TESTED.
+
+## POC-0 B-picture generated-media timeline soak — 2026-11-03
+
+The offline soak helper gained an opt-in `--b-frames` path. It requests
+libx264 Main with B pictures, then checks the emitted SPS is POC Type 0, uses
+FFprobe coded/display order to derive nonnegative Grid composition offsets,
+and requires actual B-picture frames before running the unchanged production
+MediaSink/StreamIO/TS path. The default remains the original no-B POC-2 mode.
+The helper serializes those offsets in the same Parent media-body field; an
+offline unit test covers that field.
+
+Runs on worktree based at `e7a1044450ed0d1552261bc639bfbbd1d2dc6779` with
+production bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`:
+
+| Synthetic media timeline | Wall time | Verified input/output | TS / decode / drain | Resource sample scope |
+|---|---:|---|---|---|
+| 10 min | 32.546 s | POC 0, reorder 1, 3,960 B pictures; 6,000/6,000 VCL AUs; 28,126/28,126 AAC AUs | 203,186 TS packets; continuity/PSI errors 0; PCR max gap 100 ms; full decode and EOF/drain | RSS first/last/peak 165,076/149,184/165,076 KiB; FDs 4/4; threads 2/1 |
+| 30 min | 95.423 s | POC 0, reorder 1, 11,880 B pictures; 18,000/18,000 VCL AUs; 84,376/84,376 AAC AUs | 609,552 TS packets; continuity/PSI errors 0; PCR max gap 100 ms; full decode and EOF/drain | RSS first/last/peak 217,044/204,176/231,808 KiB; FDs 4/4; threads 2/1 |
+| 2 h | 377.871 s | POC 0, reorder 1, 47,520 B pictures; 72,000/72,000 VCL AUs; 337,501/337,501 AAC AUs | 2,438,199 TS packets; continuity/PSI errors 0; PCR max gap 100 ms; full decode and EOF/drain | RSS first/last/peak 218,452/204,624/291,300 KiB; FDs 4/4; threads 2/1 |
+| 6 h | 1,139.226 s | POC 0, reorder 1, 142,560 B pictures; 216,000/216,000 VCL AUs; 1,012,501/1,012,501 AAC AUs | 7,314,591 TS packets; continuity/PSI errors 0; PCR max gap 100 ms; full decode and EOF/drain | RSS first/last/peak 221,704/207,996/468,660 KiB; FDs 4/4; threads 2/1 |
+
+All four were accelerated generated-media timelines (`realtime_paced=false`),
+not wall-clock runs or SOOP/Grid reception. Sampled resources include the
+harness and fixture generation; they are not receiver-only leak measurements.
+The verifier's 21.333 ms decoded coverage-boundary difference is a finite
+track-span metric, not source-clock drift or perceptual synchronization. The
+six-hour result adds long POC-0 B-frame composition/segment-boundary and coded
+payload identity evidence, but does not satisfy the live 6 h release gate.
+
+Final offline validation for this follow-up: source pytest **798 passed, 0
+skipped**; bundle parity **789 passed, 0 skipped**; Ruff check and format,
+compileall, deterministic bundle check, SHA-256 manifest, and `git diff
+--check` passed. The bundle is unchanged at
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

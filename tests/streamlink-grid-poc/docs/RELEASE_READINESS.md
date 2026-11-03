@@ -53,6 +53,13 @@ available. Live and live-duration release gates remain untested.
 
 ## Latest offline candidate — 2026-11-03
 
+An additional offline harness mode generated POC-0 B-frame media and passed
+accelerated 10 min, 30 min, 2 h and 6 h MediaSink/StreamIO/TS runs with exact
+VCL/AAC identity, complete FFmpeg decode and EOF/drain. This improves reordered
+offline timeline coverage only. It does not alter the Stable gate: exact-build
+SOOP live reception, source-relative sync, live recovery, and live/wall-clock
+2 h/6 h remain NOT TESTED.
+
 H.264 V16 SEI envelope regressions were added for opaque payload types 213–215
 and malformed lengths. These test common framing and byte preservation only;
 the new H.274/VSEI metadata semantics are not interpreted. No production

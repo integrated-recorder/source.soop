@@ -23,6 +23,11 @@ network pacing, authentication, Parent/Cache recovery, controlled failures,
 real-time A/V drift, or hours of wall-clock resource behavior. Its synthetic
 timeline duration must not be counted as a live endurance stage.
 
+An optional POC-0 B-frame generated-media mode has now completed accelerated
+10 min/30 min/2 h/6 h timelines through the production sink/output path. This
+adds reordered-picture continuity evidence; it remains distinct from each
+wall-clock or SOOP/Grid stage below.
+
 ## Gates and stages
 
 1. **Offline compatibility smoke (15–30 s fixtures):** risk-based combinations covering POC 0/1/2, B/no-B, AAC 44.1/48 kHz, quality profiles, normal EOF and StreamIO drain. Validate actual SPS, AU identity, TS continuity/PSI/PCR, FFprobe and full decode. Keep parser-negative fixtures separate.

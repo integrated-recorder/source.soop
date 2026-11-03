@@ -9,7 +9,13 @@ from types import SimpleNamespace
 import pytest
 
 from soop_grid.protocol import Cancelled
-from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _pace_until, _remaining_timeout, _run
+from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _body, _pace_until, _remaining_timeout, _run
+
+
+def test_offline_soak_parent_body_serializes_composition_offset():
+    body = _body(b"fixture-vcl", "P", 7, 123_456_789, composition=234_567)
+    assert int.from_bytes(body[57:61], "little") == 234_567
+    assert body[69:] == b"fixture-vcl"
 
 
 def test_offline_soak_uses_one_global_subprocess_deadline():
