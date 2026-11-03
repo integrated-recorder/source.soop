@@ -7,7 +7,7 @@
 * Bundle `dist/soop_grid.py` SHA-256: `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`
 * Linux x86_64, Python 3.12.3, Streamlink 8.6.2
 * FFmpeg/FFprobe available to this run: 6.1.1 (Ubuntu build), with libx264; not the 9.0.2 documented by earlier validation reports
-* Available filesystem space at inspection: approximately 198 GB
+* Available filesystem space before live tests: approximately 198 GB
 
 ## Offline verification performed
 
@@ -30,21 +30,23 @@ The project-local alternate FFmpeg executable could not be launched because its 
 
 ## Live and endurance stages
 
-No new self-broadcast or authorized live session was run in this environment. No SOOP test target/credentials were configured in the process environment at inspection. This records the current execution boundary only; historical short self-broadcast evidence is preserved in `POC_GRID_LIVE_VALIDATION.md` under bundle SHA `e1a1433b…`, and must not be transferred to this candidate.
+The first environment check looked only for process environment variables and incorrectly concluded that no test credentials were configured. A later permissions-safe check found the user's existing mode-0600 test configuration outside the repository; it was used only by the private harness, with values kept out of logs and reports. The user also confirmed an authorized test broadcast. The exact bundle hash above was copied into the isolated receiver plugin for the following tests.
 
-| Stage | Current exact candidate |
-|---|---|
-| Offline smoke | VERIFIED by source/bundle suites for their synthetic cases; not a live claim |
-| Live 15–30 s | NOT_TESTED |
-| 10 min | NOT_TESTED |
-| 30 min | NOT_TESTED on this candidate |
-| 2 h | NOT_TESTED on this candidate |
-| 6 h | NOT_TESTED on this candidate |
-| Endurance with controlled failures | NOT_TESTED on this candidate |
-| Current-build source-relative sync/resource trend | NOT_TESTED |
+| Stage | Outcome | Evidence / scope |
+|---|---|---|
+| Offline smoke | PASS | Source and bundle suites listed above; synthetic cases only. |
+| Live 120 s pilot | PASS | Self-owned synthetic broadcast; exact bundle; 7,457 VCL / 5,808 AAC AUs form contiguous byte-identical source intervals; SPS/PPS identical; 7,371 pictures fully decoded; B pictures present; TS and timestamp checks pass. Source continued beyond receiver cutoff; event misses are proven right-censored tail only. |
+| 10 min | PASS — receiver capture; publisher cleanup disclosed | Exact bundle; receiver exit 0 at 600 s; H.264 High, 1920×1080, POC type 0, B pictures; 36,284 VCL / 28,344 AAC AUs match contiguous source intervals; SPS/PPS identical; full TS/FFmpeg validation pass. 1,052,629 TS packets, continuity/PSI CRC/PCR regression errors 0, max PCR delta 17 ms, DTS regression 0. A/V 240 common events, added offset median 0.333 ms, max/p95 0.667 ms, measured drift 0.224 ppm over 602.3 s. |
+| Looped-source seam smoke | REJECTED as an endurance fixture | RTMP input loop had a 4 ms audio timestamp overlap in the local reference and a 20.667 ms A/V offset jump at the seam despite Grid sequence continuity. Not attributed to the receiver. |
+| 30 min | PASS WITH MEASURED EDGE LIMITS | Exact bundle; authorized self-owned non-looping 1080p60 H.264 B-frame + AAC-LC 48 kHz stereo broadcast; receiver and publisher exit 0; 1,800.24 s, StreamIO drain complete, emitted/read/accepted bytes equal (590,853,840), discarded/unaccepted 0. Grid sequence gaps/discontinuities 0; one Parent, no failover/recovery. Source/Grid contiguous identity: 108,115 VCL and 84,456 AAC AUs; SPS/PPS equal. Output TS: 3,144,607 packets, 3,602 valid PSI sections; 108,035 video PES / 3,519 audio PES; TS continuity, PSI CRC, PCR regressions, DTS regressions, duplicate PTS and PTS/DTS mismatches 0. Full FFmpeg H.264/AAC decode passes for 1,800.62 s video and 1,801.73 s audio. Independent TS/PES checker passes. First 80 captured video preroll chunks (492,902 bytes, before decodable IDR) are excluded; no interior/suffix coded video bytes are excluded. |
+| 30 min A/V event sync | PASS FOR COMMON OVERLAP; strict full-edge gate not met | 1,929 common controlled flash/click events across 1,799.167 s; added offset median 0.333 ms, max/p95 0.667 ms; fitted drift −0.002615 ppm (−0.00157 ms per 600 s). Matched event IDs are contiguous over captured overlap; initial source event IDs 0–1 (video) / 0 (audio) precede receiver coverage and the finite source has a censored tail. Audio onset detector found 11 unmatched observed onsets versus 16 in the source/reference detector baseline; treated as detector artifacts, not hidden media loss, because AAC AUs are byte-identical. The original strict `validation-gate.json` remains `passed=false` due edge/detector coverage conditions; overlap timing metrics meet limits. |
+| 2 h | NOT_TESTED — unavailable | User confirmed no test broadcast is currently available; remaining work is offline-only. |
+| 6 h | NOT_TESTED — unavailable | User confirmed no test broadcast is currently available; remaining work is offline-only. |
+| Endurance with controlled failures | NOT_TESTED | Clean 10 min run had no failover/recovery event, so recovery is not evidenced. |
+| Source-relative sync/resource trend | VERIFIED_FOR_30_MIN_CLEAN_RUN | 361 samples / 5 s: RSS peak 59,364 KiB; FD peak 13; threads peak 3; 195.58 CPU seconds over 1,800.24 s. No recovery/failover event occurred in this clean run. |
 
 Prior long-run and 30-minute reports concern other bundle hashes. They are useful historical evidence but do not pass the exact-candidate release gate.
 
 ## Result
 
-This candidate passes the executed offline regression gates. It has no new production-code change from this campaign; the changes are compatibility documentation corrections and a staged validation plan. The candidate is **not Stable-ready** because current-hash live, A/V sync, controlled-live-recovery, 2-hour and 6-hour tests were not run.
+This candidate passes the executed offline regression gates and has passed 120 s, 600 s, and 1,800 s authorized synthetic self-broadcast captures on the exact bundle. The 30 min receiver and publisher both exited cleanly. Coded media identity, TS/PES, independent timestamps, full decoding, EOF/drain, and source-relative A/V timing over the common event interval passed. Startup/finite-capture event edges remain measured exclusions; the strict full-coverage A/V gate is not green. No production code changed. The user has since confirmed no further test broadcast is currently available, so 2 h, 6 h, and controlled-failure live endurance remain untested. Stable remains **NO-GO**.

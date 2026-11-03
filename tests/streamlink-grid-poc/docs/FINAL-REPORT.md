@@ -1,3 +1,52 @@
+# Comprehensive compatibility campaign — 2026-11-03 final update
+
+This update applies to code candidate `b070755ed1f1593714575c3813ace1bc64da221e`
+and bundle SHA-256
+`5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`.
+Documentation-only commits may advance Git HEAD without changing the tested
+bundle.
+
+* Offline: source 764 passed / 2 optional `libopenh264` skips; bundle 755 passed
+  / 2 skips. Ruff, format, compileall, deterministic bundle/SHA, Streamlink
+  8.6.2 plugin discovery and diff checks passed. The pre-existing untracked
+  `tests/test_suffix_latejoin.py` remains untouched and uncommitted.
+* Exact-bundle authorized synthetic self-broadcast: 120 s, 600 s and 1,800 s
+  receiver runs exited cleanly. The 30 min receiver and publisher both exited
+  0; EOF/drain completed with 590,853,840 emitted/read/accepted bytes and zero
+  discarded/unaccepted bytes.
+* The 30 min capture contains H.264 High 1920x1080 60 fps, POC type 0, B
+  pictures, and AAC-LC 48 kHz stereo. Source/Grid identity has a contiguous
+  match for 108,115 VCL NAL units and 84,456 AAC AUs; SPS/PPS sets are equal.
+  Grid sequence gaps, duplicates, missing frames, Cache recovery failures,
+  Parent failover attempts, and continuity discontinuities are zero.
+* Full 3,144,607-packet TS validation passed: 3,602 PSI sections CRC-valid,
+  108,035 video PES, 3,519 audio PES, zero TS continuity/PSI CRC/PCR regression,
+  zero PTS/DTS mismatch, duplicate video PTS or non-increasing DTS. FFmpeg
+  decoded the entire 1,800.62 s video and 1,801.73 s AAC output without errors;
+  an independent Grid-wire/TS/PES checker also passed. It measured 80 captured
+  pre-IDR video preroll chunks (492,902 bytes) as prefix exclusions; no interior
+  or suffix video chunks were excluded.
+* Source-relative A/V marker timing over 1,929 common events / 1,799.167 s:
+  added offset median 0.333 ms, max and p95 0.667 ms, estimated slope
+  −0.002615 ppm. This is an overlap result, not perceptual monitoring. The
+  strict full-edge gate remains false: the capture begins after source events
+  0–1 (video) / 0 (audio), the finite capture censors the source tail, and the
+  onset detector has 11 extra observed audio candidates versus 16 in its
+  source-reference baseline. No interior event-ID gap was found in the matched
+  overlap. The raw gate was not overwritten or represented as a strict PASS.
+* Resource sampling every 5 s for 1,800.24 s (361 samples): RSS peak 59,364 KiB,
+  FD peak 13, thread peak 3, CPU 195.58 s. No failover/recovery occurred, so
+  this is a clean-run stability result, not recovery proof.
+* The user confirmed no additional authorized test broadcast is currently
+  available; remaining work is offline-only. 2 h, 6 h, and controlled-failure
+  endurance are NOT TESTED. POC 1 live B pictures, MMCO 5, arbitrary broadcast
+  compatibility, and the exact V3/V5/V8 inputs remain outside this run.
+
+**Campaign: PARTIAL. Stable: NO-GO.** The 30 min exact-bundle clean run is
+substantive evidence, but it cannot replace the unrun 2 h / 6 h / failure
+stages. See `ENDURANCE_RESULT.md`, `COMPATIBILITY_MATRIX.md`, and
+`RELEASE_READINESS.md`.
+
 # H.264 POC types 0/1/2: compatibility result
 
 ## Outcome
