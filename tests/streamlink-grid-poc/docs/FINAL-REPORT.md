@@ -25,8 +25,13 @@ DPB/reference-list/HRD text or every minor correction. See
   parser either accepts or returns its documented `GridError`; it produced no
   unexpected exception. This is bounded near-valid mutation testing, not
   coverage-guided fuzzing or bitstream conformance proof.
+* A third fixed-seed test mutates 1–4 bytes in 1,024 variants of eight real
+  FFmpeg-generated ADTS frames. Accepted parses preserve exact frame
+  concatenation, bounded frame count, sample totals and rational duration;
+  malformed inputs use `GridError`. This checks framing arithmetic, not AAC
+  payload decoding or CRC validity.
 * Changes are tests and documentation only; production source and bundle are
-  unchanged. Full source: **782 passed, 0 skipped**; bundled parity: **773
+  unchanged. Full source: **783 passed, 0 skipped**; bundled parity: **774
   passed, 0 skipped**. The source count includes the 9 single-file construction
   tests. Bundle SHA-256 remains
   `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

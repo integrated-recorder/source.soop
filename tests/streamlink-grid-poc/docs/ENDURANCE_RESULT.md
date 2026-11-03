@@ -88,6 +88,18 @@ full source suite passed **782 tests** and the bundled parity suite passed
 coverage-guided fuzzing or semantic conformance proof. Production source and
 bundle remain unchanged. The tested tree was based on `ee61fae6884371c247cfeb1ecb431854bfd6ac92`.
 
+## Near-valid ADTS framing mutation regression — 2026-11-03
+
+A fixed-seed, 1,024-case test mutates one to four bytes in eight real
+FFmpeg-generated ADTS frames. Every candidate either fails with `GridError` or
+has bounded frame count, exact input reconstruction, consistent raw-sample
+totals and exact rational duration. The test passed; full source and bundle
+regressions now report **783 passed** and **774 passed**, respectively, with no
+skips. The source run includes nine standalone bundle tests. This validates
+framing arithmetic only; it does not validate AAC CRC values or decode mutated
+AAC payloads. Production code and bundle are unchanged; live and endurance
+gates remain untested.
+
 ## Candidate and environment
 
 * Branch: `fix/grid-startup-readiness`

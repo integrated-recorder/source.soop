@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import random
 import shutil
 import subprocess
 
@@ -478,6 +479,32 @@ def test_pre_idr_audio_chunk_is_preserved_when_its_tail_overlaps_video(tone_aac,
 def test_standalone_parser_strict_boundaries(bad):
     with pytest.raises(GridError):
         parse_adts(bad)
+
+
+def test_seeded_near_valid_adts_mutations_keep_parser_results_bounded(tone_aac):
+    rng = random.Random(0x414143)
+    source = b"".join(tone_aac[1][:8])
+    assert len(source) > 56
+
+    for _ in range(1024):
+        candidate = bytearray(source)
+        for position in rng.sample(range(len(candidate)), rng.randint(1, 4)):
+            candidate[position] = rng.randrange(256)
+        payload = bytes(candidate)
+        try:
+            parsed = parse_adts(payload)
+        except GridError:
+            continue
+
+        assert parsed.frames
+        assert len(parsed.frames) <= len(payload) // 7
+        assert sum(len(frame.data) for frame in parsed.frames) == len(payload)
+        assert sum(frame.core_samples for frame in parsed.frames) == parsed.core_samples
+        assert parsed.duration_seconds == sum(
+            (Fraction(frame.core_samples, frame.config.sample_rate) for frame in parsed.frames),
+            Fraction(0),
+        )
+        assert b"".join(frame.data for frame in parsed.frames) == payload
 
 
 @pytest.mark.parametrize("blocks", [1, 2, 3, 4])
