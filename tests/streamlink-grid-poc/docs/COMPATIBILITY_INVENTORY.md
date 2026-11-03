@@ -1,6 +1,6 @@
 # Native Grid compatibility inventory
 
-Base audit scope: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`. Supplemental offline candidate: bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`; it corrects MMCO-5 POC reset state and adds all-three-POC StreamIO/decode fixtures. Current code/test evidence is read with that supplement. This is a code/test inventory, not a claim of broad live compatibility. The exact community V3/V5/V8 inputs are not available.
+Base audit scope: `b070755ed1f1593714575c3813ace1bc64da221e`, bundle SHA-256 `5c1657d5eb317c5cd93a03e358046c4dbefcf0b47f343195f07fda0ad3901d17`. Supplemental offline candidate: source commit `c149834f6ad98cdaac52b6559b5067e09efa4fcf`, bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`; it corrects MMCO-5 POC reset state and adds all-three-POC StreamIO/decode fixtures. Current code/test evidence is read with that supplement. This is a code/test inventory, not a claim of broad live compatibility. The exact community V3/V5/V8 inputs are not available.
 
 ## Classification
 

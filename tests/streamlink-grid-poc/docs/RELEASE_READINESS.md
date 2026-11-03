@@ -3,6 +3,7 @@
 ## Current offline candidate
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
+* Candidate source commit: `c149834f6ad98cdaac52b6559b5067e09efa4fcf` (pushed).
 * Bundle SHA-256: `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`.
 * This candidate fixes the MMCO-5 POC reset state for the tested frame-coded subset and adds independent synthetic POC 0/1/2 StreamIO, TS, payload identity and decode tests.
 

@@ -1,6 +1,7 @@
 # Current offline candidate supplement — 2026-11-03
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
+* Candidate source commit: `c149834f6ad98cdaac52b6559b5067e09efa4fcf` (pushed to origin).
 * Candidate bundle: `dist/soop_grid.py`, SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`.
 * Environment: Linux x86_64, Python 3.12.3, Streamlink 8.6.2, FFmpeg/FFprobe 6.1.1 with libx264.
 * Source tests: **771 passed, 0 skipped** (`tests/test_suffix_latejoin.py` excluded and preserved). Bundle tests against the final regenerated bundle: **762 passed, 0 skipped** (47.12 s).

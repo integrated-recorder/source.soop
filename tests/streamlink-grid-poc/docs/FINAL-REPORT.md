@@ -1,6 +1,6 @@
 # Current offline compatibility update — 2026-11-03
 
-This supplement applies to bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`, built from the working changes based on `b070755ed1f1593714575c3813ace1bc64da221e`. The older campaign report below remains artifact-scoped and is not overwritten.
+This supplement applies to source commit `c149834f6ad98cdaac52b6559b5067e09efa4fcf` and bundle SHA-256 `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`, based on `b070755ed1f1593714575c3813ace1bc64da221e`. The older campaign report below remains artifact-scoped and is not overwritten.
 
 * Corrected H.264 POC Type 0 MMCO-5 state: after the current picture's order counts are normalized, the next picture uses prior `PicOrderCnt` state `(MSB, LSB)=(0,0)`. Types 1/2 reset prior frame-number/offset state. Duplicate MMCO-5 operations in one marking list fail closed.
 * Added generated, independently decoded MMCO-5 bitstreams for POC 0/1/2 in a narrow progressive CAVLC/no-B/one-reference subset. All pass production MediaSink/StreamIO/MPEG-TS, preserve VCL NAL bytes, fully decode and drain EOF. This is offline subset evidence only; no live broadcast was available.
