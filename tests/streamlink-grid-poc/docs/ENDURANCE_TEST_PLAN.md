@@ -11,9 +11,12 @@ EOF/drain, byte accounting, VCL/AAC identity, TS structure and FFmpeg decode.
 The tool bounds duration to 360 media minutes in chunks of at most 10 minutes,
 each generated chunk to 512 MiB, aggregate generated input to 2 GiB, output to
 2 GiB, and all fixture generation, StreamIO reading and verification under
-one caller-specified wall-clock deadline (at most 3,600 seconds). Temporary
+one caller-specified wall-clock deadline (at most 28,800 seconds). Temporary
 files are automatically removed. The six-hour synthetic run uses one
-continuous StreamIO session across all chunks.
+continuous StreamIO session across all chunks. `--realtime` optionally paces
+synthetic media events against their media timestamps and samples RSS, open
+FDs and thread count every 30 seconds. This exercises wall-clock pacing in the
+local MediaSink/StreamIO pipeline; it still does not create Grid network input.
 
 This is supplementary offline validation only. It does not exercise SOOP,
 network pacing, authentication, Parent/Cache recovery, controlled failures,

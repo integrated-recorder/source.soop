@@ -297,3 +297,38 @@ This is accelerated synthetic media-time validation, not live or six-hour
 wall-clock endurance. Live 2 h/6 h, real-time sync, Parent/Cache network
 recovery and controlled live failures remain NOT_TESTED; Stable remains
 **NO-GO**.
+
+## Wall-clock-paced offline smoke — 2026-11-03
+
+The soak helper gained an opt-in `--realtime` mode. It waits against the
+synthetic Grid timestamps through the existing receiver cancellation event;
+the output remains offline-generated media and exercises no SOOP or Parent
+network. A 60-second POC-2/no-reorder 320x180 Baseline + AAC-LC 48 kHz mono
+smoke completed in **62.798 s**. It preserved 600/600 video AUs and
+2,814/2,814 AAC AUs, produced 20,384 TS packets, had zero TS continuity and
+PSI CRC errors, maximum PCR value gap 100 ms, and passed full FFmpeg decode,
+StreamIO byte accounting, EOF and drain. Peak StreamIO buffer was 13,536 B.
+The sampled process RSS was 53,248 / 52,708 / 53,248 KiB (first/last/peak);
+sampled FD count was 7 / 4 / 7 with process FD count 4 before and after; and
+sampled thread count was 2 / 1 / 2. These process samples include the test
+harness and transient file/worker activity and are only a one-minute smoke,
+not evidence of long-term leak stability. The synthetic decoded boundary
+coverage delta was 32 ms; the validator classifies it as boundary coverage,
+not source-clock drift or perceptual synchronization.
+
+The 60-second run verified pacing and cancellation wiring only. It does not
+upgrade the earlier accelerated six-hour media timeline to wall-clock
+endurance and does not replace live Grid tests. Current-source 2 h/6 h
+wall-clock runs, live A/V marker sync, Parent/Cache recovery over SOOP, and
+live controlled-failure endurance remain **NOT TESTED** because the user
+confirmed no test broadcast is available. Stable remains **NO-GO**.
+
+The paced-runner follow-up was tested from base commit
+`8ee10fc427f33b4f90aca4dd09638cb77cc8cbed`; only the offline soak helper,
+its helper tests, and this report/plan changed. Source pytest: **793 passed,
+0 skipped**; static-bundle parity: **784 passed, 0 skipped**. Ruff check,
+tracked project Python Ruff format, compileall, deterministic bundle check,
+manifest verification, and `git diff --check` passed. Production bundle bytes
+remain unchanged at SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+`tests/test_suffix_latejoin.py` was excluded, left untouched, and unstaged.

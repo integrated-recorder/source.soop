@@ -18,6 +18,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from types import SimpleNamespace
 
@@ -30,7 +31,7 @@ from soop_grid.aac import MAX_ADTS_BYTES, MAX_ADTS_FRAMES, parse_adts  # noqa: E
 from soop_grid.h264clock import parse_sps  # noqa: E402
 from soop_grid.media import MediaSink  # noqa: E402
 from soop_grid.mpegts import nals  # noqa: E402
-from soop_grid.protocol import Frame, GridError  # noqa: E402
+from soop_grid.protocol import Cancelled, Frame, GridError  # noqa: E402
 from soop_grid.stream import SoopGridReader, validate_media_output  # noqa: E402
 from tools.verify_recording import verify  # noqa: E402
 
@@ -237,7 +238,29 @@ def _fd_count():
         return None
 
 
-def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
+def _resource_sample():
+    return {
+        "rss_kib": _rss_kib(),
+        "fd_count": _fd_count(),
+        "thread_count": threading.active_count(),
+    }
+
+
+def _pace_until(network, wall_start, media_timestamp, deadline):
+    target = wall_start + max(0, media_timestamp - BASE_TIMESTAMP) / 10_000_000
+    delay = target - time.monotonic()
+    if delay <= 0:
+        return
+    remaining = _remaining_timeout(deadline)
+    if delay >= remaining:
+        if network.stop.wait(remaining):
+            raise Cancelled("offline_soak_cancelled")
+        raise subprocess.TimeoutExpired("offline_media_soak", timeout=0)
+    if network.stop.wait(delay):
+        raise Cancelled("offline_soak_cancelled")
+
+
+def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False):
     if not 1 <= minutes <= 360:
         raise ValueError("timeline_duration_invalid")
     duration = minutes * 60
@@ -360,6 +383,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             stats.update(sink.stats)
             sink.stats = stats
             video_index = audio_index = frame_number = 0
+            media_wall_start = time.monotonic()
             try:
                 with (
                     audio_path.open("rb") as source,
@@ -395,6 +419,8 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
                                 chunk_audio_index += 1
                                 audio_index += 1
                             frame_number += 1
+                            if realtime:
+                                _pace_until(_network, media_wall_start, timestamp, deadline)
                             sink.add(Frame(0xC748, _body(payload, kind, frame_number, timestamp)))
                         del video_aus, audio_frames
                 sink.close()
@@ -407,7 +433,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
 
         reader = SoopGridReader(stream, runner=runner)
         before_fds = _fd_count()
-        rss_samples = []
+        resource_samples = []
         output_bytes = 0
         reader.open()
         try:
@@ -421,8 +447,9 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
                     if output_bytes > output_cap:
                         raise RuntimeError("soak_output_limit")
                     output.write(block)
-                    if not rss_samples or time.monotonic() - rss_samples[-1][0] >= 1:
-                        rss_samples.append((time.monotonic(), _rss_kib()))
+                    now = time.monotonic()
+                    if not resource_samples or now - resource_samples[-1][0] >= 30:
+                        resource_samples.append((now, _resource_sample()))
         finally:
             reader.close()
 
@@ -483,13 +510,21 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
             raise RuntimeError("soak_aac_identity_mismatch")
 
         after_fds = _fd_count()
+        resource_samples.append((time.monotonic(), _resource_sample()))
         if before_fds is not None and after_fds != before_fds:
             raise RuntimeError("soak_fd_delta")
         elapsed = round(time.monotonic() - started, 3)
-        rss_values = [sample[1] for sample in rss_samples if sample[1] is not None]
+        rss_values = [sample[1]["rss_kib"] for sample in resource_samples if sample[1]["rss_kib"] is not None]
+        fd_values = [
+            sample[1]["fd_count"] for sample in resource_samples if sample[1]["fd_count"] is not None
+        ]
+        thread_values = [sample[1]["thread_count"] for sample in resource_samples]
         return {
             "verdict": "pass",
-            "scope": "generated_media_timeline_not_live_or_realtime",
+            "scope": "offline_generated_media_realtime_paced"
+            if realtime
+            else "generated_media_timeline_not_live_or_realtime",
+            "realtime_paced": realtime,
             "timeline_seconds": duration,
             "elapsed_wall_seconds": elapsed,
             "generated_input_bytes": generated_input_bytes,
@@ -521,7 +556,14 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap):
                 "decoded_av": validation["decoded_av"],
                 "streamio_eof_drain": True,
                 "peak_buffer_bytes": reader.buffer.peak_bytes,
-                "rss_sample_peak_kib": max(rss_values) if rss_values else None,
+                "resource_samples": len(resource_samples),
+                "rss_kib_first_last_peak": [rss_values[0], rss_values[-1], max(rss_values)]
+                if rss_values
+                else None,
+                "fd_count_first_last_peak": [fd_values[0], fd_values[-1], max(fd_values)]
+                if fd_values
+                else None,
+                "thread_count_first_last_peak": [thread_values[0], thread_values[-1], max(thread_values)],
                 "fd_count_before_after": [before_fds, after_fds],
             },
         }
@@ -534,11 +576,16 @@ def main():
     parser.add_argument("--ffprobe", default=os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe"))
     parser.add_argument("--timeout", type=float, default=900)
     parser.add_argument("--max-output-mib", type=int, default=512, choices=range(1, 2049))
+    parser.add_argument(
+        "--realtime",
+        action="store_true",
+        help="pace synthetic Grid media in wall-clock time; not a live SOOP test",
+    )
     args = parser.parse_args()
     if not args.ffmpeg or not args.ffprobe:
         parser.error("FFmpeg and FFprobe are required")
-    if not 1 <= args.timeout <= 3600:
-        parser.error("timeout must be in 1..3600 seconds")
+    if not 1 <= args.timeout <= 28800:
+        parser.error("timeout must be in 1..28800 seconds")
     try:
         summary = run(
             args.minutes,
@@ -546,6 +593,7 @@ def main():
             args.ffprobe,
             args.timeout,
             args.max_output_mib << 20,
+            args.realtime,
         )
     except (GridError, OSError, RuntimeError, StreamError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({"verdict": "fail", "error": "offline_media_soak_failed"}))

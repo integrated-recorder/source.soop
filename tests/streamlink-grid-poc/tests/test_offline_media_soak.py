@@ -2,11 +2,14 @@
 # Copyright (c) 2026 source.soop contributors
 import subprocess
 import sys
+import threading
 import time
+from types import SimpleNamespace
 
 import pytest
 
-from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _remaining_timeout, _run
+from soop_grid.protocol import Cancelled
+from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _pace_until, _remaining_timeout, _run
 
 
 def test_offline_soak_uses_one_global_subprocess_deadline():
@@ -32,3 +35,34 @@ def test_offline_soak_kills_child_at_global_deadline(tmp_path):
 
 def test_offline_soak_chunks_fixture_to_bound_peak_input_working_set():
     assert MAX_SEGMENT_MINUTES == 10
+
+
+def test_realtime_pacing_wait_is_cancellable():
+    network = SimpleNamespace(stop=threading.Event())
+    deadline = time.monotonic() + 2
+    errors = []
+
+    def wait_for_media_time():
+        try:
+            _pace_until(network, time.monotonic(), 50_000_000 + 10_000_000, deadline)
+        except BaseException as error:
+            errors.append(error)
+
+    worker = threading.Thread(target=wait_for_media_time)
+    worker.start()
+    time.sleep(0.05)
+    network.stop.set()
+    worker.join(1)
+    assert not worker.is_alive()
+    assert len(errors) == 1 and isinstance(errors[0], Cancelled)
+
+
+def test_realtime_pacing_obeys_global_deadline():
+    network = SimpleNamespace(stop=threading.Event())
+    with pytest.raises(subprocess.TimeoutExpired):
+        _pace_until(
+            network,
+            time.monotonic(),
+            50_000_000 + 10_000_000,
+            time.monotonic() + 0.01,
+        )
