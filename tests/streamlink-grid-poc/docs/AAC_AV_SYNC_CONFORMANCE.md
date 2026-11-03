@@ -20,6 +20,8 @@ Current offline E2E interleaves 43 AAC-LC AUs at 44.1 kHz stereo with each 30-fr
 
 The current Parent-wire E2E additionally probes every MPEG-TS packet on all three generated POC types. It verifies increasing video DTS, unique video PTS, increasing AAC PTS, and that the first displayed video and first AAC PTS each match the constructed shared start within one 90 kHz clock tick. This is a deterministic timestamp mapping check, not an audio-click/video-flash perceptual sync measurement, not source-relative live sync, and not evidence of long-run drift.
 
+The separate 44.1 kHz stereo AAC E2E now applies the same packet-level clock assertions across POC 0/1/2; all three targeted tests pass. It checks the represented 90 kHz timestamps and does not measure acoustic event alignment.
+
 ## Required follow-up
 
 For an authorized self-broadcast, insert numbered audio clicks and video flashes at a known cadence; retain a bounded source reference and output for the same interval. Report initial offset, additional offset, maximum and p95 offset, fitted drift (ppm), missing markers and uncertainty. Require the exact test Bundle SHA, same capture interval and complete decode before interpreting the result. Do not infer long-term sync from one short sample or track-span coverage alone.

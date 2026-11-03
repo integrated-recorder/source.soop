@@ -488,8 +488,9 @@ protocol fault injection, not an SOOP service or live recovery test.
 The POC E2E module passed **12 tests**. FFprobe packet checks also confirmed
 increasing video DTS, unique video PTS, increasing AAC PTS, and the first
 displayed-video/AAC PTS aligned to the constructed shared start within one
-90 kHz tick for each type. This is timestamp mapping evidence, not perceptual
-sync or drift measurement. Full source pytest passed **797/0 skipped** and
+90 kHz tick for each type. The separate 44.1 kHz stereo path has the same
+checks across POC 0/1/2; those targeted tests passed 3/3. This is timestamp
+mapping evidence, not perceptual sync or drift measurement. Full source pytest passed **797/0 skipped** and
 static bundle parity passed **788/0 skipped**. Ruff, format, compileall,
 deterministic bundle check, manifest, and `git diff --check` passed. Production bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

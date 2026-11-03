@@ -14,6 +14,10 @@ increasing, and both tracks start within one 90 kHz tick of their synthetic
 shared-origin target for POC 0/1/2. This does not establish perceptual sync or
 live drift.
 
+The 44.1 kHz stereo AAC path has the same packet-level PTS/DTS checks for
+POC 0/1/2; its three targeted tests pass. Both checks are synthetic clock
+validation only.
+
 | Feature | Offline | Grid E2E | 30 min | 2 h | 6 h | Current exact-candidate status |
 |---|---|---|---|---|---|---|
 | POC 0 progressive subset | VERIFIED; current candidate includes MMCO5 offline fixture | Historical exact-bundle 120 s/600 s/1,800 s runs on the prior candidate; B pictures and contiguous source/Grid VCL identity | Historical prior-bundle 1,800 s capture PASS; full TS/decode pass | NOT_TESTED | NOT_TESTED | VERIFIED_FOR_SUBSET; current candidate MMCO5 subset is offline-only |

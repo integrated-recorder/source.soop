@@ -382,6 +382,9 @@ increase, video PTS are distinct, and video/audio starts meet the constructed
 common timestamp within one 90 kHz tick for all three types. This does not
 measure perceptual sync or source-relative drift.
 
+Equivalent packet-level assertions now cover the 44.1 kHz stereo AAC path on
+all three POC types; the focused tests pass 3/3.
+
 Results: POC E2E **12 passed**; source suite **797 passed, 0 skipped**;
 bundle parity **788 passed, 0 skipped**. Bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

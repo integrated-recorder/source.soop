@@ -612,7 +612,7 @@ def test_poc_type_streamio_44100_stereo_aac_identity_and_decode(generated_poc_st
             ffprobe,
             "-count_frames",
             "-show_entries",
-            "stream=codec_name,width,height,nb_read_frames,sample_rate,channels",
+            "stream=index,codec_name,width,height,nb_read_frames,sample_rate,channels",
             "-of",
             "json",
             ts_path,
@@ -623,6 +623,32 @@ def test_poc_type_streamio_44100_stereo_aac_identity_and_decode(generated_poc_st
     assert (video["width"], video["height"], int(video["nb_read_frames"])) == (320, 180, 30)
     assert int(audio_stream["sample_rate"]) == 44100 and int(audio_stream["channels"]) == 2
     _run(ffmpeg, "-xerror", "-i", ts_path, "-f", "null", "-")
+
+    packet_rows = json.loads(
+        _run(
+            ffprobe,
+            "-v",
+            "error",
+            "-show_packets",
+            "-show_entries",
+            "packet=stream_index,pts,dts",
+            "-of",
+            "json",
+            ts_path,
+        )
+    )["packets"]
+    video_packets = [row for row in packet_rows if row["stream_index"] == video["index"]]
+    audio_packets = [row for row in packet_rows if row["stream_index"] == audio_stream["index"]]
+    assert len(video_packets) == 30 and len(audio_packets) == len(audio_frames)
+    video_dts = [int(row["dts"]) for row in video_packets]
+    video_pts = [int(row["pts"]) for row in video_packets]
+    audio_pts = [int(row["pts"]) for row in audio_packets]
+    assert all(right > left for left, right in zip(video_dts, video_dts[1:], strict=False))
+    assert len(set(video_pts)) == len(video_pts)
+    assert all(right > left for left, right in zip(audio_pts, audio_pts[1:], strict=False))
+    expected_common_start = 90_000 + round(lead * FRAME_STEP * 90_000 / 10_000_000)
+    assert abs(min(video_pts) - expected_common_start) <= 1
+    assert abs(min(audio_pts) - expected_common_start) <= 1
 
     recovered_video = tmp_path / f"poc{poc_type}-44100-video.h264"
     _run(ffmpeg, "-y", "-i", ts_path, "-map", "0:v:0", "-c", "copy", "-f", "h264", recovered_video)
