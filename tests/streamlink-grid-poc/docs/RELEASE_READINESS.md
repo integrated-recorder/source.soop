@@ -54,6 +54,10 @@ count. This is not a real-time or live soak. The user currently cannot provide
 an authorized test broadcast, so exact-current-build live, 2-hour, 6-hour and
 controlled-failure stages remain NOT TESTED. **Campaign PARTIAL; Stable NO-GO.**
 
+Additional accelerated 1,800-second synthetic media timeline: PASS for the
+tested POC-2/no-reorder fixture. This is not 30-minute real-time endurance and
+does not establish six-hour process stability.
+
 ## Historical MMCO-5 candidate — superseded
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
