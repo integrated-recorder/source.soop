@@ -11,6 +11,7 @@ import struct
 import subprocess
 import threading
 from types import SimpleNamespace
+from fractions import Fraction
 
 import pytest
 
@@ -649,6 +650,13 @@ def test_poc_type_streamio_44100_stereo_aac_identity_and_decode(generated_poc_st
     expected_common_start = 90_000 + round(lead * FRAME_STEP * 90_000 / 10_000_000)
     assert abs(min(video_pts) - expected_common_start) <= 1
     assert abs(min(audio_pts) - expected_common_start) <= 1
+    audio_origin = BASE + round(lead * 10_000_000 / 30)
+    for index, actual_pts in enumerate(audio_pts):
+        sample_clock_pts = 90_000 + round(
+            Fraction((audio_origin - BASE) * 90_000, 10_000_000)
+            + Fraction(index * 1024 * 90_000, audio.config.sample_rate)
+        )
+        assert abs(actual_pts - sample_clock_pts) <= 1
 
     recovered_video = tmp_path / f"poc{poc_type}-44100-video.h264"
     _run(ffmpeg, "-y", "-i", ts_path, "-map", "0:v:0", "-c", "copy", "-f", "h264", recovered_video)

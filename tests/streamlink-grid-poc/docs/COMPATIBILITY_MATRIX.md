@@ -15,8 +15,9 @@ shared-origin target for POC 0/1/2. This does not establish perceptual sync or
 live drift.
 
 The 44.1 kHz stereo AAC path has the same packet-level PTS/DTS checks for
-POC 0/1/2; its three targeted tests pass. Both checks are synthetic clock
-validation only.
+POC 0/1/2 and verifies all 43 AAC PTS values against the rational sample
+clock within one 90 kHz tick; its three targeted tests pass. These are
+synthetic clock validation checks only.
 
 | Feature | Offline | Grid E2E | 30 min | 2 h | 6 h | Current exact-candidate status |
 |---|---|---|---|---|---|---|
