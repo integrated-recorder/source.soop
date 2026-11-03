@@ -1,6 +1,6 @@
 # H.264 reference, POC, DPB and timing conformance
 
-Audited source: `soop_grid/h264clock.py`, `soop_grid/media.py`. Normative reference: [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S), clauses 7.4.2.1, 7.4.3, 8.2.1, 8.2.5, and Annex C. This is an implementation-subset assessment, not full decoder conformance.
+Audited source: `soop_grid/h264clock.py`, `soop_grid/media.py`. The detailed clause checks below used [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S). ITU now lists [H.264 (06/2026)](https://www.itu.int/rec/T-REC-H.264-202606-I) as the in-force edition. The 2026 revision's delta has not been fully reviewed here, so conformance against the current edition is **UNVERIFIED**. This is an implementation-subset assessment, not full decoder conformance.
 
 ## Production invariants
 
@@ -43,7 +43,7 @@ into an unnecessary rejection.
 
 ## MMCO 5
 
-For frame-coded pictures, H.264 (08/2024) clauses 8.2.1 and 8.2.1.1–8.2.1.3 normalize the current MMCO-5 picture's field order counts by subtracting `PicOrderCnt(CurrPic)`. Subsequent uses of that picture therefore use normalized POC 0. Type 0 also seeds the next reference POC state from the normalized top-field order count (0 for this frame-only subset); Types 1/2 use the post-MMCO frame-number state. Production now applies those resets, starts a new POC comparison epoch at the next picture, and still derives output PTS exclusively from Grid composition. Duplicate MMCO-5 operations in one marking list are rejected under the standard's at-most-one constraint.
+For frame-coded pictures, H.264 (08/2024) clauses 8.2.1 and 8.2.1.1–8.2.1.3 normalize the current MMCO-5 picture's field order counts by subtracting `PicOrderCnt(CurrPic)`. Subsequent uses of that picture therefore use normalized POC 0. Type 0 also seeds the next reference POC state from the normalized top-field order count (0 for this frame-only subset); Types 1/2 use the post-MMCO frame-number state. Production now applies those resets, starts a new POC comparison epoch at the next picture, and still derives output PTS exclusively from Grid composition. Duplicate MMCO-5 operations in one marking list are rejected under the standard's at-most-one constraint. These clause-level conclusions have not yet been checked against the 06/2026 edition.
 
 Evidence is limited to a generated progressive, CAVLC, no-B, one-reference stream with one MMCO-5 reference P picture. Type 0/1/2 variants independently decode to the same frame hashes as the source. Each passes production `MediaSink`→`StreamIO`→MPEG-TS, preserves every VCL NAL, fully decodes with FFmpeg, and drains EOF. This verifies a narrow syntax/state subset, not full DPB/list-management conformance or live Grid behavior. MMCO-5 outside this tested subset, arbitrary reference-management combinations, and live MMCO-5 remain unverified.
 

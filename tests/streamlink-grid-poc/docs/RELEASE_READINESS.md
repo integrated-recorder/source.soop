@@ -11,17 +11,17 @@
 
 **Campaign: PARTIAL. Stable: NO-GO.** This is an offline hardening candidate; it does not replace current-build live or endurance gates.
 
-## Current offline candidate
+## Historical MMCO-5 candidate — superseded
 
 * Base commit: `b070755ed1f1593714575c3813ace1bc64da221e` on `fix/grid-startup-readiness`.
-* Candidate source commit: `c149834f6ad98cdaac52b6559b5067e09efa4fcf` (pushed).
+* Candidate source commit: `c149834f6ad98cdaac52b6559b5067e09efa4fcf` (pushed; historical).
 * Bundle SHA-256: `00af27789d671d5230499c551bbd7c49f27727585b3b6b57faabac05ae886cef`.
 * This candidate fixes the MMCO-5 POC reset state for the tested frame-coded subset and adds independent synthetic POC 0/1/2 StreamIO, TS, payload identity and decode tests.
 
 | Gate | Status | Evidence / gap |
 |---|---|---|
-| Source full regression | PASS | 771 passed, 0 skipped; preserved untracked suffix test excluded |
-| Bundle full regression | PASS | Exact final bundle: 762 passed, 0 skipped; standalone bundle tests: 9 passed |
+| Source full regression | Historical PASS | 771 passed, 0 skipped; preserved untracked suffix test excluded |
+| Bundle full regression | Historical PASS | Candidate bundle: 762 passed, 0 skipped; standalone bundle tests: 9 passed |
 | Ruff / format / compileall / deterministic build | PASS | Changed tracked files formatted; deterministic SHA check and manifest pass; untracked suffix file untouched |
 | MMCO-5 offline | PASS for narrow subset | POC 0/1/2, one progressive no-B/one-reference fixture; independent decode/hash, StreamIO/TS, VCL identity, EOF/drain |
 | MMCO-5 live / arbitrary DPB | NOT TESTED | User confirmed offline-only; no arbitrary reference-list proof |
@@ -31,7 +31,9 @@
 
 ## Decision
 
-**Stable: NO-GO.** This candidate has new offline MMCO-5 evidence but no current-hash live or endurance evidence. The previous 30-minute run is on another bundle, its strict full-edge A/V gate remained false, and 2-hour, 6-hour and controlled live recovery stages are unrun.
+This section records an earlier candidate and its evidence; the latest candidate is documented above. Do not use these counts or bundle hash as current-candidate validation.
+
+**Stable: NO-GO.** This historical candidate had offline MMCO-5 evidence but no matching live or endurance evidence. The previous 30-minute run is on another bundle, its strict full-edge A/V gate remained false, and 2-hour, 6-hour and controlled live recovery stages were unrun.
 
 **Beta: CONDITIONAL** for the previously validated bounded subset. Do not imply live MMCO-5 support, arbitrary H.264/DPB support, or long-run stability from the new synthetic fixture.
 

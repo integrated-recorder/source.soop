@@ -1,6 +1,6 @@
 # H.264 compatibility audit
 
-Normative reference: [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S), especially clauses 7.4.2.1, 7.4.3, 8.1, 8.2.1, 8.2.1.3, 8.2.5.1 and 8.2.5.2.
+Clause review reference: [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S), especially clauses 7.4.2.1, 7.4.3, 8.1, 8.2.1, 8.2.1.3, 8.2.5.1 and 8.2.5.2. ITU lists [H.264 (06/2026)](https://www.itu.int/rec/T-REC-H.264-202606-I) as the current in-force edition; its delta has not been fully reviewed for this audit, so current-edition conformance remains **UNVERIFIED**.
 
 ## Findings
 
