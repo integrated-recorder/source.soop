@@ -257,4 +257,12 @@ live server compatibility, multi-hour resource trends, or Parent/Cache
 recovery. Current-build live, 2-hour, 6-hour and controlled-failure endurance
 remain NOT TESTED. Campaign status is **PARTIAL** and Stable is **NO-GO**.
 
+An additional 1,800-second synthetic media timeline completed in 89.335 wall
+seconds. It preserved 18,000 input/output VCL NALs and 84,376 input/output AAC
+AUs; 609,196 TS packets had zero continuity/PSI CRC errors and a 100 ms maximum
+PCR value gap. Full FFmpeg decode, EOF/drain, output accounting and unchanged
+FD count passed. RSS peaked at 301,156 KiB for the harness that retains and
+parses all generated input media; this is not product-only or long-run leak
+evidence. Live, real-time and 2/6-hour gates are still untested.
+
 # Existing report history

@@ -36,6 +36,12 @@ long-duration test.
 
 **Campaign: PARTIAL. Stable: NO-GO.** This is an offline hardening candidate; it does not replace current-build live or endurance gates.
 
+The generated-media soak was subsequently extended to 1,800 media seconds and
+passed VCL/AAC identity, full decode, TS integrity and StreamIO drain. It ran in
+89.335 wall seconds and is an accelerated POC-2 synthetic test, not 30-minute
+real-time endurance or evidence of a stable six-hour process. The campaign and
+Stable decisions do not change.
+
 ## Offline timeline-soak follow-up — 2026-11-03
 
 Current branch HEAD: `b1adbfc419ce834315ddab3ea864ca3a1cc2d0f6`. The production

@@ -175,12 +175,15 @@ progressive Baseline, POC Type 2, zero reorder.
 |---|---:|---|
 | 60 s | 3.856 s | PASS; 600 video AUs/VCL NALs and 2,814 AAC AUs preserved; 20,384 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 42,112 bytes. |
 | 600 s | 30.401 s | PASS; 6,000 video AUs/VCL NALs and 28,126 AAC AUs preserved; 203,076 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 38,164 bytes. |
+| 1,800 s | 89.335 s | PASS; 18,000 video AUs/VCL NALs and 84,376 AAC AUs preserved; 609,196 TS packets; continuity errors 0; PSI CRC errors 0; max PCR value gap 100 ms; EOF/drain and full FFmpeg decode passed; FD count 4 before/after; StreamIO peak buffer 48,880 bytes. |
 
 Output VCL and ADTS payload identities matched generated inputs. The 600 s
 fixture's FFmpeg coverage-boundary offset change was 21.333 ms; the verifier
 labels this as boundary coverage, not source-clock drift or perceptual sync.
-RSS sampled during the accelerated run peaked at 126,820 KiB, which is not a
-long-duration leak/trend result. The first smoke run exposed a test-tool
+The 1,800 s accelerated harness sampled RSS up to 301,156 KiB; it holds the
+generated elementary streams and parsed AUs in memory, so that figure measures
+the test harness as well as the receiver and is not a receiver leak/trend
+result. The first smoke run exposed a test-tool
 assumption error: libx264 emitted POC Type 2, while the helper expected Type 0
 and used the wrong SPS result key. The helper was corrected to assert the
 observed `poc_type=2`; production code did not change.
