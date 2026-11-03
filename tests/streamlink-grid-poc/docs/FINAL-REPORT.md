@@ -377,6 +377,11 @@ wire-to-StreamIO E2E. Each corrupt AU is rejected as
 only the valid source prefix, no live transition is requested, and sockets
 are closed. Valid controls continue through TS and full FFmpeg decode.
 
+The same test now inspects FFprobe packet timestamps: video DTS and AAC PTS
+increase, video PTS are distinct, and video/audio starts meet the constructed
+common timestamp within one 90 kHz tick for all three types. This does not
+measure perceptual sync or source-relative drift.
+
 Results: POC E2E **12 passed**; source suite **797 passed, 0 skipped**;
 bundle parity **788 passed, 0 skipped**. Bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.

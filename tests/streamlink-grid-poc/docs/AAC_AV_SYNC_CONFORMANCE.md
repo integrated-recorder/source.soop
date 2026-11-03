@@ -18,6 +18,8 @@ Historical short self-broadcast trials recorded exact AAC AU interval identity a
 
 Current offline E2E interleaves 43 AAC-LC AUs at 44.1 kHz stereo with each 30-frame POC 0/1/2 fixture through `MediaSink`, StreamIO and MPEG-TS. Type 0/1 use FFprobe coded/display order to construct composition offsets; Type 2 is zero-reorder. FFprobe reports 44.1 kHz/two channels, all source AAC raw data blocks and video VCL NALs match after demux, full FFmpeg decode succeeds, and EOF/drain accounting matches. This is short synthetic format/transport coverage, not source-relative synchronization or long-duration evidence.
 
+The current Parent-wire E2E additionally probes every MPEG-TS packet on all three generated POC types. It verifies increasing video DTS, unique video PTS, increasing AAC PTS, and that the first displayed video and first AAC PTS each match the constructed shared start within one 90 kHz clock tick. This is a deterministic timestamp mapping check, not an audio-click/video-flash perceptual sync measurement, not source-relative live sync, and not evidence of long-run drift.
+
 ## Required follow-up
 
 For an authorized self-broadcast, insert numbered audio clicks and video flashes at a known cadence; retain a bounded source reference and output for the same interval. Report initial offset, additional offset, maximum and p95 offset, fitted drift (ppm), missing markers and uncertainty. Require the exact test Bundle SHA, same capture interval and complete decode before interpreting the result. Do not infer long-term sync from one short sample or track-span coverage alone.

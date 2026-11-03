@@ -485,9 +485,13 @@ reported complete, `CB2B` is not sent, and the local socket is closed. Valid
 cases retain full decode and coded-media identity checks. This is local
 protocol fault injection, not an SOOP service or live recovery test.
 
-The POC E2E module passed **12 tests**. Full source pytest passed **797/0
-skipped** and static bundle parity passed **788/0 skipped**. Production bundle
-SHA-256 remains
+The POC E2E module passed **12 tests**. FFprobe packet checks also confirmed
+increasing video DTS, unique video PTS, increasing AAC PTS, and the first
+displayed-video/AAC PTS aligned to the constructed shared start within one
+90 kHz tick for each type. This is timestamp mapping evidence, not perceptual
+sync or drift measurement. Full source pytest passed **797/0 skipped** and
+static bundle parity passed **788/0 skipped**. Ruff, format, compileall,
+deterministic bundle check, manifest, and `git diff --check` passed. Production bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 No authorized SOOP test broadcast is available, so campaign status remains
 **PARTIAL** and Stable remains **NO-GO**; current-build live and live 2 h/6 h

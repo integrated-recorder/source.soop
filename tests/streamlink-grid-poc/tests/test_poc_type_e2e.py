@@ -409,7 +409,7 @@ def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, po
             "error",
             "-count_frames",
             "-show_entries",
-            "stream=codec_name,width,height,nb_read_frames,sample_rate,channels",
+            "stream=index,codec_name,width,height,nb_read_frames,sample_rate,channels",
             "-of",
             "json",
             ts_path,
@@ -420,6 +420,32 @@ def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, po
     assert (video["width"], video["height"], int(video["nb_read_frames"])) == (320, 180, 30)
     assert int(audio["sample_rate"]) == 48000 and int(audio["channels"]) == 1
     _run(ffmpeg, "-v", "error", "-xerror", "-i", ts_path, "-f", "null", "-")
+
+    packet_rows = json.loads(
+        _run(
+            ffprobe,
+            "-v",
+            "error",
+            "-show_packets",
+            "-show_entries",
+            "packet=stream_index,pts,dts",
+            "-of",
+            "json",
+            ts_path,
+        )
+    )["packets"]
+    video_packets = [row for row in packet_rows if row["stream_index"] == video["index"]]
+    audio_packets = [row for row in packet_rows if row["stream_index"] == audio["index"]]
+    assert len(video_packets) == 30 and len(audio_packets) == 46
+    video_dts = [int(row["dts"]) for row in video_packets]
+    video_pts = [int(row["pts"]) for row in video_packets]
+    audio_pts = [int(row["pts"]) for row in audio_packets]
+    assert all(right > left for left, right in zip(video_dts, video_dts[1:], strict=False))
+    assert len(set(video_pts)) == len(video_pts)
+    assert all(right > left for left, right in zip(audio_pts, audio_pts[1:], strict=False))
+    expected_common_start = 90_000 + round(lead * FRAME_STEP * 90_000 / 10_000_000)
+    assert abs(min(video_pts) - expected_common_start) <= 1
+    assert abs(min(audio_pts) - expected_common_start) <= 1
 
     recovered = root / f"poc-{poc_type}-demux.h264"
     _run(ffmpeg, "-y", "-v", "error", "-i", ts_path, "-map", "0:v:0", "-c", "copy", "-f", "h264", recovered)
