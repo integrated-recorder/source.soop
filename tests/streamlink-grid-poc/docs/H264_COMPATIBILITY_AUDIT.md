@@ -1,25 +1,31 @@
 # H.264 compatibility audit
 
-Normative reference: ITU-T H.264 (08/2024), especially clauses 7.4.3, 8.1, 8.2.1, 8.2.5.1, and 8.2.5.2: <https://www.itu.int/rec/dologin_pub.asp?id=T-REC-H.264-202408-I%21%21PDF-E&lang=e&type=items>.
+Normative reference: [ITU-T H.264 (08/2024)](https://www.itu.int/rec/T-REC-H.264-202408-S), especially clauses 7.4.2.1, 7.4.3, 8.1, 8.2.1, 8.2.1.3, 8.2.5.1 and 8.2.5.2.
 
 ## Findings
 
-* `_validate_frame_num_progress()` in `soop_grid/h264clock.py` compares the current picture to the successor of the previous reference frame number modulo SPS `MaxFrameNum`. With `gaps_in_frame_num_value_allowed_flag == 0`, non-successors fail closed with `h264_frame_num_gap`; with the flag set, the parser leaves normative gap-picture decoding to the downstream H.264 decoder. This receiver does not synthesize or rewrite coded access units.
-* The parser only accepts frame-coded (non-interlaced) SPS, so the complementary-field exceptions to frame_num progression do not apply to its accepted subset. IDR requires frame_num 0. MMCO5 is parsed and influences POC/reference bookkeeping, but is rejected by the production timing subset until its complete Grid epoch behavior has independent evidence.
-* `119→1` is not ordinary modulo wrap in a 7-bit frame_num domain. 119's successor is 120; wrap is 127→0. A Grid packet sequence that is contiguous is independent evidence and does not establish reference-picture continuity.
-* POC type 0 wrap uses the previous reference picture's POC state. POC type 2 uses previous-picture frame_num and FrameNumOffset; the parser requires a proven zero reorder bound. POC type 1 math is parsed, but production currently fails closed with `h264_grid_poc_type_unverified`.
-* The former POC type 2 guard rejected every adjacent non-reference pair. H.264 8.2.1.3 NOTE 2 prohibits consecutive non-reference pictures only when they produce duplicate Top/BottomFieldOrderCnt. The guard now rejects only a repeated POC for adjacent non-reference frames; distinct POC values are accepted when the SPS gap flag permits the sequence. Deterministic syntax-level tests cover both paths. These are parser probes, not complete independently decodable streams.
+* `_validate_frame_num_progress()` compares a picture to the successor of the previous reference `frame_num` modulo SPS `MaxFrameNum`. With `gaps_in_frame_num_value_allowed_flag == 0`, a non-successor fails closed as `h264_frame_num_gap`. With the flag set, this receiver does not synthesize missing coded pictures; support remains bounded by the implemented reference-state model.
+* Only frame-coded progressive SPS is accepted. IDR requires `frame_num == 0`. MMCO 5 is parsed and affects POC/reference bookkeeping, but the production Grid timing subset still rejects it as `h264_grid_mmco5_unverified`.
+* `119→1` is not normal modulo wrap when `MaxFrameNum == 128`; successor is 120 and wrap is 127→0. Grid packet continuity is independent and does not prove H.264 reference-picture continuity. The reporter's actual SPS/PPS/AU and reference marking remain unavailable, so that exact report remains UNVERIFIED.
+* POC 0 uses prior-reference POC state for LSB/MSB wrap. POC 1 computes cycle-based order including `FrameNumOffset`, reference/non-reference offsets and slice deltas. POC 2 computes order from `FrameNumOffset`/`frame_num` and is accepted only with a proven zero-reorder bound.
+* Type 2 rule correction to commit `41309cb`: H.264 7.4.2.1 prohibits a POC-type-2 coded video sequence containing a non-reference frame immediately followed by a non-reference picture. For this frame-only parser subset, the former test that allowed distinct POC values was not a conforming positive case. Production now rejects this pattern regardless of POC; tests distinguish it from allowed progression and reject it explicitly.
 
-## Timing and order
+## Production timing and offline/live evidence
 
-Production timing remains `DTS = rescale(Grid startTime - origin) + 90000` and `PTS = rescale(Grid startTime + composition - origin) + 90000`. POC is an order cross-check; it is not converted to elapsed time. PTS/DTS regressions, duplicate presentation timestamps, impossible POC/PTS order, reorder-bound violations, IDR epoch violations, unsupported POC type 1, and MMCO5 remain fail-closed.
+Production timing is `DTS = rescale(Grid startTime - origin) + 90000` and `PTS = rescale(Grid startTime + composition - origin) + 90000`. POC validates order; it is not turned into elapsed time. PTS uniqueness/order, increasing DTS, IDR epoch rules, reorder bounds and Grid composition checks remain enabled.
 
-`h264_reorder_bound_invalid` continues to reject VUI reorder bounds greater than the signaled buffering bound; this is a bitstream constraint, not a generic B-frame rejection. The first release and current implementation both enforce a bound, though the current parser validates more SPS/VUI syntax. HRD/SEI is parsed for validation/diagnostics but does not replace Grid composition timestamps.
+POC types 0, 1 and 2 are now enabled for validated progressive Grid-composition subsets. New offline E2E tests pass each generated type through the real `MediaSink`, `SoopGridReader.open/read/close`, buffer, TS mux and EOF/drain. FFmpeg independently decodes all output; VCL NAL and AAC AU payloads match the generated input. An offline Type-1 B-frame stream also decodes to the same frame hashes as its Type-0 source.
 
-## Independent evidence and limits
+Short self-broadcast Grid tests additionally verified:
 
-* Same FFmpeg/libx264 B-frame input: both first-release and current clocks accepted 30 frames, including 18 B pictures. PTS-sorted order matched FFprobe's decoded `pkt_pos` display order and DTS strictly increased.
-* Retained 60-second Grid wire: in-memory parser replay after exact overlap duplicate filtering yielded 3,591 current accepted VCL AUs, no current parser errors, and 30 release timing failures followed by missing-parameter-set errors. This does not reproduce the reporter's private V3/V5/V8 input and did not rebuild the historical full mux path.
-* Two POC type 2 tests were skipped because the pinned local FFmpeg lacks the `libopenh264` encoder. Other type 2 parser and decode tests ran using available generated inputs.
+* Type 0 with B pictures: source, RTMP-reference and Grid SPS type 0; 468/468 captured VCL NALs and 792/792 AAC AUs matched a contiguous source interval.
+* Type 1 with zero reorder: source, RTMP-reference and Grid SPS type 1; 466/466 VCL NALs and 792/792 AAC AUs matched a contiguous interval. This live result does not cover Type-1 B pictures.
+* Type 2 zero-reorder: source, RTMP-reference and Grid SPS type 2; 466/466 VCL NALs and 792/792 AAC AUs matched a contiguous interval.
 
-Unresolved: the reporter's actual SPS/PPS, frame_num width, `gaps_allowed`, reference marking, POC, and exact AU around `119→1` are unavailable. Therefore that report remains **UNVERIFIED**, not fixed. A missing reference AU or nonconforming encoder output must not be “repaired” by resetting frame_num or fabricating coded pictures.
+Each TS passed the independent structural/timestamp verifier and full FFmpeg decode; exact per-run metrics and the clipped capture bounds are in [POC_GRID_LIVE_VALIDATION.md](POC_GRID_LIVE_VALIDATION.md). This is short synthetic evidence, not broad encoder/service compatibility evidence.
+
+The two existing encoder-dependent skips are because the pinned FFmpeg does not provide `libopenh264`; the available libx264 encoder was used and each actual SPS type was checked. The skips do not suppress failures in the new POC E2E tests.
+
+## Remaining limits
+
+MMCO 5 remains fail-closed. Arbitrary reference-DPB transitions, interlace, low-delay HRD, unsupported slice structures, midstream codec changes, and the exact reporter V3/V5/V8 media remain unverified or unsupported. PCR-only interpolation is a bounded file-timeline operation, not real-time packet pacing. The short Grid trials do not establish long-duration drift, subjective A/V synchronization or all SOOP encoder variants.

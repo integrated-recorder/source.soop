@@ -165,25 +165,21 @@ def test_grid_composition_needs_neither_hrd_picture_timing_nor_fixed_vui():
     assert second["pts"] == 96_000
 
 
-@pytest.mark.parametrize(
-    "mode,mmco,code",
-    [
-        (1, False, "h264_grid_poc_type_unverified"),
-        (0, True, "h264_grid_mmco5_unverified"),
-    ],
-)
-def test_production_preserves_unverified_poc_and_mmco_restrictions(mode, mmco, code):
+def test_production_accepts_poc_type1_with_grid_composition():
     clock = H264Clock()
-    first = annex(sps(mode=mode, reorder=0), pps(), picture(mode=mode, idr=True))
-    if mode == 1:
-        with pytest.raises(GridError, match=code):
-            clock.inspect(first, 50_000_000, 0)
-        assert clock.origin_dts is None
-    else:
-        clock.inspect(first, 50_000_000, 0)
-        with pytest.raises(GridError, match=code):
-            clock.inspect(annex(picture(1, 2, mode=mode, mmco=mmco)), 50_333_333, 0)
-        assert clock.last_poc == 0
+    first = clock.inspect(annex(sps(mode=1, reorder=0), pps(), picture(mode=1, idr=True)), 50_000_000, 0)
+    second = clock.inspect(annex(picture(1, mode=1)), 50_333_333, 0)
+    assert (first["poc"], second["poc"]) == (0, 2)
+    assert (first["dts"], second["dts"]) == (90_000, 93_000)
+    assert first["timing_model"] == second["timing_model"] == "grid_composition"
+
+
+def test_production_preserves_mmco5_restriction():
+    clock = H264Clock()
+    clock.inspect(annex(sps(mode=0, reorder=0), pps(), picture(mode=0, idr=True)), 50_000_000, 0)
+    with pytest.raises(GridError, match="h264_grid_mmco5_unverified"):
+        clock.inspect(annex(picture(1, 2, mode=0, mmco=True)), 50_333_333, 0)
+    assert clock.last_poc == 0
 
 
 def test_production_preserves_low_delay_hrd_restriction():

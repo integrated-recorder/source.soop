@@ -1182,16 +1182,13 @@ class H264Clock:
         self._validate_timing_subset(header, sps)
         poc = self._picture_order(header, sps)
         self.last_observation["h264_current_poc"] = poc
-        # H.264 8.2.1.3 NOTE 2 disallows consecutive non-reference pictures
-        # only when they produce duplicate POC values. Consecutive pictures
-        # with distinct frame_num can be valid when gaps are permitted; do not
-        # reject that sequence merely because both have nal_ref_idc == 0.
-        if (
-            sps["poc_type"] == 2
-            and not header.nal_ref_idc
-            and self.previous_nonreference
-            and poc == self.last_poc
-        ):
+        # H.264 7.4.2.1 forbids pic_order_cnt_type == 2 for a coded video
+        # sequence containing a non-reference frame immediately followed by
+        # another non-reference picture. This receiver accepts frame-coded
+        # pictures only, so field-pair exceptions cannot apply. The more
+        # specific 8.2.1.3 note also constrains duplicate field order counts;
+        # it does not relax the SPS-level prohibition above.
+        if sps["poc_type"] == 2 and not header.nal_ref_idc and self.previous_nonreference:
             raise GridError("h264_poc2_nonreference_sequence_invalid")
 
         first_picture = self.origin_dts is None
@@ -1305,8 +1302,6 @@ class H264Clock:
 
     @staticmethod
     def _validate_timing_subset(header, sps):
-        if sps["poc_type"] == 1:
-            raise GridError("h264_grid_poc_type_unverified")
         if header.mmco5:
             raise GridError("h264_grid_mmco5_unverified")
 

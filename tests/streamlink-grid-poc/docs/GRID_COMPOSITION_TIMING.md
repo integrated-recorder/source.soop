@@ -1,6 +1,6 @@
 # Grid composition 시간축 적용 및 오프라인 검증
 
-상태: Experimental/Beta. 이 문서는 기존 HRD 기반 역사 보고서와 구분되는 현재 구현을 설명한다. 신규 실방송은 수행하지 않았다.
+상태: Experimental/Beta. 이 문서는 기존 HRD 기반 역사 보고서와 구분되는 현재 구현을 설명한다. 2026-11-02에는 합성 테스트 소스로 POC 0/1/2 각 15초 Native Grid 수신을 수행했으며, 세부 범위는 [POC Grid 실방송 검증](POC_GRID_LIVE_VALIDATION.md)에 기록했다.
 
 ## 입력과 계산
 
@@ -20,7 +20,7 @@ PTS = round((startTime + composition - origin) * 90000 / 10000000) + 90000
 
 HRD Picture Timing은 구조적으로 파싱하지만 생산 Grid 경로에서는 DPB delay로 PTS를 생성하지 않는다. SPS/PPS/SEI/slice/Access Unit, POC wrap, POC와 PTS 순서, 재정렬 한도, IDR epoch 순서, 엄격한 DTS 증가와 MPEG-TS 검증은 유지한다. 동일 picture epoch의 중복 PTS도 거부한다.
 
-현재 생산 Grid 경로는 검증된 progressive POC type 0/2를 지원한다. POC type 1, Grid MMCO5, low_delay_hrd, interlace, 미지원 slice 구조 및 midstream codec 변경은 여전히 거부한다. 생산 H264Clock은 composition 입력을 필수로 요구하며 HRD/no-reorder PTS fallback을 제공하지 않는다. 역사적 분석 API는 [독립 감사 도구](LEGACY_HRD_AUDIT.md)로 분리하고 생산 번들에서 제외한다.
+현재 생산 Grid 경로는 검증된 progressive POC type 0/1/2 subset을 지원한다. Type 1은 offline B-frame과 live no-reorder sample을 검증했다. Grid MMCO5, low_delay_hrd, interlace, 미지원 slice 구조 및 midstream codec 변경은 여전히 거부한다. 생산 H264Clock은 composition 입력을 필수로 요구하며 HRD/no-reorder PTS fallback을 제공하지 않는다. 역사적 분석 API는 [독립 감사 도구](LEGACY_HRD_AUDIT.md)로 분리하고 생산 번들에서 제외한다. 지원 경계는 [POC support matrix](POC_TYPE_SUPPORT_MATRIX.md)를 참고한다.
 
 AAC-LC의 AU sample 수와 샘플레이트로 정확하게 누적 시간을 계산한다. chunk timestamp의 bounded residual 검사는 그대로 유지하며 매 묶음에서 원점을 바꾸지 않는다. AU 삽입/제거, 무음 생성, resampling이나 임의 A/V 보정은 하지 않는다.
 

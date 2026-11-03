@@ -230,7 +230,7 @@ ffmpeg -v warning -xerror -i recording.ts \
 - 미디어가 3초 동안 도착하지 않으면 정체로 판정해 복구를 시도할 수 있습니다. 정상적인 긴 정체 구간에서도 재연결이 발생할 수 있습니다.
 - 자동 세션 재인증, 방송 종료와 네트워크 장애의 완전한 구분, 방송 전환 및 장시간 A/V drift는 검증되지 않았습니다.
 - 기존 내장 플러그인의 `--soop-username`, `--soop-password`, `--soop-stream-password`는 외부 `soop_grid`에 전달되지 않습니다. 외부 플러그인에서는 대응하는 `--soop-grid-*` 옵션 또는 환경변수를 사용하세요.
-- 일부 progressive Annex-B H.264와 AAC-LC만 지원합니다. 영상 PTS는 검증된 Grid composition 값을 사용하며 HRD 지연으로 생성하지 않습니다. POC는 표시 순서 검증에 사용합니다. POC type 1, interlace, Grid 경로 MMCO5 및 미검증 구조는 안전하게 거부합니다. 현재 모델의 장시간 실방송과 지각적 A/V 동기는 미검증입니다. [적용 결과](GRID_COMPOSITION_TIMING.md)를 참고하세요.
+- 일부 progressive Annex-B H.264와 AAC-LC만 지원합니다. 영상 PTS는 검증된 Grid composition 값을 사용하며 HRD 지연으로 생성하지 않습니다. POC type 0/1/2는 검증된 progressive subset에서 표시 순서 검증에 사용합니다. Grid 경로 MMCO5, interlace 및 미검증 구조는 안전하게 거부합니다. POC 0/1/2의 오프라인 및 짧은 자체방송 범위와 Type 1의 제한은 [지원표](POC_TYPE_SUPPORT_MATRIX.md)를 참고하세요. 장시간 실방송과 지각적 A/V 동기는 미검증입니다.
 - 선택적 진단 JSONL은 최대 16 MiB이며, 한도에 도달하면 이벤트 기록을 중단하고 요약에 잘림 여부를 표시합니다. 진단 캡처는 수신 스레드에 직렬화·파일 기록 부담을 추가하므로 문제 재현에 필요한 경우에만 사용하세요.
 - Native Grid의 Gateway/Center/Parent 연결은 SOOP 프로토콜의 일반 TCP를 사용하며 플러그인이 TLS를 추가하지 않습니다. 일부 인증 관련 값이 프로토콜 패킷에 포함되므로 신뢰할 수 있는 네트워크에서만 사용하세요. HTTPS Bootstrap과 Native Grid TCP 연결의 전송 보안은 서로 다릅니다.
 - Linux에서만 직접 실행을 확인했습니다. Windows/macOS 및 다른 Streamlink/Python 조합은 미검증입니다.

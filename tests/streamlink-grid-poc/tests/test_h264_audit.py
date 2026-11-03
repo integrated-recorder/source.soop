@@ -1055,16 +1055,20 @@ def test_poc2_gap_flag_false_rejects_missing_reference_frame_num():
                 clock.inspect(payload, 50_666_666, 0)
 
 
-def test_poc2_consecutive_nonreference_pictures_with_distinct_poc_are_allowed():
+def test_poc2_rejects_consecutive_nonreference_pictures_with_distinct_poc():
     clock = H264Clock()
     seq = sps(mode=2, fixed=False, reorder=0, gaps_allowed=True)
     clock.inspect(annex(seq, pps(), picture(mode=2, idr=True)), 50_000_000, 0)
-    observed = []
     for index, frame_num in enumerate((1, 2), start=1):
         payload = annex(picture(frame_num, mode=2, ref_idc=0))
-        timing = clock.inspect(payload, 50_000_000 + index * 333_333, 0)
-        observed.append(timing["poc"])
-    assert observed == [1, 3]
+        if frame_num == 1:
+            clock.inspect(payload, 50_000_000 + index * 333_333, 0)
+        else:
+            # POC differs (1 then 3), but SPS 7.4.2.1 forbids this sequence
+            # for pic_order_cnt_type 2 even though the gap flag permits the
+            # reference-frame progression check to defer to gap processing.
+            with pytest.raises(GridError, match="h264_poc2_nonreference_sequence_invalid"):
+                clock.inspect(payload, 50_000_000 + index * 333_333, 0)
 
 
 def test_poc2_consecutive_nonreference_pictures_with_duplicate_poc_are_rejected():

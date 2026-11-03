@@ -1,34 +1,46 @@
-# Independent H.264 / MPEG-TS compatibility result
+# H.264 POC types 0/1/2: compatibility result
 
 ## Outcome
 
-One standards-based over-rejection was reproduced and corrected: POC type 2 previously rejected every consecutive non-reference pair, while H.264 prohibits only the pair that produces duplicate POC. The new check allows distinct POC values and preserves the duplicate-POC rejection. All other unsupported/uncertain syntax remains fail-closed.
+Production now accepts POC types 0, 1 and 2 for the validated progressive, frame-coded, explicit Grid-composition subset. Each type passed both offline production `MediaSink`→`StreamIO`→MPEG-TS tests and a short synthetic self-broadcast Native Grid trial. Each live result had the same SPS POC type as its source, a contiguous byte-identical VCL/AAC interval, complete TS verification, full decode, and EOF/drain.
 
-PCR recovery for up to two seconds remains a file-timeline repair only. The deterministic 231 ms path passes independent TS/PES validation and FFmpeg decoding, but does not promise wall-clock packet pacing or prove the source contained no lost media.
+**Goal: COMPLETE for the validated progressive/Grid-composition subsets of all three POC types.** Each type has an independently decoded valid bitstream, an own SOOP Native Grid send/receive, production Streamlink output, VCL/AAC identity checks, full output decode and regression coverage. This does not claim universal H.264 support: Type-1 live evidence is no-reorder (Type-1 B-frame handling has offline E2E evidence), Type-2 live evidence is no-reorder, and MMCO 5 remains fail-closed. Broad service compatibility and long-duration behavior remain outside the proven subset. See [the support matrix](POC_TYPE_SUPPORT_MATRIX.md).
 
-## User-reported issue status
+## Standards correction
 
-| Issue | Status | Evidence / limit |
+Commit `41309cb` had incorrectly allowed successive non-reference POC-type-2 pictures when their POC values differed. H.264 7.4.2.1 prohibits the pattern at the coded-video-sequence level for the accepted frame-only subset. The condition is restored to reject adjacent non-reference pictures regardless of POC. The former “distinct POC is valid” test is now a negative test. No exception or synthetic picture is used to bypass the rule.
+
+## Issue status
+
+| Issue family | Result | Evidence / remaining limit |
 |---|---|---|
-| V3 reorder timing / reorder bound | PARTIAL | Current uses Grid composition for PTS and retains POC/display-order and DPB-bound checks. Same B-frame fixture matches FFprobe. Reporter's patch/capture is unavailable; arbitrary V3 input unverified. |
-| V5 picture order conflict | UNVERIFIED as reporter case | Current rejects contradictory POC vs Grid composition. Same generated B-frame fixture is correct; exact reporter input absent. |
-| V8 frame_num 119→1 | UNVERIFIED as reporter case | The transition is not normal wrap for MaxFrameNum 128 and remains rejected when gaps are forbidden. Grid continuity does not prove H.264 reference continuity. Original SPS/reference/AU unavailable. |
-| V8 231 ms PCR gap | PARTIAL | Bounded PCR-only interpolation and independent 231 ms TS/full decode pass. No real V8 capture or real-time pacing test. |
+| Type-0 B-frame timing / reorder | FIXED FOR TESTED SUBSET | Offline B-frame StreamIO E2E and 15-second live Grid sample pass; VCL/AAC interval identity and independent decode pass. Exact V3 input unavailable. |
+| Type-1 POC/timing | FIXED FOR TESTED SUBSET | Production type-1 rejection removed only after an independently decoded Type-1 bitstream and real StreamIO E2E. Live Grid test confirms Type 1 with no reorder. Live Type-1 B-picture Grid test is still unverified. |
+| Type-2 adjacent non-reference rule | FIXED | Incorrect acceptance introduced at `41309cb` corrected to the normative 7.4.2.1 rejection; distinct and duplicate POC negative tests pass. |
+| Type-2 low-delay reception | FIXED FOR TESTED SUBSET | Offline and live no-B zero-reorder samples pass; prohibited adjacent non-reference sequence remains rejected. |
+| MMCO 5 | UNSUPPORTED / FAIL-CLOSED | Still rejected as `h264_grid_mmco5_unverified`; complete Grid epoch interaction is not proven. |
+| V5 exact `h264_picture_order_conflict` report | UNVERIFIED AS REPORTED | Synthetic B-frame and paired marker tests pass, but the reporter's input is unavailable. Actual contradictory POC/PTS still fails closed. |
+| V8 `frame_num 119→1` | UNVERIFIED AS REPORTED | It is not normal wrap for MaxFrameNum 128; original SPS/reference/AU is unavailable. No state reset or missing-picture fabrication was added. |
+| V8 231 ms PCR interval | PARTIAL | Prior synthetic interpolation and current TS checks are valid; no claim about the reporter's real capture or real-time packet pacing. |
 
-## Tests and tool checks
+## Validation
 
-* Focused H.264/TS tests: **139 passed, 2 skipped**.
-* Full modular source suite (excluding untouched untracked `tests/test_suffix_latejoin.py`): **733 passed, 2 skipped**.
-* Static bundle suite (same exclusion): **724 passed, 2 skipped**.
-* Skip reason: local FFmpeg does not expose `libopenh264`; tests requiring that encoder for real POC type 2 fixtures skipped. These were existing environment skips, not newly hidden failures.
-* Ruff check: passed.
-* Ruff format: 52 tracked source/tool/test files passed. A whole-tree format check also reported the pre-existing untracked `tests/test_suffix_latejoin.py`; that file was not edited, staged, or used in the suite.
-* `compileall`, deterministic bundle `--check`, SHA check, and `git diff --check`: passed.
-* New bundle SHA-256: `d303a80c5a972702cc249d9488f77071e60763d7e3fc5e49d46dca053c145f25`.
-* No live broadcast/long recording was performed.
+* Source suite: **736 passed, 2 skipped**.
+* Single-file bundle suite: **727 passed, 2 skipped**.
+* Single-file construction/loading tests: **9 passed**.
+* Ruff check, Ruff format check, compileall, deterministic bundle regeneration/check and `git diff --check`: pass.
+* Streamlink 8.6.2 sideload listing found `soop_grid`.
+* POC offline E2E: all three types pass actual `MediaSink`/`SoopGridReader.open/read/close`, TS, decode, payload identity and EOF/drain.
+* Short synthetic own-broadcast Grid E2E: all three requested POC types received; detailed frame/AU, TS, PCR, event-marker and drain counts are in [POC_GRID_LIVE_VALIDATION.md](POC_GRID_LIVE_VALIDATION.md).
+* The two skips require `libopenh264`, absent from local FFmpeg. The new tests use libx264 and validate the emitted SPS type instead of trusting encoder options.
 
-## Remaining scope and release decision
+## Bundle and source state at validation
 
-POC type 1, production MMCO5, arbitrary reference-DPB validation, real-time mux pacing, the reporter's exact V3/V5/V8 samples, and broad live compatibility remain unverified or unsupported. Do not label the reporter's exact failures fixed without their input. The q=32/1080p profile changes predated this task and are kept separate in Git history.
+* Branch: `fix/grid-startup-readiness`.
+* Base HEAD before this task: `41309cb826e6a673d597a99423526c2369d5cebc`.
+* Tested bundle SHA-256: `e1a1433bbcfb67febb37e43b7e92f2761c3f1cd58b4119dfbaa44c5dc0f6029b`.
+* No live media, credentials, account/channel identifiers or raw capture is included in the repository.
 
-**Release:** Beta only; not a new Stable declaration. H.264 correction is a narrow compatibility improvement backed by syntax probes, with full suite parity. Live stability is not established by this offline work.
+## Release decision
+
+**Beta: GO for the validated progressive POC 0/1/2 subsets. Stable: NO-GO.** Do not promote MMCO 5, arbitrary reference-state combinations, live Type-1 B frames, long-duration drift, exact V3/V5/V8 cases or universal broadcaster compatibility based on these short synthetic tests. The q=32/1080p profile remains separate and unchanged.
