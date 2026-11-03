@@ -77,6 +77,17 @@ shutdown checks. Loopback was permitted for this run; no SOOP service endpoint
 was contacted. This is not live failure-injection evidence and does not satisfy
 the endurance or Stable gates.
 
+## Near-valid H.264 parser mutation regression — 2026-11-03
+
+Added a fixed-seed, 1,024-case mutation test based on a valid synthetic
+progressive POC-2 SPS/PPS/IDR access unit. Each case mutates one to four NAL
+header/RBSP bytes while preserving Annex-B start codes, then requires either a
+normal parse result or a documented `GridError`. The targeted test passed; the
+full source suite passed **782 tests** and the bundled parity suite passed
+**773 tests**, with zero skips. This is bounded near-valid mutation smoke, not
+coverage-guided fuzzing or semantic conformance proof. Production source and
+bundle remain unchanged. The tested tree was based on `ee61fae6884371c247cfeb1ecb431854bfd6ac92`.
+
 ## Candidate and environment
 
 * Branch: `fix/grid-startup-readiness`

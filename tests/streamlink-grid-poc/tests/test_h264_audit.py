@@ -940,6 +940,29 @@ def test_seeded_malformed_parser_inputs_never_escape_as_unexpected_exceptions():
             pass
 
 
+def test_seeded_near_valid_h264_nal_mutations_fail_only_with_grid_errors():
+    rng = random.Random(0x48423634)
+    units = [sps(mode=2, reorder=0), pps(), picture(idr=True, mode=2)]
+    source = annex(*units)
+    mutable_positions = []
+    offset = 0
+    for unit in units:
+        # Keep each four-byte Annex-B start code fixed; mutate the NAL header
+        # and RBSP so samples remain close to a valid parameter-set/picture AU.
+        mutable_positions.extend(range(offset + 4, offset + 4 + len(unit)))
+        offset += 4 + len(unit)
+
+    for _ in range(1024):
+        candidate = bytearray(source)
+        for _ in range(rng.randint(1, 4)):
+            position = rng.choice(mutable_positions)
+            candidate[position] = rng.randrange(256)
+        try:
+            H264Clock().inspect(bytes(candidate), 50_000_000, 0)
+        except GridError:
+            pass
+
+
 @pytest.mark.parametrize("later_sei_nal", [False, True])
 def test_buffering_period_must_be_first_sei_payload_of_first_sei_nal(later_sei_nal):
     bp = Bits()
