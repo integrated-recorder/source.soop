@@ -534,3 +534,25 @@ skipped**; bundle parity **789 passed, 0 skipped**; Ruff check and format,
 compileall, deterministic bundle check, SHA-256 manifest, and `git diff
 --check` passed. The bundle is unchanged at
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+### Wall-clock-paced 10-minute POC-0 B-frame run
+
+After the accelerated runs, the same generated POC-0 B-frame mode completed a
+600 s **wall-clock-paced offline** timeline in 621.127 s. This adds scheduler
+and timestamp pacing coverage, but it still uses generated Parent-media
+bodies on the local production sink path and is not a SOOP session.
+
+* SPS: 320x180, POC 0, `max_num_reorder_frames=1`; 3,960 decoded B pictures.
+* H.264: 6,000 input and output VCL AUs; input/output identity verified.
+* AAC: 28,126 input/output ADTS frames at 48 kHz; identity verified.
+* TS: 203,186 packets, zero continuity and PSI CRC errors, maximum PCR value
+  gap 100 ms; full FFmpeg decode and StreamIO EOF/drain passed.
+* Output: 38,198,968 bytes; peak bounded buffer 23,124 bytes.
+* Resource samples: RSS first/last/peak 165,012/149,156/165,016 KiB; FD
+  first/last/peak 7/4/7; threads 2/1/2.
+* Decoded track-coverage boundary difference: 21.333 ms. This is not
+  source-clock drift or perceptual A/V synchronization.
+
+This evidence is stronger than an accelerated media-time run for local pacing,
+but it does not exercise SOOP network timing, Parent recovery, long-running
+receiver-only resource behavior, or the live release gates.

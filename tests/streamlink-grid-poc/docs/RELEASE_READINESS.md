@@ -179,3 +179,15 @@ full TS/decode/EOF checks passing. Current source/bundle regressions are
 AAC end-to-end fixtures across POC 0/1/2 and confirms the soak timeout terminates its child
 process. This does not satisfy live or wall-clock
 endurance. Stable remains NO-GO.
+
+### Current candidate follow-up — 2026-11-03
+
+On bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`, a
+10-minute POC-0 B-frame generated-media run paced against wall clock completed
+in 621.127 seconds. It passed H.264/AAC identity, TS/PSI/PCR checks, full
+decode and EOF/drain. This is local synthetic pacing, not SOOP reception,
+source-relative sync, Parent recovery, or receiver-only resource trending.
+Current offline suites are 798 source / 789 bundle passed, zero skipped. No
+authorized test broadcast is available; live and controlled-recovery release
+gates remain NOT TESTED. Stable remains **NO-GO**.
