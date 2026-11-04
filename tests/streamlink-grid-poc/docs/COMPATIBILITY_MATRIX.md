@@ -63,3 +63,19 @@ A 10-minute wall-clock-paced POC-0 `b-pyramid=normal` timeline also passed with 
 The same offline suite now sends generated POC 0/1/2 H.264 plus AAC through a local fake Parent wire, the production Parent frame parser/receive loop, MediaSink, StreamIO, MPEG-TS and FFmpeg decode. It asserts the expected Parent control request sequence and exact H.264 VCL/AAC payload identity. All 9 POC E2E cases and the full source/bundle suites pass (794/785, zero skipped). This strengthens protocol-to-output integration evidence only; it is not SOOP Grid E2E or live POC validation.
 
 Latest offline continuation at source commit `b7f74d3`: transformed POC-1 reference-B/reorder-2 completed a 21,600-second synthetic sink timeline (see `ENDURANCE_RESULT.md`), and local Parent frame-order/conflicting-identity faults fail closed. Full Source/Bundle suites pass **806/797**, zero skips. No live, source-relative sync, real-time endurance, or current-build remote recovery evidence was added; campaign remains PARTIAL and Stable NO-GO.
+
+## Latest test-only continuation — 2026-11-04
+
+At commit `8d9adac7be81c0008437ed80417755c478e296fb`, a Type-1 empty-cycle
+fixture with `offset_for_non_ref_pic=-1` was added. The earlier run recorded in
+`ENDURANCE_RESULT.md` passed the focused 10-case matrix and full Source/Bundle
+suites at 811/802 with no skips, including independent FFmpeg decode and
+Parent/StreamIO/TS identity checks. A fresh rerun in the current environment
+passed 731 Source and 722 bundled-parity tests, with 80 skips in each; the
+preserved untracked suffix test was excluded. FFmpeg/FFprobe are absent here,
+so the generated-bitstream decoder cases were not rerun. Ruff, format,
+compileall, deterministic bundle and manifest checks pass; Streamlink 8.6.2
+loads the standalone plugin. No live source was available. This adds only
+constructed offline Type-1 syntax coverage; live Grid, source-relative sync,
+controlled live recovery, and real-time 2 h/6 h remain NOT_TESTED. Campaign
+PARTIAL; Stable NO-GO.
