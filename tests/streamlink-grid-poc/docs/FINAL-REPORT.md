@@ -489,10 +489,11 @@ payload identity, full output decode and EOF/drain pass. Full suites are
 Type-1 syntax only; it does not establish native encoder output or live Grid
 support. Campaign remains **PARTIAL**; Stable remains **NO-GO**.
 
-The 2026-11-04 environment recheck passed 731 Source and 722 bundle-parity
+The 2026-11-04 environment recheck passed 732 Source and 723 bundle-parity
 tests, with 80 skips each, after explicitly excluding the preserved untracked
-suffix experiment. FFmpeg/FFprobe were unavailable in this environment, so
-decoder-generated POC E2E checks skipped on rerun; the earlier recorded
-no-skip results remain separate evidence and were not reproduced here. Static
-checks and deterministic bundle/manifest checks passed. Live SOOP and real-time
-endurance remain untested.
+suffix experiment. FFmpeg/FFprobe were unavailable, so generated-bitstream POC
+E2E checks skipped on rerun. An added FFmpeg-independent Type-1 empty-cycle
+SPS/POC unit regression passed. The earlier recorded no-skip results remain
+separate evidence and were not reproduced here. Static checks and deterministic
+bundle/manifest checks passed. Live SOOP and real-time endurance remain
+untested.

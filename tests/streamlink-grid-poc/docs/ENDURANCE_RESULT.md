@@ -829,13 +829,15 @@ Campaign PARTIAL; Stable NO-GO.
 
 ### Environment recheck — 2026-11-04
 
-A later offline rerun in the current restricted environment passed **731**
-Source tests and **722** bundled-parity tests, with **80 skips** in each run.
+A later offline rerun in the current restricted environment passed **732**
+Source tests and **723** bundled-parity tests, with **80 skips** in each run.
 The preserved untracked suffix experiment was explicitly excluded. The current
 environment has no discoverable `ffmpeg`/`ffprobe`, so generated-bitstream POC
-E2E and other decoder-dependent checks skipped; the 14 loopback/socketpair
-tests passed after granting local test-socket access. Ruff, format, compileall,
-deterministic bundle check, and manifest verification passed. This rerun does
-not replace the earlier recorded no-skip run, but those decoder checks could
-not be independently repeated in this environment. No live SOOP or endurance
-test was attempted.
+E2E and other decoder-dependent checks skipped. A new FFmpeg-independent
+Type-1 unit test directly builds/parses an empty-cycle SPS with negative
+non-reference offset and checks POC values for IDR, reference and
+non-reference pictures; it passed. The 14 loopback/socketpair tests passed
+after granting local test-socket access. Ruff, format, compileall, deterministic
+bundle check, and manifest verification passed. This rerun does not replace the
+earlier recorded no-skip run, but decoder E2E checks could not be independently
+repeated in this environment. No live SOOP or endurance test was attempted.

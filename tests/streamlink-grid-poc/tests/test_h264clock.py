@@ -118,6 +118,50 @@ def test_poc1_sps_reference_cycle_is_parsed():
     assert (sps["width"], sps["height"]) == (160, 96)
 
 
+def test_poc1_empty_reference_cycle_and_negative_non_reference_offset():
+    writer = BitWriter()
+    writer.put(66, 8)  # Baseline profile
+    writer.put(0, 8)  # constraint flags and reserved bits
+    writer.put(30, 8)  # level
+    writer.ue(0)  # seq_parameter_set_id
+    writer.ue(0)  # log2_max_frame_num_minus4
+    writer.ue(1)  # pic_order_cnt_type
+    writer.put(0, 1)  # delta_pic_order_always_zero_flag
+    writer.se(-1)  # offset_for_non_ref_pic
+    writer.se(0)  # offset_for_top_to_bottom_field
+    writer.ue(0)  # empty offset_for_ref_frame cycle
+    writer.ue(2)  # max_num_ref_frames
+    writer.put(0, 1)  # gaps_in_frame_num_value_allowed_flag
+    writer.ue(9)  # 160 pixels wide
+    writer.ue(5)  # 96 pixels high
+    writer.put(1, 1)  # frame_mbs_only_flag
+    writer.put(1, 1)  # direct_8x8_inference_flag
+    writer.put(0, 1)  # frame_cropping_flag
+    writer.put(0, 1)  # vui_parameters_present_flag
+
+    sps = parse_sps(b"\x67" + writer.rbsp())
+    assert sps["poc_type"] == 1
+    assert sps["offset_for_ref_frame"] == ()
+    assert sps["offset_for_non_ref_pic"] == -1
+
+    clock = H264Clock()
+
+    def picture(frame_num, *, ref=1, delta=0, idr=False):
+        return SimpleNamespace(
+            frame_num=frame_num,
+            idr=idr,
+            nal_ref_idc=ref,
+            delta_poc0=delta,
+            delta_poc1=0,
+            mmco5=False,
+        )
+
+    assert clock._picture_order(picture(0, idr=True), sps) == 0
+    assert clock._picture_order(picture(1, delta=2), sps) == 2
+    assert clock._picture_order(picture(2, ref=0), sps) == -1
+    assert clock._picture_order(picture(3, delta=1), sps) == 1
+
+
 def test_invalid_emulation_prevention_byte_is_rejected():
     with pytest.raises(GridError, match="h264_emulation_prevention_invalid"):
         parse_sps(b"\x67\x00\x00\x03\x04")

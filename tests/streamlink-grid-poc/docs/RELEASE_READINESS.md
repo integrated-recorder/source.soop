@@ -237,9 +237,10 @@ Latest HEAD is `8d9adac7be81c0008437ed80417755c478e296fb`; the pushed branch
 matches. It adds only a Type-1 empty-cycle/negative-non-reference-offset
 fixture, tests, and evidence. The earlier exact run passed 811 Source / 802
 Bundle tests with no skips and the focused Type matrix passed 10/10. The
-current-environment rerun passed 731/722 with 80 skips each because this
+current-environment rerun passed 732/723 with 80 skips each because this
 environment has no FFmpeg/FFprobe; local loopback tests passed with test-socket
-permission. Static checks and Streamlink 8.6.2 standalone loading pass. The
+permission. An FFmpeg-independent empty-cycle SPS/POC unit test was added and
+passed. Static checks and Streamlink 8.6.2 standalone loading pass. The
 bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 User confirmed offline-only work; current-hash live SOOP, source-relative
 sync, live recovery and real-time 2 h/6 h remain untested. Stable remains NO-GO.
