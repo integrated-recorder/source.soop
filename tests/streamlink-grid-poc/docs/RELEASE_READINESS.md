@@ -215,3 +215,11 @@ execution. See `ENDURANCE_RESULT.md`.
 The user confirmed no authorized broadcast is currently available. Current
 build Grid reception, source-relative sync, live recovery, and live 2 h/6 h
 endurance remain NOT TESTED. **Campaign PARTIAL; Stable NO-GO.**
+
+An accelerated 7,200-second Type-1 reference-B generated-media timeline then
+passed in 1,102.368 wall seconds: 72,000 VCL and 337,501 AAC frames preserved,
+zero TS continuity/PSI errors, max PCR value gap 100 ms, full decode and
+StreamIO drain. RSS was harness-inclusive and peaked at 251,272 KiB. This is
+synthetic media-time evidence, not a real-time or SOOP 2 h test; Type-1
+reference-B 6 h and live gates remain NOT TESTED. Campaign remains PARTIAL;
+Stable remains NO-GO.

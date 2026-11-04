@@ -426,3 +426,13 @@ The user confirmed there is no authorized test broadcast at this time. Current
 build live reception, source-relative A/V sync, controlled live recovery, and
 2 h/6 h SOOP endurance remain NOT TESTED. Overall campaign **PARTIAL**;
 Stable **NO-GO**.
+
+After commit `32cf02906964055a9a38f71b9040d7bc191390b7`, the same transformed
+POC-1 reference-B fixture passed an accelerated 7,200-second generated-media
+timeline in 1,102.368 wall seconds. It preserved 72,000/72,000 VCL NALs and
+337,501/337,501 AAC frames, passed full FFmpeg decode and TS checks with zero
+continuity/PSI errors and a 100 ms maximum PCR gap, and completed EOF/drain.
+Harness-inclusive RSS peaked at 251,272 KiB; FD and thread counts returned to
+their baselines. This is media-time accumulation only, not a real-time or
+SOOP/Grid 2-hour test. Type-1 reference-B 6-hour and all authorized live gates
+remain untested. Bundle SHA-256 is unchanged.

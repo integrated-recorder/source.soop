@@ -646,6 +646,27 @@ This adds a paced local sink-path result for transformed Type-1 reference-B
 syntax. It does not validate native Type-1 encoder output, SOOP Grid delivery,
 network recovery, source-relative sync, or live 2 h/6 h endurance.
 
+The same transformed POC-1 reference-B mode also completed an accelerated
+7,200-second synthetic timeline in 1,102.368 wall seconds on source commit
+`32cf02906964055a9a38f71b9040d7bc191390b7` and the unchanged production
+bundle SHA above:
+
+* SPS: 320x180, POC 1, reorder bound 2; 53,280 B pictures and 18,000
+  reference-B VCL slices.
+* H.264: 72,000/72,000 input/output VCL NALs, identity passed.
+* AAC: 337,501/337,501 ADTS frames at 48 kHz, identity passed.
+* TS: 2,443,131 packets; continuity/PSI CRC errors 0; maximum PCR value gap
+  100 ms. Full FFmpeg decode and StreamIO EOF/drain passed.
+* Output: 459,308,628 bytes; peak bounded buffer 55,272 bytes.
+* Harness-inclusive RSS first/last/peak 178,432/165,604/251,272 KiB;
+  FD first/last/peak 7/4/7; threads 2/1/2.
+* Decoded coverage-boundary difference 21.333 ms is not source-relative drift
+  or perceptual sync.
+
+This is an accelerated media-time test. POC-1 reference-B 2-hour wall-clock
+operation, 6-hour operation, native Type-1 encoder output and SOOP/Grid
+reception remain untested.
+
 ### Offline regression after adding the Type-1 reference-B mode
 
 With the local FFmpeg/FFprobe toolchain explicitly configured and the preserved
