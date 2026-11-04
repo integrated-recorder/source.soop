@@ -47,7 +47,7 @@ The literal error-code catalogue, source locations, and coarse retry/fallback/te
 
 ## Primary follow-up risks
 
-1. Obtain lawful, reproducible Type-1 B-picture and MMCO-5 bitstreams and run them through the current production sink/StreamIO path before widening support.
+1. Obtain native-encoder Type-1 B-picture output and broader MMCO-5/reference-list bitstreams; current Type-1 B coverage is transformed from Type 0, and MMCO-5 evidence is a narrow no-B/one-reference subset.
 2. Execute the exact current bundle against an authorized self-broadcast for duration and controlled failure tests.
 3. Measure source-relative A/V drift, memory, descriptors and threads on the same exact build for at least 2 h and 6 h before Stable consideration.
 
@@ -72,3 +72,11 @@ An offline Type-1 `delta_pic_order_always_zero_flag=1` bitstream regression was 
 The Type-1 fixture matrix now also covers PPS bottom-POC syntax and explicit `delta_pic_order_cnt[1]=0` in progressive frame slices. The transformed stream's SPS/PPS and slice syntax are reparsed; decoded frame hashes, per-picture order fields, VCL/AAC payload identity, full TS decode and EOF/drain pass. Full Source/Bundle counts are **809/800**, zero skips. This remains constructed offline conformance evidence; no native Type-1 encoder or live SOOP session was available.
 
 The Type-1 matrix now additionally exercises an empty reference POC cycle and negative non-reference offset. SPS semantics, source-vs-transformed per-picture POC, FFmpeg decoded hashes, local Parent/StreamIO/TS payload identity, full decode, and EOF/drain pass. Full Source/Bundle suites are **811/802**, zero skips. Native Type-1 encoding and live B-picture Grid reception remain unverified.
+
+At pushed source HEAD `7b67b6533cc9ed3f1175d41d5f60a3ec6cac457d`, pure-Python
+regressions additionally check the empty-cycle negative offset across IDR,
+reference/non-reference pictures and `frame_num` wrap, plus the parser's 255
+entry POC-cycle limit (accepted at 255, rejected at 256). Current offline
+rerun: Source **734 passed / 80 skipped**; Bundle **725 passed / 80 skipped**.
+FFmpeg/FFprobe absence accounts for decoder-dependent checks not being rerun;
+see `ENDURANCE_RESULT.md`. No production code or bundle bytes changed.

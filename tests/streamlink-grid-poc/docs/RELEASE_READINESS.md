@@ -233,15 +233,15 @@ At source commit `139aaf6ead3c9f4cc7573decef6d2af31168cdd5`, a 21,600-second syn
 
 The latest offline Parent-wire fault follow-up adds explicit frame-reorder and conflicting-duplicate cases. Recovery-module tests pass 43/43; full Source/Bundle pass 806/797 with zero skips. Both faults fail closed before publishing the invalid frame. This does not change live gates. Source commit `b7f74d3` contains these regressions; bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. Campaign PARTIAL; Stable NO-GO.
 
-Latest HEAD is `8d9adac7be81c0008437ed80417755c478e296fb`; the pushed branch
-matches. It adds only a Type-1 empty-cycle/negative-non-reference-offset
-fixture, tests, and evidence. The earlier exact run passed 811 Source / 802
+Latest HEAD is `7b67b6533cc9ed3f1175d41d5f60a3ec6cac457d`; the pushed branch
+matches. The recent commits add only Type-1 empty-cycle/negative-non-reference
+fixture tests and evidence. The earlier exact run passed 811 Source / 802
 Bundle tests with no skips and the focused Type matrix passed 10/10. The
 current-environment rerun passed 734/725 with 80 skips each because this
 environment has no FFmpeg/FFprobe; local loopback tests passed with test-socket
 permission. An FFmpeg-independent empty-cycle SPS/POC unit test, including
-frame_num wrap and the 255/256 cycle-count limit, was added and passed. Static checks and Streamlink 8.6.2
-standalone loading pass. The
+`frame_num` wrap and the 255/256 cycle-count limit, was added and passed.
+Static checks and Streamlink 8.6.2 standalone loading pass. The
 bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 User confirmed offline-only work; current-hash live SOOP, source-relative
 sync, live recovery and real-time 2 h/6 h remain untested. Stable remains NO-GO.

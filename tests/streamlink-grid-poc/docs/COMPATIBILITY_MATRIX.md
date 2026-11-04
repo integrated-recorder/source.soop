@@ -66,7 +66,7 @@ Latest offline continuation at source commit `b7f74d3`: transformed POC-1 refere
 
 ## Latest test-only continuation — 2026-11-04
 
-At commit `8d9adac7be81c0008437ed80417755c478e296fb`, a Type-1 empty-cycle
+At commit `7b67b6533cc9ed3f1175d41d5f60a3ec6cac457d`, a Type-1 empty-cycle
 fixture with `offset_for_non_ref_pic=-1` was added. The earlier run recorded in
 `ENDURANCE_RESULT.md` passed the focused 10-case matrix and full Source/Bundle
 suites at 811/802 with no skips, including independent FFmpeg decode and
@@ -82,3 +82,10 @@ loads the standalone plugin. No live source was available. This adds only
 constructed offline Type-1 syntax coverage; live Grid, source-relative sync,
 controlled live recovery, and real-time 2 h/6 h remain NOT_TESTED. Campaign
 PARTIAL; Stable NO-GO.
+
+The same current regression adds FFmpeg-independent parser/POC boundary checks:
+empty cycle with negative non-reference offset across IDR/reference/non-reference
+pictures and `frame_num` wrap, plus cycle lengths 255 accepted and 256 rejected
+with `h264_poc_cycle_limit`. Full Source/Bundle rerun remains 734/725 passed,
+80 skips each; generated-media decode cases remain skipped in the current
+environment because FFmpeg/FFprobe are unavailable.
