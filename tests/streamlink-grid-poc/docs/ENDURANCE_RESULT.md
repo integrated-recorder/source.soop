@@ -742,3 +742,33 @@ The preserved untracked suffix test was excluded and untouched. Production code
 and bundle bytes did not change; bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 This validates local failure handling, not SOOP network or live recovery.
+
+## POC-1 reference-B two-hour wall-clock-paced synthetic run — 2026-11-04
+
+At source tree HEAD `0d081520ff4278bfbd32a7bceb8319aed94c0e46`, the same
+300 kb/s transformed POC-1 reference-B/reorder-2 fixture was paced from
+synthetic Grid timestamps for 7,200 media seconds. It completed in 8,093.948
+wall seconds including fixture generation and post-run checks. This is an
+offline generated-media pacing test, not SOOP traffic or source-relative
+synchronization.
+
+* SPS: 320x180, POC 1, reorder bound 2; 53,280 B pictures and 18,000
+  reference-B VCL slices. All 72,000 source/transformed decoded-frame hashes
+  matched.
+* H.264: 72,000/72,000 VCL NALs preserved; identity passed.
+* AAC: 337,501/337,501 ADTS frames at 48 kHz; identity passed.
+* TS: 2,196,795 packets; continuity errors 0, PSI CRC errors 0; maximum PCR
+  value gap 100 ms. Full FFmpeg decode and StreamIO EOF/drain passed.
+* Output: 412,997,460 bytes, SHA-256
+  `637067256092e26a266be5ee65552ef9282bfae75cf91e25d1f3282df60f7e6d`.
+* Peak bounded buffer 24,064 bytes; 241 harness-inclusive resource samples;
+  RSS first/last/peak 165,548/150,112/245,568 KiB; FD 7/4/7; threads 2/1/2;
+  FD count before/after 4/4.
+* Decoded A/V coverage-boundary offset change 21.333 ms is not source-clock
+  drift or perceptual synchronization.
+
+This complements the accelerated six-hour Type-1 media-time run; it proves
+neither six-hour wall-clock stability nor receiver-only memory trend. Native
+Type-1 encoder output, SOOP/Grid delivery, source-relative A/V, live recovery,
+and live 2 h/6 h operation remain unverified. Production bundle SHA remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
