@@ -57,4 +57,4 @@ Current follow-up extends the offline soak harness with an opt-in, SPS-verified 
 
 Final follow-up verification: source suite **798 passed, 0 skipped**; bundle parity **789 passed, 0 skipped**. No production source changed; the deterministic bundle remains byte-identical.
 
-The offline soak now also exercises a transformed Type-1 B-picture stream through the production sink and a 10-minute wall-clock-paced generated timeline. The first identity failure revealed the harness was reading its original Type-0 fixture; the path was corrected without relaxing VCL identity. Current suites pass **800/791**, zero skips. The Type-1 fixture is not native encoder output and provides no live SOOP proof.
+The offline soak exercises transformed Type-1 B-picture and POC-0 reference-B/reorder-2 streams through the production sink. A 10-minute paced run now covers the POC-0 reference-B subset; the Type-1 fixture is transformed from POC 0, not native encoder output. Current suites pass **801/792**, zero skips. Neither result provides live SOOP proof.

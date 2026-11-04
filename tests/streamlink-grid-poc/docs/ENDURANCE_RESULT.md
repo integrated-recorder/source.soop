@@ -589,3 +589,28 @@ On bundle SHA-256
 This is a paced local generated-media test, not SOOP/Grid E2E or a live
 endurance result. The complete source and bundle suites subsequently passed
 800 and 791 tests respectively, with zero skips.
+
+## POC-0 reference B-picture timeline — 2026-11-04
+
+The bounded soak now includes `--reference-b-frames`, generating an x264 Main
+stream with `b-pyramid=normal`. Before sending it through the sink, the helper
+parses every VCL slice and requires reference B slices; it also verifies SPS
+POC Type 0 and `max_num_reorder_frames >= 2`. The one-minute fixture test
+passed independently.
+
+The 10-minute wall-clock-paced run completed in 623.812 s:
+
+* SPS: 320x180, POC 0, reorder bound 2; 4,440 B pictures and 1,500 reference-B
+  VCL slices observed.
+* H.264: 6,000/6,000 VCL AUs input/output; identity passed.
+* AAC: 28,126/28,126 ADTS frames at 48 kHz; identity passed.
+* TS: 203,573 packets; continuity/PSI errors 0; max PCR value gap 100 ms.
+* Full FFmpeg decode and StreamIO EOF/drain passed; output 38,271,724 bytes.
+* Bounded buffer peak 23,876 bytes; RSS first/last/peak
+  189,568/175,452/189,572 KiB; FD 7/4/7; threads 2/1/2.
+* Decoded coverage boundary difference 21.333 ms is not source-clock drift or
+  perceptual sync.
+
+This adds paced local coverage for a deeper reorder/reference-B subset. It is
+not SOOP reception, source-relative A/V synchronization, network recovery, or
+receiver-only resource trending.
