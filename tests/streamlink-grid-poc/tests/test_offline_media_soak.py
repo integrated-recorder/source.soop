@@ -11,7 +11,15 @@ from types import SimpleNamespace
 import pytest
 
 from soop_grid.protocol import Cancelled
-from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _body, _pace_until, _remaining_timeout, _run, run
+from tools.offline_media_soak import (
+    MAX_SEGMENT_MINUTES,
+    _body,
+    _decoded_frame_identity,
+    _pace_until,
+    _remaining_timeout,
+    _run,
+    run,
+)
 
 
 def test_offline_soak_parent_body_serializes_composition_offset():
@@ -29,6 +37,15 @@ def test_offline_soak_uses_one_global_subprocess_deadline():
 def test_offline_soak_expired_deadline_fails_closed():
     with pytest.raises(subprocess.TimeoutExpired):
         _remaining_timeout(10, now=10)
+
+
+def test_offline_soak_frame_identity_rejects_decoder_failure(monkeypatch):
+    monkeypatch.setattr(
+        "tools.offline_media_soak.subprocess.run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=1, stdout=b""),
+    )
+    with pytest.raises(RuntimeError, match="decoded_frame_identity_failed"):
+        _decoded_frame_identity("ffmpeg", "fixture.h264", time.monotonic() + 1)
 
 
 def test_offline_soak_kills_child_at_global_deadline(tmp_path):

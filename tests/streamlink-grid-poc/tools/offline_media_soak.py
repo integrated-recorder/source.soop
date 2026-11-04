@@ -79,8 +79,9 @@ def _decoded_frame_identity(ffmpeg, path, deadline):
         ],
         capture_output=True,
         timeout=_remaining_timeout(deadline),
-        check=True,
     )
+    if result.returncode:
+        raise RuntimeError("decoded_frame_identity_failed")
     digest = hashlib.sha256()
     count = 0
     for line in result.stdout.splitlines():
