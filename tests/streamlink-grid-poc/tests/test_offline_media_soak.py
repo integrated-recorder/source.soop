@@ -100,6 +100,8 @@ def test_offline_soak_poc1_reference_bframes_survive_production_sink_and_decode(
     assert result["sps"]["poc_type"] == 1
     assert result["sps"]["max_reorder"] >= 2
     assert result["sps"]["reference_b_vcl_count"] > 0
+    assert result["sps"]["type1_transform_frame_identity"]
+    assert result["sps"]["type1_transform_decoded_frame_count"] == 600
     assert result["video"]["input_access_units"] == result["video"]["output_vcl_nals"]
     assert result["audio"]["input_adts_frames"] == result["audio"]["output_adts_frames"]
     assert result["output"]["ts_continuity_errors"] == 0

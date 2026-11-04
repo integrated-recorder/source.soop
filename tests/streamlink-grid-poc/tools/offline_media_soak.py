@@ -61,6 +61,39 @@ def _run(binary, args, deadline):
         raise RuntimeError("fixture_generation_failed")
 
 
+def _decoded_frame_identity(ffmpeg, path, deadline):
+    result = subprocess.run(
+        [
+            str(ffmpeg),
+            "-v",
+            "error",
+            "-xerror",
+            "-nostdin",
+            "-i",
+            str(path),
+            "-map",
+            "0:v:0",
+            "-f",
+            "framemd5",
+            "-",
+        ],
+        capture_output=True,
+        timeout=_remaining_timeout(deadline),
+        check=True,
+    )
+    digest = hashlib.sha256()
+    count = 0
+    for line in result.stdout.splitlines():
+        if not line or line.startswith(b"#"):
+            continue
+        digest.update(line.rsplit(b",", 1)[-1].strip())
+        digest.update(b"\n")
+        count += 1
+    if count == 0:
+        raise ValueError("decoded_frame_identity_empty")
+    return count, digest.hexdigest()
+
+
 def _access_units(data, expected_count):
     units = nals(data, max_units=max(1024, expected_count * 8))
     groups, current = [], []
@@ -291,6 +324,7 @@ def run(
         sps_info = None
         b_picture_count = 0
         reference_b_vcl_count = 0
+        transformed_decode_frame_count = 0
         audio_path = work / "source.aac"
         _run(
             ffmpeg,
@@ -378,6 +412,11 @@ def run(
                     raise RuntimeError("soak_fixture_size_limit")
                 timeline_video_path = video_path.with_suffix(".poc1.h264")
                 timeline_video_path.write_bytes(video_data)
+                source_decode = _decoded_frame_identity(ffmpeg, video_path, deadline)
+                transformed_decode = _decoded_frame_identity(ffmpeg, timeline_video_path, deadline)
+                if source_decode != transformed_decode or source_decode[0] != video_frames_expected:
+                    raise ValueError("poc1_transform_decoded_frames_mismatch")
+                transformed_decode_frame_count += transformed_decode[0]
             video_aus = _access_units(video_data, video_frames_expected)
             sps = next((unit for unit in nals(video_data) if unit[0] & 31 == 7), None)
             if sps is None:
@@ -636,6 +675,8 @@ def run(
                 "max_reorder": sps_info["max_reorder"],
                 "b_picture_count": b_picture_count,
                 "reference_b_vcl_count": reference_b_vcl_count,
+                "type1_transform_decoded_frame_count": transformed_decode_frame_count,
+                "type1_transform_frame_identity": bool(poc1_b_frames or poc1_reference_b_frames),
             },
             "audio": {
                 "sample_rate": SAMPLE_RATE,
