@@ -478,3 +478,21 @@ production code or Bundle bytes changed. The result broadens only constructed
 offline Type-1 syntax coverage; live Type-1 Grid B pictures, source-relative
 A/V, live recovery, and real-time 2 h/6 h remain NOT TESTED. Campaign stays
 **PARTIAL** and Stable **NO-GO**.
+
+## Offline continuation — Type-1 empty reference cycle
+
+Added a constructed Type-1 B-picture stream with an empty
+`offset_for_ref_frame` cycle and `offset_for_non_ref_pic=-1`. Per-picture
+source/transformed POC, independent FFmpeg decode hashes, Parent/StreamIO/TS
+payload identity, full output decode and EOF/drain pass. Full suites are
+**811 Source / 802 Bundle**, zero skips. This extends tested progressive
+Type-1 syntax only; it does not establish native encoder output or live Grid
+support. Campaign remains **PARTIAL**; Stable remains **NO-GO**.
+
+The 2026-11-04 environment recheck passed 731 Source and 722 bundle-parity
+tests, with 80 skips each, after explicitly excluding the preserved untracked
+suffix experiment. FFmpeg/FFprobe were unavailable in this environment, so
+decoder-generated POC E2E checks skipped on rerun; the earlier recorded
+no-skip results remain separate evidence and were not reproduced here. Static
+checks and deterministic bundle/manifest checks passed. Live SOOP and real-time
+endurance remain untested.

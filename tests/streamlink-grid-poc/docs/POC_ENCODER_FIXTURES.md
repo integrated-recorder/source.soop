@@ -41,6 +41,14 @@ the derived stream's per-picture `frame_num` and `delta_poc0` match the
 pre-transform stream. FFmpeg frame hashes match. This extends the Type-1
 parser/E2E fixture subset; it is not native encoder output.
 
+A third Type-1 variant uses an empty reference POC cycle and
+`offset_for_non_ref_pic=-1`. Slice deltas are derived from the source Type-0
+POC so reference and non-reference display order is retained. The resulting
+SPS is checked for a zero-length cycle and the signed non-reference offset;
+H264Clock POC values are compared picture by picture and FFmpeg frame hashes
+match. It passes the production Parent/StreamIO/TS path and is not native
+Type-1 encoder output.
+
 ## Short live-broadcast masters
 
 The three 20-second synchronized masters use generated 640x360 video and AAC-LC stereo. Eight irregular one-frame flashes are paired to 5 ms audio clicks at the same source times. The following hashes identify the exact synthetic Matroska inputs used in the marker-enabled SOOP tests:

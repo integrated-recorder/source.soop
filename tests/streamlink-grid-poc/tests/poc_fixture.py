@@ -97,7 +97,14 @@ def _escape(rbsp: bytes) -> bytes:
     return bytes(output)
 
 
-def _rewrite_sps(nal: bytes, target_type: int, *, delta_always_zero: bool = True) -> bytes:
+def _rewrite_sps(
+    nal: bytes,
+    target_type: int,
+    *,
+    delta_always_zero: bool = True,
+    offset_for_non_ref: int = 0,
+    offset_for_ref_frame: tuple[int, ...] = (2,),
+) -> bytes:
     if target_type not in (1, 2):
         raise ValueError("target POC type must be 1 or 2")
     rbsp = _unescape(nal[1:])
@@ -115,13 +122,12 @@ def _rewrite_sps(nal: bytes, target_type: int, *, delta_always_zero: bool = True
         raise ValueError("SPS POC syntax exceeds RBSP")
     replacement = _ue(target_type)
     if target_type == 1:
-        # Use a one-entry reference cycle: each reference frame advances POC
-        # by two. Type-1 fixtures with B pictures carry a per-slice delta.
         replacement.append(int(delta_always_zero))
-        replacement.extend(_se(0))  # offset_for_non_ref_pic
+        replacement.extend(_se(offset_for_non_ref))
         replacement.extend(_se(0))  # offset_for_top_to_bottom_field
-        replacement.extend(_ue(1))  # num_ref_frames_in_pic_order_cnt_cycle
-        replacement.extend(_se(2))  # offset_for_ref_frame[0]
+        replacement.extend(_ue(len(offset_for_ref_frame)))
+        for offset in offset_for_ref_frame:
+            replacement.extend(_se(offset))
     rewritten = [*syntax[:poc_type_start], *replacement, *syntax[reader.pos :]]
     return bytes([nal[0], *_escape(_pack_rbsp(rewritten))])
 
@@ -155,7 +161,13 @@ def _rewrite_slice(
     return bytes([nal[0], *_escape(_pack_rbsp(rewritten))])
 
 
-def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
+def rewrite_type0_stream(
+    data: bytes,
+    target_type: int,
+    *,
+    type1_cycle: tuple[int, ...] = (2,),
+    type1_offset_for_non_ref: int = 0,
+) -> bytes:
     """Rewrite a progressive POC-0 no-B stream to a valid POC-1 or POC-2 form."""
     if target_type not in (1, 2):
         raise ValueError("target POC type must be 1 or 2")
@@ -181,7 +193,15 @@ def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
     for unit in nals(data):
         kind = unit[0] & 31
         if kind == 7:
-            converted.append(_rewrite_sps(unit, target_type, delta_always_zero=target_type != 1))
+            converted.append(
+                _rewrite_sps(
+                    unit,
+                    target_type,
+                    delta_always_zero=target_type != 1,
+                    offset_for_non_ref=type1_offset_for_non_ref,
+                    offset_for_ref_frame=type1_cycle,
+                )
+            )
         elif kind in (1, 5):
             header = parse_slice(unit, source_sps, source_pps)
             source_poc = clock._picture_order(header, source_sps)
@@ -193,10 +213,16 @@ def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
                     frame_num_offset = previous_frame_num_offset
                     if previous_frame_num > header.frame_num:
                         frame_num_offset += source_sps["max_frame_num"]
-                abs_frame_num = frame_num_offset + header.frame_num
+                abs_frame_num = frame_num_offset + header.frame_num if type1_cycle else 0
                 if not header.nal_ref_idc and abs_frame_num > 0:
                     abs_frame_num -= 1
-                expected = 2 * abs_frame_num
+                expected = 0
+                if abs_frame_num > 0 and type1_cycle:
+                    cycle_count = (abs_frame_num - 1) // len(type1_cycle)
+                    frame_in_cycle = (abs_frame_num - 1) % len(type1_cycle)
+                    expected = cycle_count * sum(type1_cycle) + sum(type1_cycle[: frame_in_cycle + 1])
+                if not header.nal_ref_idc:
+                    expected += type1_offset_for_non_ref
                 delta = source_poc - expected
                 if header.mmco5:
                     # The MMCO-5 picture is frame_num 0 for the next picture.

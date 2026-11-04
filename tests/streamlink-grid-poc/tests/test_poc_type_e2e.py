@@ -143,6 +143,9 @@ def generated_poc_streams(tmp_path_factory):
     source_bytes = bframe_source.read_bytes()
     source_sps_nal = next(unit for unit in nals(source_bytes) if unit[0] & 31 == 7)
     source_sps = parse_sps(source_sps_nal)
+    source_pps = parse_pps(
+        next(unit for unit in nals(source_bytes) if unit[0] & 31 == 8), {source_sps["id"]: source_sps}
+    )
     if source_sps["poc_type"] != 0:
         pytest.fail(f"x264 B-frame source unexpectedly used POC type {source_sps['poc_type']}")
     type1_bytes = rewrite_type0_stream(source_bytes, 1)
@@ -217,6 +220,35 @@ def generated_poc_streams(tmp_path_factory):
         "sps": type1_bottom_sps,
         "sha256": hashlib.sha256(type1_bottom).hexdigest(),
     }
+    type1_zero_cycle = rewrite_type0_stream(source_bytes, 1, type1_cycle=(), type1_offset_for_non_ref=-1)
+    type1_zero_cycle_path = root / "type1-zero-cycle-negative-nonref.h264"
+    type1_zero_cycle_path.write_bytes(type1_zero_cycle)
+    zero_cycle_units = nals(type1_zero_cycle)
+    type1_zero_sps = parse_sps(next(unit for unit in zero_cycle_units if unit[0] & 31 == 7))
+    type1_zero_pps = parse_pps(
+        next(unit for unit in zero_cycle_units if unit[0] & 31 == 8), {type1_zero_sps["id"]: type1_zero_sps}
+    )
+    assert type1_zero_sps["poc_type"] == 1
+    assert type1_zero_sps["offset_for_ref_frame"] == ()
+    assert type1_zero_sps["offset_for_non_ref_pic"] == -1
+    assert _video_decode_hashes(ffmpeg, bframe_source) == _video_decode_hashes(ffmpeg, type1_zero_cycle_path)
+    source_clock, zero_cycle_clock = H264Clock(), H264Clock()
+    for source_group, converted_group in zip(_aus(source_bytes), _aus(type1_zero_cycle), strict=True):
+        source_header = parse_slice(
+            next(unit for unit in source_group if unit[0] & 31 in (1, 5)), source_sps, source_pps
+        )
+        converted_header = parse_slice(
+            next(unit for unit in converted_group if unit[0] & 31 in (1, 5)), type1_zero_sps, type1_zero_pps
+        )
+        assert source_clock._picture_order(source_header, source_sps) == zero_cycle_clock._picture_order(
+            converted_header, type1_zero_sps
+        )
+    metadata[4] = {
+        "path": type1_zero_cycle_path,
+        "data": type1_zero_cycle,
+        "sps": type1_zero_sps,
+        "sha256": hashlib.sha256(type1_zero_cycle).hexdigest(),
+    }
     full_audio = audio_source.read_bytes()
     audio_frames = parse_adts(full_audio).frames[:46]
     assert len(audio_frames) == 46
@@ -225,7 +257,9 @@ def generated_poc_streams(tmp_path_factory):
 
 
 @pytest.mark.parametrize(
-    ("fixture_key", "poc_type"), [(0, 0), (1, 1), (2, 2), (3, 1)], ids=["poc0", "poc1", "poc2", "poc1-bottom"]
+    ("fixture_key", "poc_type"),
+    [(0, 0), (1, 1), (2, 2), (3, 1), (4, 1)],
+    ids=["poc0", "poc1", "poc2", "poc1-bottom", "poc1-zero-cycle"],
 )
 @pytest.mark.parametrize("corrupt", [False, True], ids=["valid", "bad-vcl-header"])
 def test_poc_type_full_grid_parent_streamio_and_decode(

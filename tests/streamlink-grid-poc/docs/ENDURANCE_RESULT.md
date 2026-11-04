@@ -812,3 +812,30 @@ single-file Bundle: **800 passed**, zero skips. No SOOP endpoint was contacted;
 the synthetic stream is not native Type-1 encoder or live Grid evidence.
 Bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 Campaign remains PARTIAL; Stable NO-GO pending live and real-time endurance.
+
+## POC-1 empty-cycle/non-reference-offset regression — 2026-11-04
+
+Added a Type-1 B-picture fixture with
+`num_ref_frames_in_pic_order_cnt_cycle=0` and
+`offset_for_non_ref_pic=-1`. Slice delta values are computed from the valid
+Type-0 source POC, and source/transformed H264Clock output is compared for
+every picture. The SPS fields, independent FFmpeg frame hashes, local
+Parent/StreamIO→TS output, VCL/AAC identity, full decode and EOF/drain pass.
+Focused Type matrix: **10 passed**. Full Source: **811 passed**; Bundle:
+**802 passed**, zero skips. No SOOP endpoint was contacted; this is
+constructed offline evidence, not native Type-1 encoder or live Grid proof.
+Bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Campaign PARTIAL; Stable NO-GO.
+
+### Environment recheck — 2026-11-04
+
+A later offline rerun in the current restricted environment passed **731**
+Source tests and **722** bundled-parity tests, with **80 skips** in each run.
+The preserved untracked suffix experiment was explicitly excluded. The current
+environment has no discoverable `ffmpeg`/`ffprobe`, so generated-bitstream POC
+E2E and other decoder-dependent checks skipped; the 14 loopback/socketpair
+tests passed after granting local test-socket access. Ruff, format, compileall,
+deterministic bundle check, and manifest verification passed. This rerun does
+not replace the earlier recorded no-skip run, but those decoder checks could
+not be independently repeated in this environment. No live SOOP or endurance
+test was attempted.
