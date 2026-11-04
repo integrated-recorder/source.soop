@@ -465,3 +465,16 @@ code or bundle changed. This improves Type-1 syntax coverage but does not
 prove native Type-1 encoder output, SOOP/Grid delivery, source-relative sync,
 or live 2 h/6 h endurance. Campaign remains **PARTIAL**; Stable remains
 **NO-GO**.
+
+## Offline continuation — Type-1 bottom-POC slice syntax
+
+Added a Type-1 PPS bottom-POC variant with explicit
+`delta_pic_order_cnt[1]=0` to the synthetic B-picture bitstream and ran it
+through the production local Parent/StreamIO/TS path. The transformed SPS/PPS
+and slices were reparsed, frame order fields matched, FFmpeg decoded hashes
+matched, VCL/AAC payloads were identical, and output decode/EOF/drain passed.
+The expanded full suites pass **809 Source / 800 Bundle**, zero skips. No
+production code or Bundle bytes changed. The result broadens only constructed
+offline Type-1 syntax coverage; live Type-1 Grid B pictures, source-relative
+A/V, live recovery, and real-time 2 h/6 h remain NOT TESTED. Campaign stays
+**PARTIAL** and Stable **NO-GO**.

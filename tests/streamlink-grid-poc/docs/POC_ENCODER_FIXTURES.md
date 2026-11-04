@@ -32,6 +32,15 @@ Type-1 encoder mode. The available encoder inventory was rechecked: the local
 FFmpeg exposes libx264, but no JM reference encoder, `lencod`, or OpenH264
 encoder was found, so native Type-1 encoder output remains unavailable here.
 
+A second Type-1 header transform toggles the PPS
+`bottom_field_pic_order_in_frame_present_flag` and inserts
+`delta_pic_order_cnt[1]=0` after each parsed `delta_pic_order_cnt[0]`. Its
+offset constraints are checked before transformation. The SPS/PPS/slice
+headers are reparsed, every inserted `delta_poc1` is asserted to be zero, and
+the derived stream's per-picture `frame_num` and `delta_poc0` match the
+pre-transform stream. FFmpeg frame hashes match. This extends the Type-1
+parser/E2E fixture subset; it is not native encoder output.
+
 ## Short live-broadcast masters
 
 The three 20-second synchronized masters use generated 640x360 video and AAC-LC stereo. Eight irregular one-frame flashes are paired to 5 ms audio clicks at the same source times. The following hashes identify the exact synthetic Matroska inputs used in the marker-enabled SOOP tests:

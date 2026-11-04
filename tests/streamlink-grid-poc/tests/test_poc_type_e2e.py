@@ -16,7 +16,11 @@ from fractions import Fraction
 import pytest
 
 from conftest import media_body
-from poc_fixture import rewrite_type0_stream, rewrite_type2_stream_to_type1_delta_zero
+from poc_fixture import (
+    rewrite_type0_stream,
+    rewrite_type1_stream_with_bottom_delta_zero,
+    rewrite_type2_stream_to_type1_delta_zero,
+)
 from soop_grid.h264clock import H264Clock, parse_pps, parse_slice, parse_sps
 from soop_grid.media import MediaSink, parse_adts
 from soop_grid.mpegts import nals
@@ -176,6 +180,43 @@ def generated_poc_streams(tmp_path_factory):
             "sps": info,
             "sha256": hashlib.sha256(data).hexdigest(),
         }
+    type1_bottom = rewrite_type1_stream_with_bottom_delta_zero(type1_bytes)
+    type1_bottom_path = root / "type1-bottom-delta-zero.h264"
+    type1_bottom_path.write_bytes(type1_bottom)
+    type1_bottom_sps = parse_sps(next(unit for unit in nals(type1_bottom) if unit[0] & 31 == 7))
+    type1_bottom_pps = parse_pps(
+        next(unit for unit in nals(type1_bottom) if unit[0] & 31 == 8),
+        {type1_bottom_sps["id"]: type1_bottom_sps},
+    )
+    assert type1_bottom_sps["poc_type"] == 1 and not type1_bottom_sps["delta_pic_order_always_zero"]
+    assert type1_bottom_pps["bottom_poc"]
+    assert _video_decode_hashes(ffmpeg, type1_path) == _video_decode_hashes(ffmpeg, type1_bottom_path)
+    base_groups = _aus(type1_bytes)
+    bottom_groups = _aus(type1_bottom)
+    assert len(base_groups) == len(bottom_groups)
+    base_units = nals(type1_bytes)
+    base_sps = parse_sps(next(unit for unit in base_units if unit[0] & 31 == 7))
+    base_pps = parse_pps(next(unit for unit in base_units if unit[0] & 31 == 8), {base_sps["id"]: base_sps})
+    for base_group, bottom_group in zip(base_groups, bottom_groups, strict=True):
+        base_header = parse_slice(
+            next(unit for unit in base_group if unit[0] & 31 in (1, 5)),
+            base_sps,
+            base_pps,
+        )
+        bottom_header = parse_slice(
+            next(unit for unit in bottom_group if unit[0] & 31 in (1, 5)), type1_bottom_sps, type1_bottom_pps
+        )
+        assert bottom_header.delta_poc1 == 0
+        assert (bottom_header.frame_num, bottom_header.delta_poc0) == (
+            base_header.frame_num,
+            base_header.delta_poc0,
+        )
+    metadata[3] = {
+        "path": type1_bottom_path,
+        "data": type1_bottom,
+        "sps": type1_bottom_sps,
+        "sha256": hashlib.sha256(type1_bottom).hexdigest(),
+    }
     full_audio = audio_source.read_bytes()
     audio_frames = parse_adts(full_audio).frames[:46]
     assert len(audio_frames) == 46
@@ -183,12 +224,16 @@ def generated_poc_streams(tmp_path_factory):
     return ffmpeg, ffprobe, root, metadata, audio_payload
 
 
-@pytest.mark.parametrize("poc_type", [0, 1, 2])
+@pytest.mark.parametrize(
+    ("fixture_key", "poc_type"), [(0, 0), (1, 1), (2, 2), (3, 1)], ids=["poc0", "poc1", "poc2", "poc1-bottom"]
+)
 @pytest.mark.parametrize("corrupt", [False, True], ids=["valid", "bad-vcl-header"])
-def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, poc_type, corrupt, monkeypatch):
+def test_poc_type_full_grid_parent_streamio_and_decode(
+    generated_poc_streams, fixture_key, poc_type, corrupt, monkeypatch
+):
     ffmpeg, ffprobe, root, streams, audio_payload = generated_poc_streams
-    source_path, source = streams[poc_type]["path"], streams[poc_type]["data"]
-    source_sps = streams[poc_type]["sps"]
+    source_path, source = streams[fixture_key]["path"], streams[fixture_key]["data"]
+    source_sps = streams[fixture_key]["sps"]
     source_groups = _aus(source)
     assert len(source_groups) == 30
 

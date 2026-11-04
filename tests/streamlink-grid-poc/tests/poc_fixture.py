@@ -250,6 +250,68 @@ def rewrite_type2_stream_to_type1_delta_zero(data: bytes) -> bytes:
     return b"".join(b"\x00\x00\x00\x01" + (new_sps if unit is sps_nal else unit) for unit in units)
 
 
+def rewrite_type1_stream_with_bottom_delta_zero(data: bytes) -> bytes:
+    """Enable PPS bottom-field POC syntax and insert delta_pic_order_cnt[1]=0.
+
+    This preserves each frame's POC for progressive Type-1 streams whose
+    ``offset_for_top_to_bottom_field`` is zero. Input must currently omit the
+    PPS flag and use explicit Type-1 delta syntax.
+    """
+    from soop_grid.h264clock import parse_pps, parse_sps
+
+    units = nals(data)
+    sps_nal = next((unit for unit in units if unit[0] & 31 == 7), None)
+    pps_nal = next((unit for unit in units if unit[0] & 31 == 8), None)
+    if sps_nal is None or pps_nal is None:
+        raise ValueError("Type-1 bottom-delta fixture requires SPS and PPS")
+    sps = parse_sps(sps_nal)
+    pps = parse_pps(pps_nal, {sps["id"]: sps})
+    if sps["poc_type"] != 1 or sps["delta_pic_order_always_zero"] or pps["bottom_poc"]:
+        raise ValueError("Type-1 bottom-delta source is outside the supported transform subset")
+    if sps["offset_for_top_to_bottom_field"] != 0:
+        raise ValueError("Type-1 bottom-delta transform requires zero top-to-bottom offset")
+
+    pps_rbsp = _unescape(pps_nal[1:])
+    pps_bits = _syntax_bits(pps_rbsp)
+    pps_reader = _Bits(pps_rbsp)
+    pps_reader.ue()  # pic_parameter_set_id
+    pps_reader.ue()  # seq_parameter_set_id
+    pps_reader.get(1)  # entropy_coding_mode_flag
+    bottom_flag_pos = pps_reader.pos
+    if pps_reader.get(1) != 0:
+        raise ValueError("Type-1 bottom-delta source already signals bottom POC syntax")
+    pps_bits[bottom_flag_pos] = 1
+    new_pps = bytes([pps_nal[0], *_escape(_pack_rbsp(pps_bits))])
+    parse_pps(new_pps, {sps["id"]: sps})
+
+    converted = []
+    for unit in units:
+        if unit is pps_nal:
+            converted.append(new_pps)
+            continue
+        if unit[0] & 31 not in (1, 5):
+            converted.append(unit)
+            continue
+        slice_rbsp = _unescape(unit[1:])
+        slice_bits = _syntax_bits(slice_rbsp)
+        reader = _Bits(slice_rbsp)
+        reader.ue()  # first_mb_in_slice
+        reader.ue()  # slice_type
+        reader.ue()  # pic_parameter_set_id
+        reader.get(sps["log2_frame_num"])
+        if unit[0] & 31 == 5:
+            reader.ue()  # idr_pic_id
+        reader.se()  # delta_pic_order_cnt[0]
+        insertion = reader.pos
+        converted.append(
+            bytes([unit[0], *_escape(_pack_rbsp(slice_bits[:insertion] + _se(0) + slice_bits[insertion:]))])
+        )
+    return b"".join(
+        b"\x00\x00\x00\x01" + (new_pps if unit is pps_nal else converted[index])
+        for index, unit in enumerate(units)
+    )
+
+
 def add_mmco5_type0(data: bytes, target_frame: int = 10) -> bytes:
     """Create one independently decodable POC-0/MMCO-5 no-B fixture.
 

@@ -796,3 +796,19 @@ fixture is a valid constructed Type-1 subset, not native Type-1 encoder output,
 Grid transport, or live endurance evidence. Live A/V sync, Parent/Cache live
 recovery and real-time SOOP 2 h/6 h remain NOT TESTED; campaign PARTIAL and
 Stable NO-GO.
+
+## POC-1 bottom-POC delta1 Parent/StreamIO regression — 2026-11-04
+
+Extended the constructed Type-1 B-picture fixture to signal PPS
+`bottom_field_pic_order_in_frame_present_flag=1`, then inserted
+`delta_pic_order_cnt[1]=0` after each explicit `delta_pic_order_cnt[0]`.
+The resulting SPS/PPS and slice fields were reparsed; all `delta_poc1` values
+are zero, and each picture's `frame_num` and `delta_poc0` match the original
+Type-1 fixture. FFmpeg decoded both versions to identical frame hashes. The
+full local Parent-wire→MediaSink→StreamIO→TS path passes for clean and
+malformed-header variants; VCL/AAC payload identity, full decode, and drain
+are checked. Focused matrix: **8 passed**. Full Source: **809 passed**;
+single-file Bundle: **800 passed**, zero skips. No SOOP endpoint was contacted;
+the synthetic stream is not native Type-1 encoder or live Grid evidence.
+Bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+Campaign remains PARTIAL; Stable NO-GO pending live and real-time endurance.
