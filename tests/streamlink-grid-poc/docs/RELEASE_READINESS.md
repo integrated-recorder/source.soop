@@ -208,7 +208,8 @@ bundle SHA `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`:
 PSI CRC errors were zero, PCR value gap was at most 100 ms, full decode and
 StreamIO drain passed. This is local synthetic data derived from POC 0; it
 does not prove native Type-1 output or Grid delivery. Full offline suites
-passed 802 source and 793 bundled tests with zero skips; after strengthening
+passed 803 source and 794 bundled tests with zero skips at source commit
+`42c0969`; after strengthening
 the assertions, the soak test module passed 11/11 in both source and bundled
 execution. See `ENDURANCE_RESULT.md`.
 
@@ -217,9 +218,11 @@ build Grid reception, source-relative sync, live recovery, and live 2 h/6 h
 endurance remain NOT TESTED. **Campaign PARTIAL; Stable NO-GO.**
 
 An accelerated 7,200-second Type-1 reference-B generated-media timeline then
-passed in 1,102.368 wall seconds: 72,000 VCL and 337,501 AAC frames preserved,
-zero TS continuity/PSI errors, max PCR value gap 100 ms, full decode and
-StreamIO drain. RSS was harness-inclusive and peaked at 251,272 KiB. This is
+passed in 1,139.537 wall seconds on source commit `1ee8729`: source and
+transformed decoded-frame hashes matched across 72,000 frames; 72,000 VCL and
+337,501 AAC frames were preserved; TS continuity/PSI errors were zero, max
+PCR value gap was 100 ms, and full decode/StreamIO drain passed. RSS was
+harness-inclusive and peaked at 240,000 KiB. This is
 synthetic media-time evidence, not a real-time or SOOP 2 h test; Type-1
 reference-B 6 h and live gates remain NOT TESTED. Campaign remains PARTIAL;
 Stable remains NO-GO.

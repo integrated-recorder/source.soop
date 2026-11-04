@@ -646,10 +646,12 @@ This adds a paced local sink-path result for transformed Type-1 reference-B
 syntax. It does not validate native Type-1 encoder output, SOOP Grid delivery,
 network recovery, source-relative sync, or live 2 h/6 h endurance.
 
-The same transformed POC-1 reference-B mode also completed an accelerated
-7,200-second synthetic timeline in 1,102.368 wall seconds on source commit
-`32cf02906964055a9a38f71b9040d7bc191390b7` and the unchanged production
-bundle SHA above:
+After adding per-segment FFmpeg decoded-frame identity checks between each
+POC-0 source and POC-1 transformed stream, source commit `1ee8729` completed
+an accelerated 7,200-second synthetic timeline in 1,139.537 wall seconds on
+the unchanged production bundle SHA above. All 12 segments (72,000 frames
+total) passed source/transformed decoded-frame hash identity before the
+transformed stream entered the sink:
 
 * SPS: 320x180, POC 1, reorder bound 2; 53,280 B pictures and 18,000
   reference-B VCL slices.
@@ -658,8 +660,9 @@ bundle SHA above:
 * TS: 2,443,131 packets; continuity/PSI CRC errors 0; maximum PCR value gap
   100 ms. Full FFmpeg decode and StreamIO EOF/drain passed.
 * Output: 459,308,628 bytes; peak bounded buffer 55,272 bytes.
-* Harness-inclusive RSS first/last/peak 178,432/165,604/251,272 KiB;
+* Harness-inclusive RSS first/last/peak 167,180/155,324/240,000 KiB;
   FD first/last/peak 7/4/7; threads 2/1/2.
+* Peak bounded StreamIO buffer: 97,572 bytes.
 * Decoded coverage-boundary difference 21.333 ms is not source-relative drift
   or perceptual sync.
 
@@ -671,7 +674,7 @@ reception remain untested.
 
 With the local FFmpeg/FFprobe toolchain explicitly configured and the preserved
 untracked `tests/test_suffix_latejoin.py` excluded, the complete source suite
-passed **802 tests** and bundled parity passed **793 tests**, both with zero
+at commit `42c0969` passed **803 tests** and bundled parity passed **794 tests**, both with zero
 skips. The first sandboxed source run failed 14 socketpair/loopback tests due
 to sandbox `Operation not permitted`; the same full suite passed after running
 its synthetic local-socket tests in the authorized environment. A first bundle
