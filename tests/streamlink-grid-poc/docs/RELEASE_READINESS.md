@@ -226,3 +226,7 @@ harness-inclusive and peaked at 240,000 KiB. This is
 synthetic media-time evidence, not a real-time or SOOP 2 h test; Type-1
 reference-B 6 h and live gates remain NOT TESTED. Campaign remains PARTIAL;
 Stable remains NO-GO.
+
+## Offline continuation — Type-1 reference-B six-hour synthetic timeline — 2026-11-04
+
+At source commit `139aaf6ead3c9f4cc7573decef6d2af31168cdd5`, a 21,600-second synthetic POC-1 reference-B timeline completed in 3,058.424 wall seconds. It matched decoded frame hashes for all 216,000 source/transformed frames and preserved 216,000 VCL NALs and 1,012,501 AAC frames; TS continuity/PSI errors were zero, PCR value gaps stayed at 100 ms, full decode and EOF/drain passed. RSS/FD/thread samples include the harness. This is accelerated media-time evidence, not six hours of process or SOOP network operation. Full offline source/bundle suites pass 804/795 with zero skips; bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. User confirmed offline-only work. Live Grid, source-relative sync, controlled recovery, real-time 2 h/6 h, and receiver-only resource-trend gates remain NOT TESTED. Campaign PARTIAL; Stable NO-GO.

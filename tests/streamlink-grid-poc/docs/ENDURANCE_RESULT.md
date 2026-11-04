@@ -670,6 +670,40 @@ This is an accelerated media-time test. POC-1 reference-B 2-hour wall-clock
 operation, 6-hour operation, native Type-1 encoder output and SOOP/Grid
 reception remain untested.
 
+## POC-1 reference-B six-hour synthetic timeline — 2026-11-04
+
+At source commit `139aaf6ead3c9f4cc7573decef6d2af31168cdd5`, the bounded
+offline soak completed 21,600 media seconds in 3,058.424 wall seconds. The
+synthetic H.264 fixture bitrate was explicitly set to 300 kb/s to keep total
+generated input below the harness's 2 GiB limit; this changes fixture bitrate,
+not SPS dimensions, POC type, reorder depth, or frame count. It is not
+wall-clock-paced, a live process endurance run, or SOOP/Grid traffic.
+
+* SPS: 320x180, POC 1, reorder bound 2; 159,840 B pictures and 54,000
+  reference-B VCL slices. The POC-0-to-POC-1 transform independently decoded
+  and matched frame hashes for all 216,000 frames.
+* H.264: 216,000/216,000 VCL NALs preserved; identity passed.
+* AAC: 1,012,501/1,012,501 ADTS frames at 48 kHz; identity passed.
+* TS: 6,590,379 packets; continuity errors 0, PSI CRC errors 0; max PCR value
+  gap 100 ms. Full FFmpeg decode and StreamIO EOF/drain passed.
+* Output: 1,238,991,252 bytes; bounded buffer peak 68,996 bytes.
+* Harness-inclusive RSS first/last/peak 158,100/140,752/404,988 KiB;
+  FD first/last/peak 7/4/7; threads 2/1/2; 14 resource samples.
+* Decoded A/V coverage-boundary offset change was 21.333 ms. The harness marks
+  this as a boundary-only measurement, not source-clock drift or perceptual
+  synchronization.
+
+The added video-bitrate parameter rejects non-integers and out-of-range
+values; its targeted module has 13 passing tests. Full source and bundled
+regressions at this source commit pass 804 and 795 tests, respectively, with
+zero skips. The production bundle is unchanged at SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+This expands only offline synthetic Type-1 reference-B media-time coverage.
+Native Type-1 encoder output, current-build SOOP/Grid delivery, source-relative
+A/V sync, live Parent/Cache recovery, real-time 2 h/6 h operation, and
+receiver-only resource trending remain unverified. Stable remains NO-GO.
+
 ### Offline regression after adding the Type-1 reference-B mode
 
 With the local FFmpeg/FFprobe toolchain explicitly configured and the preserved

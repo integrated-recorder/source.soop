@@ -437,3 +437,9 @@ gap, and completed EOF/drain. Harness-inclusive RSS peaked at 240,000 KiB; FD
 and thread counts returned to their baselines. This is media-time accumulation
 only, not a real-time or SOOP/Grid 2-hour test. Type-1 reference-B 6-hour and
 all authorized live gates remain untested. Bundle SHA-256 is unchanged.
+
+## Offline continuation — 2026-11-04, source commit `139aaf6`
+
+The soak harness gained an explicit bounded synthetic H.264 bitrate option (100–10,000 kb/s; default 350) and rejects invalid values. A 300 kb/s POC-1 reference-B/reorder-2 fixture completed 21,600 media seconds in 3,058.424 wall seconds. All 216,000 transformed frames matched source decode hashes; 216,000/216,000 VCL NALs and 1,012,501/1,012,501 AAC frames were preserved. The 6,590,379-packet TS had zero continuity and PSI CRC errors, 100 ms maximum PCR value gap, full FFmpeg decode, and successful StreamIO EOF/drain. The decoded A/V coverage-boundary delta was 21.333 ms and is not a source-clock drift or perceptual-sync measurement. Harness-inclusive RSS peaked at 404,988 KiB; FD and thread counts returned to baseline. Full source and bundle regressions passed 804 and 795 tests with zero skips; Ruff, compileall, format excluding the preserved untracked suffix test, deterministic bundle check, manifest and Streamlink 8.6.2 plugin discovery passed. The production bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+This does not verify native Type-1 encoder output, SOOP/Grid delivery, source-relative sync, Parent/Cache recovery, live/real-time 2 h or 6 h operation, or receiver-only memory trends. The user confirmed no test broadcast is available. Campaign remains PARTIAL; Stable remains NO-GO.
