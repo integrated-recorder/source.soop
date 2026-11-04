@@ -214,6 +214,42 @@ def rewrite_type0_stream(data: bytes, target_type: int) -> bytes:
     return b"".join(b"\x00\x00\x00\x01" + unit for unit in converted)
 
 
+def rewrite_type2_stream_to_type1_delta_zero(data: bytes) -> bytes:
+    """Convert a no-B POC-2 stream to an equivalent Type-1 zero-delta stream.
+
+    The source must use reference pictures only and advance its POC by two per
+    frame. The SPS cycle is set to the corresponding +2 reference offset and
+    ``delta_pic_order_always_zero_flag`` is set, so slice syntax is unchanged.
+    Callers independently decode the result before treating it as a fixture.
+    """
+    from soop_grid.h264clock import parse_sps
+
+    units = nals(data)
+    sps_nal = next((unit for unit in units if unit[0] & 31 == 7), None)
+    if sps_nal is None:
+        raise ValueError("Type-1 zero-delta fixture requires an SPS")
+    source_sps = parse_sps(sps_nal)
+    if source_sps["poc_type"] != 2:
+        raise ValueError("Type-1 zero-delta source must use POC type 2")
+    if source_sps["max_reorder"] != 0:
+        raise ValueError("Type-1 zero-delta source must have no reordering")
+
+    rbsp = _unescape(sps_nal[1:])
+    syntax = _syntax_bits(rbsp)
+    reader = _Bits(rbsp)
+    reader.get(24)  # profile_idc, constraint flags, level_idc
+    reader.ue()  # seq_parameter_set_id
+    reader.ue()  # log2_max_frame_num_minus4
+    poc_type_start = reader.pos
+    if reader.ue() != 2:
+        raise ValueError("Type-1 zero-delta source must use POC type 2")
+    replacement = [*_ue(1), 1, *_se(0), *_se(0), *_ue(1), *_se(2)]
+    rewritten = [*syntax[:poc_type_start], *replacement, *syntax[reader.pos :]]
+    new_sps = bytes([sps_nal[0], *_escape(_pack_rbsp(rewritten))])
+    parse_sps(new_sps)
+    return b"".join(b"\x00\x00\x00\x01" + (new_sps if unit is sps_nal else unit) for unit in units)
+
+
 def add_mmco5_type0(data: bytes, target_frame: int = 10) -> bytes:
     """Create one independently decodable POC-0/MMCO-5 no-B fixture.
 

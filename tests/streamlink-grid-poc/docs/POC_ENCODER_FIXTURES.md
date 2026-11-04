@@ -20,6 +20,18 @@ The POC-2 no-fixed-clock fixture used by `tests/test_h264clock.py` is generated 
 
 This is not claimed to be an encoder-native Type-1 mode. It is an independently decoded, valid Type-1 coded stream used to exercise the production parser/muxer. The transformer rejects unsupported source features such as MMCO 5 and unsuitable PPS/SPS syntax.
 
+An additional no-B Type-1 fixture exercises
+`delta_pic_order_always_zero_flag=1`: it starts from the independently
+decodable progressive POC-2 libx264 stream, replaces the SPS POC syntax with a
+one-entry +2 reference cycle, and leaves slice syntax unchanged. The emitted
+SPS is reparsed and asserted as Type 1 with the flag set; FFmpeg frame hashes
+match the POC-2 source. It traverses the production H264Clock and
+MediaSink→StreamIO→MPEG-TS path, preserves VCL NALs and AAC AU payloads, and
+passes full TS decode and EOF/drain. This is a syntax-derived conformance fixture, not a native
+Type-1 encoder mode. The available encoder inventory was rechecked: the local
+FFmpeg exposes libx264, but no JM reference encoder, `lencod`, or OpenH264
+encoder was found, so native Type-1 encoder output remains unavailable here.
+
 ## Short live-broadcast masters
 
 The three 20-second synchronized masters use generated 640x360 video and AAC-LC stereo. Eight irregular one-frame flashes are paired to 5 ms audio clicks at the same source times. The following hashes identify the exact synthetic Matroska inputs used in the marker-enabled SOOP tests:

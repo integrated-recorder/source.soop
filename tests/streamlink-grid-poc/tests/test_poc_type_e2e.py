@@ -16,8 +16,8 @@ from fractions import Fraction
 import pytest
 
 from conftest import media_body
-from poc_fixture import rewrite_type0_stream
-from soop_grid.h264clock import parse_pps, parse_slice, parse_sps
+from poc_fixture import rewrite_type0_stream, rewrite_type2_stream_to_type1_delta_zero
+from soop_grid.h264clock import H264Clock, parse_pps, parse_slice, parse_sps
 from soop_grid.media import MediaSink, parse_adts
 from soop_grid.mpegts import nals
 from soop_grid.parent import Parent, receive_media
@@ -475,6 +475,115 @@ def test_poc_type_full_grid_parent_streamio_and_decode(generated_poc_streams, po
         bytes(frame.data[frame.header_bytes :]) for frame in parse_adts(recovered_audio.read_bytes()).frames
     ]
     assert actual_raw_aac == expected_raw_aac
+
+
+def test_poc1_delta_always_zero_full_streamio_and_decode(generated_poc_streams, tmp_path):
+    ffmpeg, _ffprobe, _root, streams, audio_payload = generated_poc_streams
+    source_path, source = streams[2]["path"], streams[2]["data"]
+    transformed = rewrite_type2_stream_to_type1_delta_zero(source)
+    transformed_path = tmp_path / "type1-delta-always-zero.h264"
+    transformed_path.write_bytes(transformed)
+
+    units = nals(transformed)
+    sps = parse_sps(next(unit for unit in units if unit[0] & 31 == 7))
+    pps_nal = next(unit for unit in units if unit[0] & 31 == 8)
+    pps = parse_pps(pps_nal, {sps["id"]: sps})
+    assert sps["poc_type"] == 1
+    assert sps["delta_pic_order_always_zero"] is True
+    assert sps["offset_for_ref_frame"] == (2,)
+    assert _video_decode_hashes(ffmpeg, source_path) == _video_decode_hashes(ffmpeg, transformed_path)
+
+    groups = _aus(transformed)
+    assert len(groups) == 30
+    clock = H264Clock()
+    headers = []
+    for index, group in enumerate(groups):
+        header = parse_slice(next(unit for unit in group if unit[0] & 31 in (1, 5)), sps, pps)
+        headers.append(header)
+        assert header.delta_poc0 == 0
+        result = clock.inspect(_annexb(group), BASE + index * FRAME_STEP, 0)
+        assert result["poc"] == 2 * index
+
+    class Config:
+        diagnostics_dir = None
+
+        @staticmethod
+        def clear():
+            pass
+
+    stream = SimpleNamespace(config=Config(), buffer_size=1 << 20, timeout=2)
+    audio_frames = parse_adts(audio_payload).frames
+    assert len(audio_frames) == 46
+
+    def runner(_config, _network, emit, _report, stats):
+        sink = MediaSink(emit)
+        stats.update(sink.stats)
+        sink.stats = stats
+        for index, (group, header) in enumerate(zip(groups, headers, strict=True)):
+            sink.add(
+                Frame(
+                    0xC748,
+                    media_body(
+                        _annexb(group),
+                        "I" if header.idr else header.slice_kind,
+                        index + 1,
+                        BASE + index * FRAME_STEP,
+                    ),
+                )
+            )
+        for index, frame in enumerate(audio_frames):
+            timestamp = BASE + index * 1024 * 10_000_000 // 48_000
+            sink.add(Frame(0xC748, media_body(bytes(frame.data), "A", 31 + index, timestamp)))
+        sink.close()
+        validate_media_output(sink.stats)
+        stats["stop_reason"] = "duration_limit"
+
+    reader = SoopGridReader(stream, runner=runner)
+    output = bytearray()
+    try:
+        reader.open()
+        while block := reader.read(64 << 10):
+            output.extend(block)
+    finally:
+        reader.close()
+
+    assert output and len(output) % 188 == 0
+    assert reader.stats["h264_poc_type"] == 1
+    assert reader.stats["video_output_frames"] == 30
+    assert reader.stats["audio_output_access_units"] == 46
+    assert reader.stats["stream_output_drain_complete"] == 1
+    assert reader.stats["stream_reader_bytes"] == len(output) == reader.stats["stream_emit_bytes"]
+
+    ts_path = tmp_path / "type1-delta-always-zero.ts"
+    ts_path.write_bytes(output)
+    _run(ffmpeg, "-v", "error", "-xerror", "-i", ts_path, "-map", "0:v:0", "-map", "0:a:0", "-f", "null", "-")
+    recovered = tmp_path / "type1-delta-always-zero-demux.h264"
+    _run(ffmpeg, "-y", "-v", "error", "-i", ts_path, "-map", "0:v:0", "-c", "copy", "-f", "h264", recovered)
+    assert [unit for unit in nals(recovered.read_bytes()) if unit[0] & 31 in (1, 5)] == [
+        unit for unit in units if unit[0] & 31 in (1, 5)
+    ]
+    assert _video_decode_hashes(ffmpeg, ts_path) == _video_decode_hashes(ffmpeg, transformed_path)
+    recovered_audio = tmp_path / "type1-delta-always-zero-demux.aac"
+    _run(
+        ffmpeg,
+        "-y",
+        "-v",
+        "error",
+        "-i",
+        ts_path,
+        "-map",
+        "0:a:0",
+        "-c",
+        "copy",
+        "-f",
+        "adts",
+        recovered_audio,
+    )
+    expected_aac = [bytes(frame.data[frame.header_bytes :]) for frame in audio_frames]
+    actual_aac = [
+        bytes(frame.data[frame.header_bytes :]) for frame in parse_adts(recovered_audio.read_bytes()).frames
+    ]
+    assert actual_aac == expected_aac
 
 
 @pytest.mark.parametrize("poc_type", [0, 1, 2])

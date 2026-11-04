@@ -451,3 +451,17 @@ Added two production receive-loop regressions for out-of-order Parent media sequ
 ## Two-hour paced Type-1 reference-B offline follow-up — 2026-11-04
 
 The 300 kb/s transformed POC-1 reference-B/reorder-2 fixture was paced for 7,200 media seconds and completed in 8,093.948 wall seconds. All 72,000 source/transformed decoded-frame hashes matched; 72,000 VCL NALs and 337,501 AAC frames were preserved. The 2,196,795-packet TS had zero continuity and PSI CRC errors, max PCR value gap 100 ms, full FFmpeg decode and StreamIO EOF/drain. RSS first/last/peak was 165,548/150,112/245,568 KiB across 241 harness-inclusive samples; FD and thread counts returned to baseline. Coverage-boundary A/V delta of 21.333 ms is not source-relative drift or perceptual sync. This is local synthetic pacing, not SOOP/live or receiver-only endurance. Full metrics are in `ENDURANCE_RESULT.md`.
+
+## Offline continuation — Type-1 zero-delta SPS branch
+
+Added a valid constructed progressive POC-1 stream with
+`delta_pic_order_always_zero_flag=1` from an independently decoded no-B
+POC-2 libx264 source. The production H264Clock and MediaSink→StreamIO→TS
+path preserved all VCL NALs and AAC AU payloads, matched decoded frame hashes,
+and passed full output decode and EOF/drain. Full Source/Bundle suites pass **807/798**, zero skips;
+the initial 14 loopback/socketpair failures were sandbox permission denials,
+and the same suite passed when run with local socket access. No production
+code or bundle changed. This improves Type-1 syntax coverage but does not
+prove native Type-1 encoder output, SOOP/Grid delivery, source-relative sync,
+or live 2 h/6 h endurance. Campaign remains **PARTIAL**; Stable remains
+**NO-GO**.

@@ -772,3 +772,27 @@ neither six-hour wall-clock stability nor receiver-only memory trend. Native
 Type-1 encoder output, SOOP/Grid delivery, source-relative A/V, live recovery,
 and live 2 h/6 h operation remain unverified. Production bundle SHA remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+## POC-1 zero-delta-flag StreamIO regression — 2026-11-04
+
+Added `rewrite_type2_stream_to_type1_delta_zero()` and an end-to-end test for
+the POC-1 `delta_pic_order_always_zero_flag=1` SPS branch. The test starts with
+the generated, no-B POC-2 libx264 bitstream, converts its SPS to a one-entry
+reference cycle with offset +2, and keeps slice syntax unchanged. It verifies
+the actual SPS and per-picture POC, compares independent FFmpeg frame hashes,
+then sends 30 video AUs and 46 AAC-LC AUs through production H264Clock,
+MediaSink, StreamIO and MPEG-TS. All VCL NALs are preserved; FFmpeg fully
+decodes the output TS and decoded frame hashes match; EOF/drain and byte
+accounting pass. Demuxed AAC AU payloads also match the original 46-frame
+fixture exactly.
+
+The initial sandboxed full Source run had 14 expected local-socket `EPERM`
+failures in loopback/socketpair tests. Re-running the unchanged suite with
+local socket access passed **807 Source tests**, zero skips. Full single-file
+bundle parity passed **798 tests**, zero skips. No SOOP endpoint was contacted.
+Production code and bundle bytes are unchanged; bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. The
+fixture is a valid constructed Type-1 subset, not native Type-1 encoder output,
+Grid transport, or live endurance evidence. Live A/V sync, Parent/Cache live
+recovery and real-time SOOP 2 h/6 h remain NOT TESTED; campaign PARTIAL and
+Stable NO-GO.
