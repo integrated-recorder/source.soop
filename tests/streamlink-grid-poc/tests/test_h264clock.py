@@ -161,6 +161,11 @@ def test_poc1_empty_reference_cycle_and_negative_non_reference_offset():
     assert clock._picture_order(picture(2, ref=0), sps) == -1
     assert clock._picture_order(picture(3, delta=1), sps) == 1
 
+    wrap_clock = H264Clock()
+    assert wrap_clock._picture_order(picture(15), sps) == 0
+    assert wrap_clock._picture_order(picture(0), sps) == 0
+    assert wrap_clock.prev_frame_num_offset == sps["max_frame_num"]
+
 
 def test_invalid_emulation_prevention_byte_is_rejected():
     with pytest.raises(GridError, match="h264_emulation_prevention_invalid"):

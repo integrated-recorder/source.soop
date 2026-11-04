@@ -493,7 +493,7 @@ The 2026-11-04 environment recheck passed 732 Source and 723 bundle-parity
 tests, with 80 skips each, after explicitly excluding the preserved untracked
 suffix experiment. FFmpeg/FFprobe were unavailable, so generated-bitstream POC
 E2E checks skipped on rerun. An added FFmpeg-independent Type-1 empty-cycle
-SPS/POC unit regression passed. The earlier recorded no-skip results remain
+SPS/POC unit regression, including frame_num wrap, passed. The earlier recorded no-skip results remain
 separate evidence and were not reproduced here. Static checks and deterministic
 bundle/manifest checks passed. Live SOOP and real-time endurance remain
 untested.

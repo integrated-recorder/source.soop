@@ -836,7 +836,8 @@ environment has no discoverable `ffmpeg`/`ffprobe`, so generated-bitstream POC
 E2E and other decoder-dependent checks skipped. A new FFmpeg-independent
 Type-1 unit test directly builds/parses an empty-cycle SPS with negative
 non-reference offset and checks POC values for IDR, reference and
-non-reference pictures; it passed. The 14 loopback/socketpair tests passed
+non-reference pictures across the frame_num wrap; it passed. The 14
+loopback/socketpair tests passed
 after granting local test-socket access. Ruff, format, compileall, deterministic
 bundle check, and manifest verification passed. This rerun does not replace the
 earlier recorded no-skip run, but decoder E2E checks could not be independently

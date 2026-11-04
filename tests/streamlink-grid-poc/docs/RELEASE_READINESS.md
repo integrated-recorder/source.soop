@@ -239,8 +239,9 @@ fixture, tests, and evidence. The earlier exact run passed 811 Source / 802
 Bundle tests with no skips and the focused Type matrix passed 10/10. The
 current-environment rerun passed 732/723 with 80 skips each because this
 environment has no FFmpeg/FFprobe; local loopback tests passed with test-socket
-permission. An FFmpeg-independent empty-cycle SPS/POC unit test was added and
-passed. Static checks and Streamlink 8.6.2 standalone loading pass. The
+permission. An FFmpeg-independent empty-cycle SPS/POC unit test, including
+frame_num wrap, was added and passed. Static checks and Streamlink 8.6.2
+standalone loading pass. The
 bundle SHA remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 User confirmed offline-only work; current-hash live SOOP, source-relative
 sync, live recovery and real-time 2 h/6 h remain untested. Stable remains NO-GO.

@@ -74,7 +74,8 @@ Parent/StreamIO/TS identity checks. A fresh rerun in the current environment
 passed 732 Source and 723 bundled-parity tests, with 80 skips in each; the
 preserved untracked suffix test was excluded. FFmpeg/FFprobe are absent here,
 so the generated-bitstream decoder cases were not rerun. A pure-Python test
-for empty-cycle SPS parsing and negative non-reference POC arithmetic passed.
+for empty-cycle SPS parsing, negative non-reference POC arithmetic and
+frame_num wrap passed.
 Ruff, format,
 compileall, deterministic bundle and manifest checks pass; Streamlink 8.6.2
 loads the standalone plugin. No live source was available. This adds only
