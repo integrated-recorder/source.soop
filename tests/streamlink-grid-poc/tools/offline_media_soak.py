@@ -305,11 +305,14 @@ def run(
     poc1_b_frames=False,
     reference_b_frames=False,
     poc1_reference_b_frames=False,
+    video_bitrate_kbps=350,
 ):
     if not 1 <= minutes <= 360:
         raise ValueError("timeline_duration_invalid")
     if sum((b_frames, poc1_b_frames, reference_b_frames, poc1_reference_b_frames)) > 1:
         raise ValueError("b_frame_poc_mode_conflict")
+    if type(video_bitrate_kbps) is not int or not 100 <= video_bitrate_kbps <= 10_000:
+        raise ValueError("video_bitrate_invalid")
     duration = minutes * 60
     if output_cap < 1 << 20 or output_cap > MAX_MEDIA_BYTES:
         raise ValueError("output_cap_invalid")
@@ -391,7 +394,7 @@ def run(
                     "-profile:v",
                     "main" if use_b_frames else "baseline",
                     "-b:v",
-                    "350k",
+                    f"{video_bitrate_kbps}k",
                     "-x264-params",
                     x264_params,
                     "-f",
@@ -690,6 +693,7 @@ def run(
                 "input_vcl_nals": source_video_identity[0],
                 "output_vcl_nals": output_video_identity[0],
                 "identity_sha256": source_video_identity[1],
+                "fixture_bitrate_kbps": video_bitrate_kbps,
             },
             "output": {
                 "bytes": output_bytes,
@@ -721,6 +725,13 @@ def main():
     parser.add_argument("--ffprobe", default=os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe"))
     parser.add_argument("--timeout", type=float, default=900)
     parser.add_argument("--max-output-mib", type=int, default=512, choices=range(1, 2049))
+    parser.add_argument(
+        "--video-bitrate-kbps",
+        type=int,
+        default=350,
+        choices=range(100, 10_001),
+        help="synthetic H.264 fixture bitrate; lower values bound multi-hour fixture storage",
+    )
     parser.add_argument(
         "--realtime",
         action="store_true",
@@ -765,6 +776,7 @@ def main():
             args.poc1_b_frames,
             args.reference_b_frames,
             args.poc1_reference_b_frames,
+            args.video_bitrate_kbps,
         )
     except (GridError, OSError, RuntimeError, StreamError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({"verdict": "fail", "error": "offline_media_soak_failed"}))

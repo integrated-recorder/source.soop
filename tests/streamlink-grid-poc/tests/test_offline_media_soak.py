@@ -79,6 +79,12 @@ def test_offline_soak_rejects_conflicting_b_frame_modes():
         )
 
 
+def test_offline_soak_rejects_invalid_video_bitrate():
+    for value in (99, 10_001, True, 350.0):
+        with pytest.raises(ValueError, match="video_bitrate_invalid"):
+            run(1, "unused-ffmpeg", "unused-ffprobe", 1, 1 << 20, video_bitrate_kbps=value)
+
+
 def test_offline_soak_poc1_bframes_survive_production_sink_and_decode():
     ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
     ffprobe = os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe")
