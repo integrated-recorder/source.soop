@@ -50,6 +50,16 @@ def test_offline_soak_rejects_conflicting_b_frame_modes():
         run(1, "unused-ffmpeg", "unused-ffprobe", 1, 1 << 20, b_frames=True, poc1_b_frames=True)
     with pytest.raises(ValueError, match="b_frame_poc_mode_conflict"):
         run(1, "unused-ffmpeg", "unused-ffprobe", 1, 1 << 20, b_frames=True, reference_b_frames=True)
+    with pytest.raises(ValueError, match="b_frame_poc_mode_conflict"):
+        run(
+            1,
+            "unused-ffmpeg",
+            "unused-ffprobe",
+            1,
+            1 << 20,
+            reference_b_frames=True,
+            poc1_reference_b_frames=True,
+        )
 
 
 def test_offline_soak_poc1_bframes_survive_production_sink_and_decode():
@@ -74,6 +84,27 @@ def test_offline_soak_reference_bframes_exercise_deeper_reorder_and_decode():
     assert result["sps"]["max_reorder"] >= 2
     assert result["sps"]["reference_b_vcl_count"] > 0
     assert result["video"]["input_access_units"] == result["video"]["output_vcl_nals"]
+    assert result["audio"]["input_adts_frames"] == result["audio"]["output_adts_frames"]
+    assert result["output"]["ts_continuity_errors"] == 0
+    assert result["output"]["psi_crc_errors"] == 0
+    assert result["output"]["pcr_max_gap_seconds"] <= 0.1
+    assert result["output"]["streamio_eof_drain"]
+
+
+def test_offline_soak_poc1_reference_bframes_survive_production_sink_and_decode():
+    ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
+    ffprobe = os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe")
+    if not ffmpeg or not ffprobe:
+        pytest.skip("FFmpeg and FFprobe are required for POC Type 1 reference B-picture fixtures")
+    result = run(1, ffmpeg, ffprobe, 120, 128 << 20, poc1_reference_b_frames=True)
+    assert result["sps"]["poc_type"] == 1
+    assert result["sps"]["max_reorder"] >= 2
+    assert result["sps"]["reference_b_vcl_count"] > 0
+    assert result["video"]["input_access_units"] == result["video"]["output_vcl_nals"]
+    assert result["audio"]["input_adts_frames"] == result["audio"]["output_adts_frames"]
+    assert result["output"]["ts_continuity_errors"] == 0
+    assert result["output"]["psi_crc_errors"] == 0
+    assert result["output"]["pcr_max_gap_seconds"] <= 0.1
     assert result["output"]["streamio_eof_drain"]
 
 

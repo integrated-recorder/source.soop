@@ -402,3 +402,27 @@ The preserved untracked `tests/test_suffix_latejoin.py` is excluded and
 untouched. No authorized test broadcast is available: live Grid, current-build
 source-relative A/V, and live 2 h/6 h endurance remain NOT TESTED. Campaign
 status is **PARTIAL**; Stable is **NO-GO**.
+
+## Offline continuation — 2026-11-04
+
+Added an offline POC Type-1 reference-B fixture mode to the soak harness. It
+transforms x264 POC-0 B-pyramid syntax using the existing test-only transform,
+verifies POC Type 1/reorder 2/reference-B VCL, then exercises the production
+Parent-frame→MediaSink→StreamIO→MPEG-TS path and FFmpeg decode. The 10-minute
+wall-clock-paced run preserved 6,000/6,000 VCL NALs and 28,126/28,126 AAC
+frames, had zero TS continuity/PSI CRC errors and a 100 ms maximum PCR value
+gap, and completed EOF/drain. This is not native Type-1 encoder output or
+SOOP/Grid E2E.
+
+Full source and bundled parity suites passed 802 and 793 tests respectively,
+zero skips, with the preserved untracked suffix test excluded. After adding
+the final assertion set, the offline soak module passed 11/11 in both source
+and bundled execution. Ruff lint, changed-file format check, compileall,
+deterministic bundle check, SHA manifest, Streamlink 8.6.2 plugin listing,
+and `git diff --check` passed. Production bundle remains SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+The user confirmed there is no authorized test broadcast at this time. Current
+build live reception, source-relative A/V sync, controlled live recovery, and
+2 h/6 h SOOP endurance remain NOT TESTED. Overall campaign **PARTIAL**;
+Stable **NO-GO**.

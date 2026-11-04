@@ -270,10 +270,11 @@ def run(
     b_frames=False,
     poc1_b_frames=False,
     reference_b_frames=False,
+    poc1_reference_b_frames=False,
 ):
     if not 1 <= minutes <= 360:
         raise ValueError("timeline_duration_invalid")
-    if sum((b_frames, poc1_b_frames, reference_b_frames)) > 1:
+    if sum((b_frames, poc1_b_frames, reference_b_frames, poc1_reference_b_frames)) > 1:
         raise ValueError("b_frame_poc_mode_conflict")
     duration = minutes * 60
     if output_cap < 1 << 20 or output_cap > MAX_MEDIA_BYTES:
@@ -317,8 +318,8 @@ def run(
         if generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
             raise RuntimeError("soak_fixture_size_limit")
 
-        use_b_frames = b_frames or poc1_b_frames or reference_b_frames
-        if poc1_b_frames:
+        use_b_frames = b_frames or poc1_b_frames or reference_b_frames or poc1_reference_b_frames
+        if poc1_b_frames or poc1_reference_b_frames:
             tests_path = str(ROOT / "tests")
             if tests_path not in sys.path:
                 sys.path.insert(0, tests_path)
@@ -331,9 +332,9 @@ def run(
             video_frames_expected = segment_duration * FPS
             x264_params = (
                 "aud=1:repeat-headers=1:open-gop=0:bframes="
-                + ("3" if reference_b_frames else "2")
+                + ("3" if reference_b_frames or poc1_reference_b_frames else "2")
                 + ":b-adapt=0:b-pyramid="
-                + ("normal" if reference_b_frames else "none")
+                + ("normal" if reference_b_frames or poc1_reference_b_frames else "none")
                 + ":keyint=100:min-keyint=100:scenecut=0"
                 if use_b_frames
                 else "aud=1:repeat-headers=1:bframes=0:keyint=100:min-keyint=100:scenecut=0"
@@ -370,7 +371,7 @@ def run(
                 raise RuntimeError("soak_fixture_size_limit")
             video_data = video_path.read_bytes()
             timeline_video_path = video_path
-            if poc1_b_frames:
+            if poc1_b_frames or poc1_reference_b_frames:
                 video_data = rewrite_type0_stream(video_data, 1)
                 generated_input_bytes += len(video_data)
                 if len(video_data) > MAX_FIXTURE_BYTES or generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
@@ -382,7 +383,13 @@ def run(
             if sps is None:
                 raise ValueError("generated_sps_missing")
             current_sps = parse_sps(sps)
-            expected_poc_type = 1 if poc1_b_frames else 0 if (b_frames or reference_b_frames) else 2
+            expected_poc_type = (
+                1
+                if poc1_b_frames or poc1_reference_b_frames
+                else 0
+                if (b_frames or reference_b_frames)
+                else 2
+            )
             if (
                 current_sps["poc_type"] != expected_poc_type
                 or current_sps["height"] != 180
@@ -426,7 +433,7 @@ def run(
                     if offset_frames < 0:
                         raise ValueError("generated_bframe_composition_negative")
                     composition_offsets[coded_index] = round(offset_frames * 10_000_000 / FPS)
-            if reference_b_frames:
+            if reference_b_frames or poc1_reference_b_frames:
                 pps_nal = next(unit for unit in nals(video_data) if unit[0] & 31 == 8)
                 pps_info = parse_pps(pps_nal, {current_sps["id"]: current_sps})
                 reference_b_vcl_count += sum(
@@ -692,8 +699,13 @@ def main():
         action="store_true",
         help="generate POC-Type-0 B-pyramid pictures and verify reference B slices",
     )
+    parser.add_argument(
+        "--poc1-reference-b-frames",
+        action="store_true",
+        help="transform generated POC-Type-0 reference B pictures to POC Type 1 and verify",
+    )
     args = parser.parse_args()
-    if sum((args.b_frames, args.poc1_b_frames, args.reference_b_frames)) > 1:
+    if sum((args.b_frames, args.poc1_b_frames, args.reference_b_frames, args.poc1_reference_b_frames)) > 1:
         parser.error("B-frame mode options are mutually exclusive")
     if not args.ffmpeg or not args.ffprobe:
         parser.error("FFmpeg and FFprobe are required")
@@ -710,6 +722,7 @@ def main():
             args.b_frames,
             args.poc1_b_frames,
             args.reference_b_frames,
+            args.poc1_reference_b_frames,
         )
     except (GridError, OSError, RuntimeError, StreamError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({"verdict": "fail", "error": "offline_media_soak_failed"}))

@@ -198,3 +198,20 @@ FFmpeg decode, identity, TS and drain checks. Source/bundle suites now pass
 801/792 with zero skips. This remains synthetic and does not change the Stable
 gate: authorized live reception, current-build source-relative sync, Parent
 recovery, and live 2 h/6 h endurance are still NOT TESTED.
+
+### Type-1 reference-B offline continuation — 2026-11-04
+
+The offline soak harness now covers a transformed Type-1 reference-B/reorder-2
+fixture. A 10-minute wall-clock-paced run passed on the unchanged production
+bundle SHA `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`:
+6,000 VCL NALs and 28,126 AAC frames were identity-checked, TS continuity and
+PSI CRC errors were zero, PCR value gap was at most 100 ms, full decode and
+StreamIO drain passed. This is local synthetic data derived from POC 0; it
+does not prove native Type-1 output or Grid delivery. Full offline suites
+passed 802 source and 793 bundled tests with zero skips; after strengthening
+the assertions, the soak test module passed 11/11 in both source and bundled
+execution. See `ENDURANCE_RESULT.md`.
+
+The user confirmed no authorized broadcast is currently available. Current
+build Grid reception, source-relative sync, live recovery, and live 2 h/6 h
+endurance remain NOT TESTED. **Campaign PARTIAL; Stable NO-GO.**

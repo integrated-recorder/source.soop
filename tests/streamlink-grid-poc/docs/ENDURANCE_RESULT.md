@@ -614,3 +614,60 @@ The 10-minute wall-clock-paced run completed in 623.812 s:
 This adds paced local coverage for a deeper reorder/reference-B subset. It is
 not SOOP reception, source-relative A/V synchronization, network recovery, or
 receiver-only resource trending.
+
+## POC-1 reference B-picture timeline — 2026-11-04
+
+Added a separate `--poc1-reference-b-frames` mode. It generates an x264
+POC-0 B-pyramid stream, transforms its POC syntax to Type 1 using the existing
+test-only fixture transform, and verifies the transformed SPS and every VCL
+slice before feeding it to the production sink. The fixture has reorder bound
+2 and reference-B slices. FFmpeg independently decodes the transformed input
+and output. This is a constrained transformed Type-1 fixture, not a native
+Type-1 encoder output or SOOP transmission.
+
+The targeted one-minute sink regression passed, followed by a 600-second
+wall-clock-paced offline timeline on the then-current source HEAD
+`f7776b263722fa748244727f30ae8094bd4f48bf` and production bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`:
+
+* SPS: 320x180, POC 1, reorder bound 2; 4,440 B pictures and 1,500
+  reference-B VCL slices.
+* H.264: 6,000 input/output VCL NALs, exact coded-payload identity.
+* AAC: 28,126 input/output ADTS frames at 48 kHz, exact identity.
+* TS: 203,597 packets; continuity and PSI CRC errors 0; maximum PCR value
+  gap 100 ms. Full FFmpeg decode and StreamIO EOF/drain passed.
+* Output: 38,276,236 bytes; peak bounded buffer 20,680 bytes.
+* Resource samples: RSS first/last/peak 190,648/177,444/190,652 KiB;
+  FD first/last/peak 7/4/7; threads 2/1/2.
+* Decoded coverage-boundary difference 21.333 ms is not source-relative drift
+  or perceptual A/V synchronization.
+
+This adds a paced local sink-path result for transformed Type-1 reference-B
+syntax. It does not validate native Type-1 encoder output, SOOP Grid delivery,
+network recovery, source-relative sync, or live 2 h/6 h endurance.
+
+### Offline regression after adding the Type-1 reference-B mode
+
+With the local FFmpeg/FFprobe toolchain explicitly configured and the preserved
+untracked `tests/test_suffix_latejoin.py` excluded, the complete source suite
+passed **802 tests** and bundled parity passed **793 tests**, both with zero
+skips. The first sandboxed source run failed 14 socketpair/loopback tests due
+to sandbox `Operation not permitted`; the same full suite passed after running
+its synthetic local-socket tests in the authorized environment. A first bundle
+run without FFmpeg environment variables had 75 fixture-related skips; the
+configured rerun above passed with zero skips.
+
+Ruff lint passed for `tests`, `tools`, and `plugins`; Ruff format check passed
+for the two changed Python files. A repository-wide format check reports only
+the pre-existing untracked `tests/test_suffix_latejoin.py` as unformatted, and
+that user-owned file was left untouched. `compileall`, deterministic bundle
+check, bundle SHA manifest, and `git diff --check` passed. Streamlink 8.6.2
+listed `soop_grid` when run with the project root on `PYTHONPATH`; without that
+path, the uninstalled checkout could not resolve the package. Production
+source and bundle were not changed by this harness-only addition; bundle SHA-256
+remains `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+The user confirmed that no authorized test broadcast is currently available.
+Therefore current-candidate SOOP/Grid E2E, source-relative A/V sync, controlled
+live recovery, and 2 h/6 h live endurance remain **NOT TESTED**. Stable remains
+**NO-GO**.
