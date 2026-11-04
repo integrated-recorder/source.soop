@@ -219,6 +219,33 @@ def test_missing_cache_reset_and_regression_are_explicit_failures(simulation, se
         simulation([(controls() + media(1) + media(2), "eof"), (controls() + second, "deadline")])
 
 
+@pytest.mark.parametrize(
+    "tail,code,expected_frames",
+    [
+        (media(3) + media(2), "frame_sequence_gap_or_reset", [1]),
+        (media(2) + media(2, timestamp=50_000_000 + 2 * 166667 + 1), "frame_identity_conflict", [1, 2]),
+    ],
+)
+def test_parent_out_of_order_or_conflicting_duplicate_fails_before_publication(
+    simulation, tail, code, expected_frames
+):
+    emitted = []
+    created = []
+
+    class TrackingSink(SyntheticSink):
+        def __init__(self, _emit):
+            super().__init__(emitted.append)
+            created.append(self)
+
+    with pytest.raises(GridError, match=f"^{code}$"):
+        simulation([(controls() + media(1) + tail, "deadline")], sink_class=TrackingSink)
+
+    assert emitted == [struct.pack(">Q", number) for number in expected_frames]
+    assert len(created) == 1
+    assert created[0].stats["video_frames"] == len(expected_frames)
+    assert created[0].stats["unrecoverable_ranges"] == 1
+
+
 def test_all_candidates_and_rediscovery_fail_without_unlimited_retry(simulation):
     calls = []
 
