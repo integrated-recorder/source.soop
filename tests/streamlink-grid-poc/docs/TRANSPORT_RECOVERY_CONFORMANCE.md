@@ -35,3 +35,7 @@ unverified scope to real SOOP network behavior, long-duration resource trends,
 and live failure timing; it does not replace those tests. Three B-frame fixture
 tests skip when the isolated FFmpeg paths are not configured; they all ran in
 this invocation.
+
+## Current offline fault-injection follow-up — 2026-11-04
+
+At source commit `b7f74d3`, two Parent-wire ordering faults were added and exercised through `receive_media()`: a future frame arriving before its predecessor raises `frame_sequence_gap_or_reset`, and a repeated frame number with changed identity raises `frame_identity_conflict`. Assertions confirm only the valid prefix before the fault is emitted and the failure is not converted into successful recovery. The complete recovery module passed **43 tests**; full Source/Bundle suites passed **806/797**, zero skips. These are deterministic synthetic peers and do not establish remote SOOP behavior or live failover reliability.

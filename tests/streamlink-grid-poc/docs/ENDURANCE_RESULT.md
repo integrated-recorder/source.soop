@@ -729,3 +729,16 @@ The user confirmed that no authorized test broadcast is currently available.
 Therefore current-candidate SOOP/Grid E2E, source-relative A/V sync, controlled
 live recovery, and 2 h/6 h live endurance remain **NOT TESTED**. Stable remains
 **NO-GO**.
+
+## Offline Parent ordering fault cases — 2026-11-04
+
+Two deterministic cases now drive the production Parent receive loop with (1) a
+frame sequence arriving out of order and (2) a duplicate frame number carrying
+conflicting identity. The reader fails closed with `frame_sequence_gap_or_reset`
+and `frame_identity_conflict`, respectively; only the valid pre-fault prefix is
+emitted. The full recovery module passed **43 tests**. Full source regression
+passed **806 tests** and bundled parity passed **797 tests**, zero skips in both.
+The preserved untracked suffix test was excluded and untouched. Production code
+and bundle bytes did not change; bundle SHA-256 remains
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+This validates local failure handling, not SOOP network or live recovery.

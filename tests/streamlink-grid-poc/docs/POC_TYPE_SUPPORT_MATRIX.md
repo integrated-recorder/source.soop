@@ -9,3 +9,11 @@ Scope: current production bundle and the bounded progressive/Grid-composition su
 | 2 | VERIFIED | VERIFIED: libx264 low-delay and MMCO-5 streams; `MediaSink`→StreamIO→TS; decoded frame identity | VERIFIED: historical short self-broadcast, zero-reorder/no-B subset; SPS/VCL preserved | SUPPORTED for tested progressive zero-reorder subset; adjacent non-reference pictures rejected | VERIFIED_OFFLINE for one progressive, no-B, one-reference fixture; live untested |
 
 MMCO-5 offline evidence is limited to a generated progressive, CAVLC, no-B, one-reference stream with one MMCO-5 reference P picture. The fixture is independently decoded and frame-hash compared, then sent through the production MediaSink/StreamIO/TS path for each POC type with VCL identity, full decode, and EOF/drain checks. No live MMCO-5 test was run. Common restrictions remain: frame-coded progressive SPS only; explicit nonnegative Grid composition required; one supported picture per Grid video chunk; no midstream codec change; unsupported slice/reference structures and low-delay HRD fail closed. Exact community V3/V5/V8 inputs were unavailable, so their reports are not individually marked fixed. See [conformance notes](POC_TYPE_CONFORMANCE.md) and [live evidence](POC_GRID_LIVE_VALIDATION.md).
+
+Latest offline Type-1 reference-B follow-up: a transformed POC-0 B-pyramid
+fixture with reorder bound 2 passed a 21,600-second synthetic media timeline
+through the production sink. Decoded-frame identity matched across all 216,000
+frames; VCL/AAC payload identity, TS checks, full FFmpeg decode and StreamIO
+drain passed. This strengthens only the transformed offline subset. Native
+Type-1 encoder output, live Grid Type-1 B pictures, and source-relative
+synchronization remain unverified. Details: `ENDURANCE_RESULT.md`.
