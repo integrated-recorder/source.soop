@@ -260,9 +260,11 @@ def _pace_until(network, wall_start, media_timestamp, deadline):
         raise Cancelled("offline_soak_cancelled")
 
 
-def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=False):
+def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=False, poc1_b_frames=False):
     if not 1 <= minutes <= 360:
         raise ValueError("timeline_duration_invalid")
+    if b_frames and poc1_b_frames:
+        raise ValueError("b_frame_poc_mode_conflict")
     duration = minutes * 60
     if output_cap < 1 << 20 or output_cap > MAX_MEDIA_BYTES:
         raise ValueError("output_cap_invalid")
@@ -304,6 +306,13 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=
         if generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
             raise RuntimeError("soak_fixture_size_limit")
 
+        use_b_frames = b_frames or poc1_b_frames
+        if poc1_b_frames:
+            tests_path = str(ROOT / "tests")
+            if tests_path not in sys.path:
+                sys.path.insert(0, tests_path)
+            from poc_fixture import rewrite_type0_stream
+
         for segment_start in range(0, minutes, MAX_SEGMENT_MINUTES):
             segment_minutes = min(MAX_SEGMENT_MINUTES, minutes - segment_start)
             segment_duration = segment_minutes * 60
@@ -324,12 +333,12 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=
                     "-preset",
                     "ultrafast",
                     "-profile:v",
-                    "main" if b_frames else "baseline",
+                    "main" if use_b_frames else "baseline",
                     "-b:v",
                     "350k",
                     "-x264-params",
                     "aud=1:repeat-headers=1:open-gop=0:bframes=2:b-adapt=0:b-pyramid=none:keyint=100:min-keyint=100:scenecut=0"
-                    if b_frames
+                    if use_b_frames
                     else "aud=1:repeat-headers=1:bframes=0:keyint=100:min-keyint=100:scenecut=0",
                     "-f",
                     "h264",
@@ -342,12 +351,20 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=
             if segment_input_bytes > MAX_FIXTURE_BYTES or generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
                 raise RuntimeError("soak_fixture_size_limit")
             video_data = video_path.read_bytes()
+            timeline_video_path = video_path
+            if poc1_b_frames:
+                video_data = rewrite_type0_stream(video_data, 1)
+                generated_input_bytes += len(video_data)
+                if len(video_data) > MAX_FIXTURE_BYTES or generated_input_bytes > MAX_TOTAL_FIXTURE_BYTES:
+                    raise RuntimeError("soak_fixture_size_limit")
+                timeline_video_path = video_path.with_suffix(".poc1.h264")
+                timeline_video_path.write_bytes(video_data)
             video_aus = _access_units(video_data, video_frames_expected)
             sps = next((unit for unit in nals(video_data) if unit[0] & 31 == 7), None)
             if sps is None:
                 raise ValueError("generated_sps_missing")
             current_sps = parse_sps(sps)
-            expected_poc_type = 0 if b_frames else 2
+            expected_poc_type = 1 if poc1_b_frames else 0 if b_frames else 2
             if (
                 current_sps["poc_type"] != expected_poc_type
                 or current_sps["height"] != 180
@@ -359,7 +376,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=
             elif current_sps != sps_info:
                 raise ValueError("generated_sps_changed_between_segments")
             composition_offsets = [0] * video_frames_expected
-            if b_frames:
+            if use_b_frames:
                 probe = subprocess.run(
                     [
                         str(ffprobe),
@@ -372,7 +389,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=
                         "frame=coded_picture_number,pict_type",
                         "-of",
                         "json",
-                        str(video_path),
+                        str(timeline_video_path),
                     ],
                     capture_output=True,
                     timeout=_remaining_timeout(deadline),
@@ -395,7 +412,7 @@ def run(minutes, ffmpeg, ffprobe, timeout, output_cap, realtime=False, b_frames=
             audio_start, audio_end = audio_facts["ranges"][len(chunks)]
             chunks.append(
                 {
-                    "video_path": video_path,
+                    "video_path": timeline_video_path,
                     "video_frames": len(video_aus),
                     "audio_start": audio_start,
                     "audio_end": audio_end,
@@ -633,7 +650,14 @@ def main():
         action="store_true",
         help="generate and probe POC-Type-0 B pictures, then apply composition timestamps",
     )
+    parser.add_argument(
+        "--poc1-b-frames",
+        action="store_true",
+        help="transform the generated POC-0 B-picture stream to POC Type 1 and verify it",
+    )
     args = parser.parse_args()
+    if args.b_frames and args.poc1_b_frames:
+        parser.error("--b-frames and --poc1-b-frames are mutually exclusive")
     if not args.ffmpeg or not args.ffprobe:
         parser.error("FFmpeg and FFprobe are required")
     if not 1 <= args.timeout <= 28800:
@@ -647,6 +671,7 @@ def main():
             args.max_output_mib << 20,
             args.realtime,
             args.b_frames,
+            args.poc1_b_frames,
         )
     except (GridError, OSError, RuntimeError, StreamError, ValueError, subprocess.TimeoutExpired):
         print(json.dumps({"verdict": "fail", "error": "offline_media_soak_failed"}))

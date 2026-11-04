@@ -56,3 +56,5 @@ Latest offline regression at working-tree base `8f988a1045837c091dd574ee226e2a62
 Current follow-up extends the offline soak harness with an opt-in, SPS-verified POC-0 B-frame timeline mode. Accelerated 10 min, 30 min, 2 h and 6 h synthetic runs passed exact VCL/AAC identity, TS/PSI/PCR checks, full decode and EOF/drain. This increases reordered-picture offline timeline coverage; it does not validate SOOP transport, live timing, or wall-clock resource stability. The final full-suite counts after its regression test are recorded in `ENDURANCE_RESULT.md`.
 
 Final follow-up verification: source suite **798 passed, 0 skipped**; bundle parity **789 passed, 0 skipped**. No production source changed; the deterministic bundle remains byte-identical.
+
+The offline soak now also exercises a transformed Type-1 B-picture stream through the production sink and a 10-minute wall-clock-paced generated timeline. The first identity failure revealed the harness was reading its original Type-0 fixture; the path was corrected without relaxing VCL identity. Current suites pass **800/791**, zero skips. The Type-1 fixture is not native encoder output and provides no live SOOP proof.

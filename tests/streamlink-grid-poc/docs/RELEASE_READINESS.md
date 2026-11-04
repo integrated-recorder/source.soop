@@ -191,3 +191,10 @@ source-relative sync, Parent recovery, or receiver-only resource trending.
 Current offline suites are 798 source / 789 bundle passed, zero skipped. No
 authorized test broadcast is available; live and controlled-recovery release
 gates remain NOT TESTED. Stable remains **NO-GO**.
+
+The offline follow-up adds a 10-minute wall-clock-paced POC-1 B-frame
+generated-media run, derived by transforming a POC-0 x264 stream and verified
+by FFmpeg, payload identity and TS checks. Source/bundle suites now pass
+800/791 with zero skips. This remains synthetic and does not change the Stable
+gate: authorized live reception, current-build source-relative sync, Parent
+recovery, and live 2 h/6 h endurance are still NOT TESTED.

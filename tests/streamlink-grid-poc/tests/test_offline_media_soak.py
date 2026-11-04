@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (c) 2026 source.soop contributors
+import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -9,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from soop_grid.protocol import Cancelled
-from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _body, _pace_until, _remaining_timeout, _run
+from tools.offline_media_soak import MAX_SEGMENT_MINUTES, _body, _pace_until, _remaining_timeout, _run, run
 
 
 def test_offline_soak_parent_body_serializes_composition_offset():
@@ -41,6 +43,23 @@ def test_offline_soak_kills_child_at_global_deadline(tmp_path):
 
 def test_offline_soak_chunks_fixture_to_bound_peak_input_working_set():
     assert MAX_SEGMENT_MINUTES == 10
+
+
+def test_offline_soak_rejects_conflicting_b_frame_modes():
+    with pytest.raises(ValueError, match="b_frame_poc_mode_conflict"):
+        run(1, "unused-ffmpeg", "unused-ffprobe", 1, 1 << 20, b_frames=True, poc1_b_frames=True)
+
+
+def test_offline_soak_poc1_bframes_survive_production_sink_and_decode():
+    ffmpeg = os.environ.get("SOOP_TEST_FFMPEG") or shutil.which("ffmpeg")
+    ffprobe = os.environ.get("SOOP_TEST_FFPROBE") or shutil.which("ffprobe")
+    if not ffmpeg or not ffprobe:
+        pytest.skip("FFmpeg and FFprobe are required for the POC Type 1 timeline fixture")
+    result = run(1, ffmpeg, ffprobe, 120, 128 << 20, poc1_b_frames=True)
+    assert result["sps"]["poc_type"] == 1
+    assert result["sps"]["b_picture_count"] > 0
+    assert result["video"]["input_access_units"] == result["video"]["output_vcl_nals"]
+    assert result["output"]["streamio_eof_drain"]
 
 
 def test_realtime_pacing_wait_is_cancellable():

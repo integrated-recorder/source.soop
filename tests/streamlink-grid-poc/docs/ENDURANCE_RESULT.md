@@ -556,3 +556,36 @@ bodies on the local production sink path and is not a SOOP session.
 This evidence is stronger than an accelerated media-time run for local pacing,
 but it does not exercise SOOP network timing, Parent recovery, long-running
 receiver-only resource behavior, or the live release gates.
+
+## POC-1 B-picture timeline — 2026-11-04
+
+The soak harness now has a separate `--poc1-b-frames` mode. It generates a
+POC-0 x264 B-picture stream, applies the repository's test-only SPS/slice POC
+header transform to Type 1, validates the resulting SPS and FFprobe display
+order, then feeds that transformed file through the production sink. The
+fixture is derived, not emitted by a Type-1-capable encoder; FFmpeg independently
+decodes the resulting stream. This validates the Type-1 state/timeline path on
+that constrained progressive subset, not arbitrary Type-1 encoder output.
+
+A first run exposed that the harness read the original Type-0 path rather than
+the transformed Type-1 path. The exact VCL identity assertion caught the error;
+the chunk now retains the transformed path. The regression test verifies the
+actual Type-1 SPS, presence of B pictures, full output AU counts, and drain.
+
+On bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`, the
+10-minute wall-clock-paced synthetic Type-1 run completed in 681.603 s:
+
+* SPS: 320x180, POC 1, reorder bound 1; 3,960 B pictures.
+* H.264: 6,000/6,000 VCL AUs input/output; coded payload identity passed.
+* AAC: 28,126/28,126 ADTS frames at 48 kHz; identity passed.
+* TS: 203,218 packets; continuity/PSI errors 0; max PCR value gap 100 ms.
+* FFmpeg full decode and StreamIO EOF/drain passed; output 38,204,984 bytes.
+* Bounded buffer peak 20,680 bytes; RSS first/last/peak 190,788/175,944/
+  190,792 KiB; FD 7/4/7; threads 2/1/2.
+* Decoded coverage boundary difference 21.333 ms is not source-relative drift
+  or perceptual synchronization.
+
+This is a paced local generated-media test, not SOOP/Grid E2E or a live
+endurance result. The complete source and bundle suites subsequently passed
+800 and 791 tests respectively, with zero skips.

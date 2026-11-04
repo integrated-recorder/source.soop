@@ -395,8 +395,8 @@ is not SOOP reception or wall-clock endurance; resource samples include the
 harness and are not receiver-only. Full run details are in
 `ENDURANCE_RESULT.md`.
 
-Results: POC E2E **12 passed**; source suite **798 passed, 0 skipped**;
-bundle parity **789 passed, 0 skipped**. Bundle SHA-256 remains
+Results: POC E2E **12 passed**; latest source suite **800 passed, 0 skipped**;
+bundle parity **791 passed, 0 skipped**. Bundle SHA-256 remains
 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
 The preserved untracked `tests/test_suffix_latejoin.py` is excluded and
 untouched. No authorized test broadcast is available: live Grid, current-build
