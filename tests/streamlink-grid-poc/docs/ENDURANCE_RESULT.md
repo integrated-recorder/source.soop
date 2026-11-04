@@ -829,14 +829,15 @@ Campaign PARTIAL; Stable NO-GO.
 
 ### Environment recheck — 2026-11-04
 
-A later offline rerun in the current restricted environment passed **732**
-Source tests and **723** bundled-parity tests, with **80 skips** in each run.
+A later offline rerun in the current restricted environment passed **734**
+Source tests and **725** bundled-parity tests, with **80 skips** in each run.
 The preserved untracked suffix experiment was explicitly excluded. The current
 environment has no discoverable `ffmpeg`/`ffprobe`, so generated-bitstream POC
 E2E and other decoder-dependent checks skipped. A new FFmpeg-independent
-Type-1 unit test directly builds/parses an empty-cycle SPS with negative
+Type-1 unit tests directly build/parse an empty-cycle SPS with negative
 non-reference offset and checks POC values for IDR, reference and
-non-reference pictures across the frame_num wrap; it passed. The 14
+non-reference pictures across the `frame_num` wrap. A cycle length of 255 is
+accepted and 256 fails with `h264_poc_cycle_limit`. These tests passed. The 14
 loopback/socketpair tests passed
 after granting local test-socket access. Ruff, format, compileall, deterministic
 bundle check, and manifest verification passed. This rerun does not replace the

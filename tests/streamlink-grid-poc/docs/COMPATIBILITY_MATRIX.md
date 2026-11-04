@@ -71,11 +71,11 @@ fixture with `offset_for_non_ref_pic=-1` was added. The earlier run recorded in
 `ENDURANCE_RESULT.md` passed the focused 10-case matrix and full Source/Bundle
 suites at 811/802 with no skips, including independent FFmpeg decode and
 Parent/StreamIO/TS identity checks. A fresh rerun in the current environment
-passed 732 Source and 723 bundled-parity tests, with 80 skips in each; the
+passed 734 Source and 725 bundled-parity tests, with 80 skips in each; the
 preserved untracked suffix test was excluded. FFmpeg/FFprobe are absent here,
 so the generated-bitstream decoder cases were not rerun. A pure-Python test
-for empty-cycle SPS parsing, negative non-reference POC arithmetic and
-frame_num wrap passed.
+for empty-cycle SPS parsing, negative non-reference POC arithmetic,
+`frame_num` wrap and cycle-count boundary 255/256 passed.
 Ruff, format,
 compileall, deterministic bundle and manifest checks pass; Streamlink 8.6.2
 loads the standalone plugin. No live source was available. This adds only
