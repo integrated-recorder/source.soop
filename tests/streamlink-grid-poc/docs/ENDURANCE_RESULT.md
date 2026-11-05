@@ -949,6 +949,11 @@ already completed earlier on this exact candidate.
   complete within its 15-minute offline limit, so source-relative A/V drift
   is **UNVERIFIED**. The dependent independent timestamp comparison remains
   unverified. The 2-hour pass does not substitute for those 6-hour gates.
+* Resource sampler: 359 samples over 21,680.8 s. Harness/publisher/receiver
+  aggregate RSS peaked at 150,176 KiB; largest sampled process RSS peaked at
+  59,264 KiB; aggregate FD and thread peaks were 30 and 9. The samples include
+  changing harness and publisher processes, so they do not establish a
+  receiver-only memory leak trend.
 * Neither endurance run injected a controlled Parent/Cache failure. Clean
   runs do not verify recovery under a fault.
 

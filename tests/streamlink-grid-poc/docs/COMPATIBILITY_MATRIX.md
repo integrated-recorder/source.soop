@@ -127,6 +127,7 @@ the user requested offline-only follow-up.
 | Independent raw Grid parser and composition timestamps | PASS | INCOMPLETE: diagnostic close event missing after bounded log cap; dependent timestamp check lacked report |
 | Source-relative marker sync | PASS over common 7,189.05 s; edge censoring noted | NOT COMPLETED within offline analysis limit |
 | EOF/drain accounting | PASS in run report | PASS from final `diagnostics/summary.json`: drain complete, accepted/read/emitted/mux bytes equal, discarded/unaccepted bytes 0; close event absent from capped event log |
+| Resource samples | 122 samples / 7,283.2 s; harness-inclusive | 359 samples / 21,680.8 s; process-tree RSS peak 150,176 KiB, FD peak 30, thread peak 9; not receiver-only |
 | Controlled Parent/Cache fault | NOT TESTED | NOT TESTED |
 
 The 6-hour result verifies output transport structure, complete decode, a
