@@ -2,8 +2,10 @@
 # Copyright (c) 2026 source.soop contributors
 
 from fractions import Fraction
+import itertools
 import json
 import os
+import random
 import shutil
 import subprocess
 from types import SimpleNamespace
@@ -17,11 +19,102 @@ from soop_grid.h264clock import (
     _validate_frame_num_progress,
     parse_pps,
     parse_sps,
+    rbsp,
 )
 from soop_grid.media import adts_info
 from soop_grid.mpegts import TSMux, nals
 from tools.legacy_h264_audit import LegacyH264Clock
 from soop_grid.protocol import GridError
+
+
+def _rbsp_reference(nal):
+    """Test oracle: the pre-optimization byte-wise EBSP validator."""
+    nal = nal.rstrip(b"\0")
+    if len(nal) < 2 or nal[0] & 0x80 or nal[0] & 31 == 0:
+        raise GridError("h264_nal_header_invalid")
+    out, zeros = bytearray(), 0
+    for index, value in enumerate(nal[1:], 1):
+        if zeros >= 2 and value == 3:
+            terminal_cabac = index + 1 == len(nal) and nal[0] & 31 in (1, 5)
+            if not terminal_cabac and (index + 1 >= len(nal) or nal[index + 1] > 3):
+                raise GridError("h264_emulation_prevention_invalid")
+            zeros = 0
+            continue
+        if zeros >= 2 and value <= 2:
+            raise GridError("h264_emulation_prevention_invalid")
+        out.append(value)
+        zeros = zeros + 1 if value == 0 else 0
+    return bytes(out)
+
+
+def _rbsp_outcome(parser, nal):
+    try:
+        return "ok", parser(nal)
+    except GridError as exc:
+        return "error", str(exc)
+
+
+def test_rbsp_matches_reference_for_exhaustive_short_inputs():
+    nal_types = (1, 5, 6, 7, 8, 9, 12)
+    alphabet = bytes(range(5))
+    for nal_type in nal_types:
+        header = bytes((nal_type,))
+        for length in range(6):
+            for body in itertools.product(alphabet, repeat=length):
+                nal = header + bytes(body)
+                assert _rbsp_outcome(rbsp, nal) == _rbsp_outcome(_rbsp_reference, nal)
+
+
+def test_rbsp_matches_reference_for_seeded_random_and_boundary_inputs():
+    rng = random.Random(0x52425350)
+    samples = [
+        bytes.fromhex(value)
+        for value in (
+            "0100000300",
+            "0100000301",
+            "0100000302",
+            "0100000303",
+            "01000003",
+            "0100000304",
+            "0100000001",
+            "0100000201",
+            "01000000000003",
+            "0600000300",
+            "0700000300",
+            "010000000000000000",
+        )
+    ]
+    samples.extend(
+        bytes((rng.choice((1, 5, 6, 7, 8, 9, 12)),)) + rng.randbytes(rng.randrange(1, 8193))
+        for _ in range(5000)
+    )
+    for nal in samples:
+        assert _rbsp_outcome(rbsp, nal) == _rbsp_outcome(_rbsp_reference, nal)
+
+
+def test_rbsp_matches_reference_on_real_encoded_vcl(encoded_bframes):
+    for access_unit, _kind in encoded_bframes:
+        for nal in nals(access_unit):
+            if nal[0] & 31 in (1, 5):
+                assert _rbsp_outcome(rbsp, nal) == _rbsp_outcome(_rbsp_reference, nal)
+
+
+def test_h264_clock_converts_each_vcl_nal_to_rbsp_once(encoded_bframes, monkeypatch):
+    import soop_grid.h264clock as h264clock_module
+
+    access_unit, _kind = encoded_bframes[0]
+    vcl = [nal for nal in nals(access_unit) if nal[0] & 31 in (1, 5)]
+    original = h264clock_module.rbsp
+    calls = []
+
+    def counted(nal):
+        if nal[0] & 31 in (1, 5):
+            calls.append(nal)
+        return original(nal)
+
+    monkeypatch.setattr(h264clock_module, "rbsp", counted)
+    assert H264Clock().inspect(access_unit, 10_000_000, 0) is not None
+    assert calls == vcl
 
 
 class BitWriter:
@@ -359,15 +452,15 @@ def test_synthetic_frame_num_gap_reports_sps_reference_poc_and_grid_facts(encode
     sink = MediaSink(lambda _data: None)
     first, second = encoded_bframes[:2]
     sink.add(Frame(0xC748, media_body(first[0], "I", 400, 50_000_000)))
-    original_parse_slice = h264clock_module.parse_slice
+    original_parse_slice = h264clock_module._parse_slice_from_rbsp
 
-    def report_gap(nal, sps, pps):
-        header = original_parse_slice(nal, sps, pps)
+    def report_gap(nal, sps, pps, data):
+        header = original_parse_slice(nal, sps, pps, data)
         if header.idr:
             return header
         return replace(header, frame_num=(header.frame_num + 1) % sps["max_frame_num"])
 
-    monkeypatch.setattr(h264clock_module, "parse_slice", report_gap)
+    monkeypatch.setattr(h264clock_module, "_parse_slice_from_rbsp", report_gap)
     try:
         with pytest.raises(GridError, match="h264_frame_num_gap") as caught:
             sink.add(

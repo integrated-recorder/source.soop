@@ -77,19 +77,38 @@ def rbsp(nal):
     nal = nal.rstrip(b"\0")
     if len(nal) < 2 or nal[0] & 0x80 or nal[0] & 31 == 0:
         raise GridError("h264_nal_header_invalid")
-    out, zeros = bytearray(), 0
-    for index, value in enumerate(nal[1:], 1):
-        if zeros >= 2 and value == 3:
-            terminal_cabac = index + 1 == len(nal) and nal[0] & 31 in (1, 5)
-            if not terminal_cabac and (index + 1 >= len(nal) or nal[index + 1] > 3):
-                raise GridError("h264_emulation_prevention_invalid")
-            zeros = 0
-            continue
-        if zeros >= 2 and value <= 2:
+    # Search for the only bytes that can change EBSP interpretation in C,
+    # rather than visiting every compressed slice byte in Python. Keep the
+    # validation rules identical to the former byte-wise implementation.
+    nal_type = nal[0] & 31
+    end = len(nal)
+    scan = start = 1
+    pieces = []
+    while True:
+        pair = nal.find(b"\0\0", scan)
+        if pair < 0:
+            break
+        marker = pair + 2
+        if marker >= end:
+            break
+        value = nal[marker]
+        if value <= 2:
             raise GridError("h264_emulation_prevention_invalid")
-        out.append(value)
-        zeros = zeros + 1 if value == 0 else 0
-    return bytes(out)
+        if value == 3:
+            terminal_cabac = marker + 1 == end and nal_type in (1, 5)
+            if not terminal_cabac and (marker + 1 >= end or nal[marker + 1] > 3):
+                raise GridError("h264_emulation_prevention_invalid")
+            pieces.append(nal[start:marker])
+            start = marker + 1
+            scan = start
+        else:
+            # A byte greater than 3 terminates this zero run. Continue after
+            # it so a later zero run is still checked.
+            scan = marker + 1
+    if not pieces:
+        return nal[1:]
+    pieces.append(nal[start:])
+    return b"".join(pieces)
 
 
 def _validate_nal_header(nal):
@@ -751,14 +770,14 @@ def _validate_frame_num_progress(
         raise GridError("h264_frame_num_gap", safe_facts=facts)
 
 
-def parse_slice(nal, sps, pps):
+def _parse_slice_from_rbsp(nal, sps, pps, data):
     nal_type = nal[0] & 31
     if nal_type not in (1, 5):
         raise GridError("h264_slice_nal_type_invalid")
     nal_ref_idc = (nal[0] >> 5) & 3
     if nal_type == 5 and nal_ref_idc == 0:
         raise GridError("h264_idr_reference_invalid")
-    reader = Reader(rbsp(nal))
+    reader = Reader(data)
     first_mb = reader.ue()
     slice_type = reader.ue()
     if slice_type > 9:
@@ -824,11 +843,19 @@ def parse_slice(nal, sps, pps):
     )
 
 
-def _slice_pps_id(nal):
-    reader = Reader(rbsp(nal))
+def parse_slice(nal, sps, pps):
+    return _parse_slice_from_rbsp(nal, sps, pps, rbsp(nal))
+
+
+def _slice_pps_id_from_rbsp(data):
+    reader = Reader(data)
     reader.ue()
     reader.ue()
     return reader.ue()
+
+
+def _slice_pps_id(nal):
+    return _slice_pps_id_from_rbsp(rbsp(nal))
 
 
 class H264Clock:
@@ -1089,7 +1116,8 @@ class H264Clock:
 
         parsed = []
         for nal in vcl:
-            pps_id = _slice_pps_id(nal)
+            slice_rbsp = rbsp(nal)
+            pps_id = _slice_pps_id_from_rbsp(slice_rbsp)
             pps = candidate_pps.get(pps_id)
             sps = candidate_sps.get(pps["sps_id"]) if pps else None
             if not sps:
@@ -1098,7 +1126,7 @@ class H264Clock:
                     commit_parameter_sets()
                     return result
                 raise GridError("h264_parameter_set_missing")
-            parsed.append((parse_slice(nal, sps, pps), sps, pps))
+            parsed.append((_parse_slice_from_rbsp(nal, sps, pps, slice_rbsp), sps, pps))
         header, sps, pps = parsed[0]
         if (sps["nal_hrd"] or sps["vcl_hrd"]) and sps["low_delay_hrd"]:
             # Annex C.1.2 C-11 can shift actual CPB removal beyond nominal
