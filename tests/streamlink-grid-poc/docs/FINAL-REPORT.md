@@ -526,3 +526,22 @@ boundary, passed. The earlier recorded no-skip results remain separate
 evidence and were not reproduced here. Static checks and deterministic
 bundle/manifest checks passed. Live SOOP and real-time endurance remain
 untested.
+
+## 2026-11-05 — final recovery of the historical six-hour evidence
+
+The previously PARTIAL historical six-hour run is now **PASS** for bundle
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297` only. New
+offline checks established direct timestamp integrity (1,296,034 video pairs,
+42,191 audio PES; zero mismatches), source-relative event sync (2,155 matched
+of 2,165, no interior event gaps; 0.333 ms median and 0.667 ms p95/max added
+offset), and summary/process-backed close with exact byte accounting. Full TS
+decode, coded media identity, EOF/drain, and sampled resource observations also
+pass. The absent `reader_closed` event remains explicitly truncated; Parent/
+Cache recovery is still NOT_TESTED. No SOOP broadcast was started in this
+recovery work.
+
+Current HEAD `3b8e40741e3c2780a7a983875f631005b68b439e` and bundle
+`361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794` are distinct
+from the historical run; no six-hour result is attributed to the current
+bundle. Current release readiness remains PARTIAL and Stable NO-GO. See
+`SIX_HOUR_VALIDATION_RECOVERY.md`.

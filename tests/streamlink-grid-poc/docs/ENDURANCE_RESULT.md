@@ -1043,3 +1043,39 @@ controlled recovery remain unverified. The full 6-hour campaign gate is
 partial. Campaign remains
 **PARTIAL** and Stable remains **NO-GO**. No production source or bundle
 changed during these checks.
+
+## 2026-11-05 — recovered historical six-hour gate
+
+The preserved 2026-11-04 six-hour self-broadcast run has now been revalidated
+without starting another broadcast. Its exact candidate was source HEAD
+`98063420327bda52996796e9bb8cb87373eb32ea`, bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. This is
+not the current bundle `361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794`.
+
+The old `reader_closed_not_seen` was a bounded-diagnostics false negative:
+`reader_closed` was omitted after the event limit, while the run-matched final
+summary, receiver exit 0, EOF/drain flags, exact file size, matching
+reader/accepted/emitted/mux byte counts (366,801,160), and zero discarded or
+unaccepted bytes establish clean closure. Event-level close sequencing stays
+`DIAGNOSTIC_EVENT_TRUNCATED`.
+
+The timestamp checker was rerun from an input-only directory containing raw
+Grid wire, recording TS and final summary, with no previous validator report.
+It compared 1,296,034 video DTS/PTS pairs and 42,191 audio PES timestamps with
+zero mismatches, duplicate video PTS or non-increasing DTS.
+
+The optimized source-relative flash/click analysis passed its two-hour
+positive control exactly (721 common events; all compared event timestamps and
+offsets differed by 0 ms from the previous analyzer). On the six-hour run,
+2,155 of 2,165 scheduled events matched through 21,595.95 seconds, with no
+interior ID gaps; the final ten events are right-censored by output coverage.
+Added offset median was 0.333 ms, p95/max 0.667 ms, and fitted drift
+−0.000344 ppm. This is source-relative coded-event timing, not physical
+lip-sync measurement.
+
+The six-hour TS/full decode, source-to-output coded media identity, EOF/drain
+and bounded resource observations all pass for the historical bundle. The
+historical six-hour endurance gate is now **PASS**. Controlled Parent/Cache
+recovery remains **NOT TESTED**; current-bundle six-hour endurance remains
+**NOT TESTED**; Stable remains **NO-GO**. See
+`SIX_HOUR_VALIDATION_RECOVERY.md` for gate-by-gate evidence and limits.

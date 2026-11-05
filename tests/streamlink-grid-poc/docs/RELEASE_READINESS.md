@@ -312,3 +312,16 @@ with bundle SHA-256 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd5
 validated subset. Stable is **NO-GO**: the 6-hour gate is partial and the
 controlled recovery gate is not tested. This is an incomplete verification
 result on the exact candidate; production source and bundle are unchanged.
+
+## 2026-11-05 historical endurance clarification
+
+The original six-hour capture on bundle
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297` is now
+**PASS** after offline evidence recovery: independent timestamps, source-relative
+flash/click timing, summary-backed Reader closure, full TS decode and sampled
+resource stability were verified. The event log itself remains truncated at
+its limit, and Parent/Cache recovery was not exercised. This historical result
+does not satisfy the current bundle's six-hour gate; current bundle SHA is
+`361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794`. Stable
+remains **NO-GO** until release-candidate-specific endurance and recovery
+requirements are met.

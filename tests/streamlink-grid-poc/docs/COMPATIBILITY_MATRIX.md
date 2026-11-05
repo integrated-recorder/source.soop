@@ -153,3 +153,14 @@ contiguous byte-identical media interval, and final EOF/drain accounting from
 the diagnostics summary. It does not complete the 6-hour endurance gate
 because source-relative A/V drift and the independent Grid timestamp
 comparison remain unverified. Overall campaign is PARTIAL; Stable is NO-GO.
+
+## 2026-11-05 — historical six-hour evidence recovery
+
+The preserved six-hour run on bundle `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`
+has completed its missing independent checks and is now **PASS** for that
+artifact only. This does not mark the current bundle
+`361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794` as
+six-hour verified. Timestamp, source-relative A/V event, reader close, EOF/drain,
+full decode, media identity and resource observations are detailed in
+`SIX_HOUR_VALIDATION_RECOVERY.md`; Parent/Cache fault recovery remains
+**NOT_TESTED**.

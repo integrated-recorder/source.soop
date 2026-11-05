@@ -132,3 +132,15 @@ recovery remains NOT TESTED.
 Current campaign: **PARTIAL**. Stable: **NO-GO**. The next live step is a
 separately authorized short retest of the fixed bundle, followed by endurance
 only after its EOF/drain and media-integrity gates pass.
+
+## 2026-11-05 — preserved six-hour run revalidation complete
+
+No new broadcast was started. The historical 6-hour run on source
+`98063420327bda52996796e9bb8cb87373eb32ea` / bundle
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297` now has a
+**PASS** endurance verdict. The event log's close record was truncated, but
+final summary, exit status, output bytes and EOF/drain accounting independently
+verify closure. Direct Grid-wire-to-TS timestamp comparison and optimized
+source-relative flash/click analysis pass. This does not validate the current
+bundle for six hours. Current-bundle 6 h and controlled Parent/Cache recovery
+remain untested; Stable remains NO-GO. See `SIX_HOUR_VALIDATION_RECOVERY.md`.
