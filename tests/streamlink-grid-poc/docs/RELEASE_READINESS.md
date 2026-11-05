@@ -247,3 +247,50 @@ User confirmed offline-only work; current-hash live SOOP, source-relative
 sync, live recovery and real-time 2 h/6 h remain untested. Stable remains NO-GO.
 
 A 2-hour wall-clock-paced transformed Type-1 reference-B synthetic run then passed: 7,200 media seconds in 8,093.948 wall seconds, decoded identity across 72,000 frames, exact 72,000 VCL/337,501 AAC preservation, zero TS continuity/PSI errors, 100 ms max PCR value gap, full decode, EOF/drain, and 241 harness-inclusive resource samples. It is not SOOP Grid or source-relative sync evidence, and it does not prove 6-hour wall-clock stability. Stable remains NO-GO pending authorized live and recovery gates.
+
+### Exact candidate recheck — 2026-11-04
+
+The current bundle `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`
+was rerun with the recovered isolated FFmpeg/FFprobe 6.1.1 toolchain. Source
+tests passed 814/814 and bundled parity 805/805, zero skips; Ruff, format,
+compileall, deterministic bundle, manifest, Streamlink 8.6.2 discovery and
+diff checks passed. No production code or bundle bytes changed. User directed
+offline-only work, so no live publish or SOOP request was made. Exact-candidate
+live Grid, source-relative A/V sync, controlled recovery and real-time 2 h/6 h
+gates remain **NOT TESTED**. Stable remains **NO-GO**. See
+`LIVE_VALIDATION_RESUME.md` for the safe restart point.
+
+The user later authorized an attempt if a live test was feasible. The exact
+candidate completed a 120-second own-broadcast Native Grid Smoke with 1080p
+H.264/AAC, TS verification and StreamIO drain. Independent decoding measured
+and excluded a 77-chunk startup prefix before the first IDR; no interior
+exclusions occurred. This is limited Smoke evidence, not the full live release
+gate. An exact-candidate 2-hour run is now active in the existing user tmux;
+6-hour, long-duration sync and controlled recovery remain pending. Stable
+remains **NO-GO** until all required stages pass.
+
+## Exact-candidate update — 2026-11-05
+
+The exact candidate is source HEAD `98063420327bda52996796e9bb8cb87373eb32ea`
+with bundle SHA-256 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+
+* The 2-hour own-broadcast run completed and passed capture, independent
+  Grid/TS, timestamps, payload comparison, full decode, marker A/V, and
+  StreamIO EOF/drain gates. A/V metrics cover common overlap and disclose
+  censored edges.
+* The 6-hour own-broadcast run completed and passed full TS integrity and
+  FFmpeg decode, plus exact contiguous source-to-Grid H.264/AAC identity.
+  Its independent raw Grid/timestamp stage failed because the diagnostics
+  event cap omitted `reader_closed` and the dependent timestamp checker lacked
+  the independent report. Six-hour source-relative A/V analysis was stopped
+  at the offline limit. The final diagnostics summary does verify clean EOF
+  and drain: all accepted/read/emitted/mux byte counts match and discarded or
+  unaccepted bytes are zero. The independent Grid timestamp comparison is
+  still unverified.
+* Controlled Parent/Cache failure recovery remains untested. The user has
+  directed offline-only work, so no new live run is being started.
+
+**Release decision:** Native Grid Beta remains conditional on the documented
+validated subset. Stable is **NO-GO**: the 6-hour gate is partial and the
+controlled recovery gate is not tested. This is an incomplete verification
+result on the exact candidate; production source and bundle are unchanged.

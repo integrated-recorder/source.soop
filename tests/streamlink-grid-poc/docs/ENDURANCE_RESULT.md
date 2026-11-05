@@ -843,3 +843,119 @@ after granting local test-socket access. Ruff, format, compileall, deterministic
 bundle check, and manifest verification passed. This rerun does not replace the
 earlier recorded no-skip run, but decoder E2E checks could not be independently
 repeated in this environment. No live SOOP or endurance test was attempted.
+
+## Exact-candidate offline rerun after FFmpeg recovery — 2026-11-04
+
+On source HEAD `98063420327bda52996796e9bb8cb87373eb32ea` and unchanged bundle
+SHA-256 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`,
+the recovered isolated FFmpeg/FFprobe 6.1.1-3ubuntu5 toolchain activated the
+decoder-dependent tests. Source pytest passed **814 tests, 0 skipped**;
+single-file bundle parity passed **805 tests, 0 skipped**. The preserved
+untracked `tests/test_suffix_latejoin.py` was excluded. Ruff check/format for
+tracked source Python, compileall, deterministic bundle check, manifest
+verification, `git diff --check`, and Streamlink 8.6.2 plugin discovery all
+passed. A separate generated-fixture smoke confirmed H.264 and 48 kHz AAC-LC
+fixture probe and full decode. No production code or bundle bytes changed.
+
+Per the user's offline-only direction, no private publish configuration was
+loaded and no SOOP endpoint was contacted. This rerun does not satisfy current
+candidate Grid reception, source-relative A/V sync, live Parent/Cache recovery,
+or real-time 2 h/6 h endurance. These remain **NOT TESTED**; campaign remains
+PARTIAL and Stable remains **NO-GO**. Exact safe resume steps are in
+`LIVE_VALIDATION_RESUME.md`.
+
+## Exact-candidate live Smoke — 2026-11-04
+
+After the offline-only response was revised to permit live testing, a
+45-second test was intentionally cut at the requested duration. The receiver
+failed closed with `media_track_coverage_incomplete` because that cut left an
+unmatched A/V track endpoint. This was not treated as a product pass or worked
+around by loosening the gate. The retry used the existing synchronized
+150-second synthetic fixture and 120-second pilot capture.
+
+Candidate source HEAD was `98063420327bda52996796e9bb8cb87373eb32ea` and the
+loaded plugin bundle SHA-256 was
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. Both
+publisher and receiver exited 0; receive duration was 120.465 seconds. Native
+Grid quality code 1 was verified at 1920×1080 H.264 High with B-frames,
+60 fps; audio was AAC-LC 48 kHz stereo. The receiver observed 7,308 video
+Grid units and 5,712 AAC AUs, zero sequence discontinuities, missing frames,
+or recoveries, one Parent, and consistent A/V coverage. StreamIO drain
+completed.
+
+The source comparison found identical SPS/PPS sets and one contiguous exact
+match covering all emitted VCL units and AAC AUs. Independent TS timestamp
+validation passed 7,231 video PTS/DTS pairs and 238 audio PES checks with no
+DTS mismatch/regression or audio PTS mismatch. The 210,177-packet output had
+242 valid PSI CRC sections. `verify_recording.py` passed with 120.550 seconds
+of video and 121.856 seconds of decoded audio.
+
+The independent raw Grid H.264 decode report is
+`pass_with_measured_exclusions`: the raw capture starts before an IDR, and its
+first 77 video preroll chunks (492,899 bytes) are not independently decodable.
+They equal the receiver's measured 77 preroll frames and are withheld from TS
+output. The final TS recording gate passed full decode for 7,231 output video
+frames and 121.856 seconds of audio. Raw capture had no undecodable interior
+or suffix chunks and zero display-order PTS regressions. The A/V marker
+comparison matched 46 events over
+118.466 seconds, with 0.667 ms p95/max added offset and 1.85 ppm estimated
+added drift; edge markers were unmatched due to capture coverage. This short
+pilot verifies a bounded live subset only.
+
+The exact-candidate 2-hour run has started in the existing user-owned tmux
+session `soop-grid-stability-2h-20261104`; the harness is currently generating
+its 7,320-second fixture, before publication. The 2-hour and 6-hour results,
+long-duration source-relative sync, and controlled live recovery remain
+pending. Campaign PARTIAL; Stable **NO-GO**.
+
+## Exact-candidate endurance update — 2026-11-05
+
+Candidate: source HEAD `98063420327bda52996796e9bb8cb87373eb32ea`, bundle
+SHA-256 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+The user later directed offline-only follow-up; no new live session was
+started after that instruction. The following 2-hour and 6-hour captures had
+already completed earlier on this exact candidate.
+
+* **2-hour own-broadcast run: PASS for the harness gates.** Capture and
+  publisher exited 0; all five post-validation commands exited 0, including
+  independent raw Grid/TS validation, timestamp comparison, source-to-Grid
+  bitstream comparison, full recording verification, and marker-based A/V
+  analysis. Duration was 7,200.021 s. FFmpeg decoded 432,146 H.264 frames and
+  337,680 AAC-LC AUs at 48 kHz stereo; TS continuity, PSI CRC, PCR and DTS
+  regression counts were zero, with maximum PCR value delta 17 ms. The marker
+  analysis matched 721 events over 7,189.05 s; added offset maximum/p95
+  absolute value was about 0.667 ms and estimated drift was 0.00198 ppm. Edge
+  event coverage was censored, so these are overlap metrics, not full-edge or
+  perceptual-latency claims. StreamIO EOF/drain and byte accounting passed.
+* **6-hour own-broadcast run: PARTIAL.** Capture, publisher and receiver
+  exited 0; recording covered at least 21,600 s. Exact-candidate recording
+  verification passed: 1,951,070 TS packets; zero sync, continuity, PSI CRC,
+  transport, adaptation, PCR-regression, DTS-regression, missing timestamp,
+  or decoder errors; maximum PCR value delta 17 ms. FFmpeg decoded 1,296,034
+  1920×1080 H.264 frames (21,600.617 s) and 1,012,584 AAC-LC access units
+  (21,601.792 s, 48 kHz stereo). Source comparison found the received VCL and
+  AAC sequences to be byte-identical contiguous intervals of the generated
+  source; SPS/PPS sets matched.
+* The independent raw Grid validator stopped at `reader_closed_not_seen`:
+  the bounded diagnostics log reached its event cap before a final close
+  record was retained. The separate timestamp checker then failed because it
+  expected the independent validator's missing `transport_streams` report.
+  These are recorded validator failures, not passing checks. The final
+  `diagnostics/summary.json` independently records `reader_state=closed`, EOF
+  observed, `duration_limit`, no error/protocol failure, and drain complete;
+  accepted/read/emitted/mux bytes all equal 366,801,160, with zero discarded
+  or unaccepted bytes. Thus final EOF/drain is verified from the summary even
+  though the close event was absent. The 6-hour A/V marker analysis did not
+  complete within its 15-minute offline limit, so source-relative A/V drift
+  is **UNVERIFIED**. The dependent independent timestamp comparison remains
+  unverified. The 2-hour pass does not substitute for those 6-hour gates.
+* Neither endurance run injected a controlled Parent/Cache failure. Clean
+  runs do not verify recovery under a fault.
+
+**Current decision:** exact-candidate 2-hour endurance is verified; 6-hour
+transport integrity, complete decode, and EOF/drain accounting are verified,
+but source-relative A/V drift, the independent Grid timestamp cross-check and
+controlled recovery remain unverified. The full 6-hour campaign gate is
+partial. Campaign remains
+**PARTIAL** and Stable remains **NO-GO**. No production source or bundle
+changed during these checks.

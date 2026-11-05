@@ -89,3 +89,48 @@ pictures and `frame_num` wrap, plus cycle lengths 255 accepted and 256 rejected
 with `h264_poc_cycle_limit`. Full Source/Bundle rerun remains 734/725 passed,
 80 skips each; generated-media decode cases remain skipped in the current
 environment because FFmpeg/FFprobe are unavailable.
+
+## Exact-candidate offline rerun — 2026-11-04
+
+For source HEAD `98063420327bda52996796e9bb8cb87373eb32ea` and bundle SHA
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`,
+decoder-enabled offline Source/Bundle suites passed 814/805 with zero skips.
+This improves offline verification status only. Live Grid, source-relative
+sync, live recovery, and real-time 2 h/6 h cells remain **NOT_TESTED**; no
+historical or synthetic run is promoted to live evidence. Stable: **NO-GO**.
+
+## Exact-candidate live smoke update — 2026-11-04
+
+The same bundle completed a 120-second authorized own-broadcast Native Grid
+capture at verified 1920×1080 with H.264 B-frames and AAC-LC. Grid sequence,
+source-contiguous payload match, timestamp checks, PSI CRC, A/V marker sample,
+and StreamIO drain passed for the measured subset. The decoder excluded a
+77-chunk non-IDR prefix from the raw Grid H.264 capture; these were measured
+preroll frames withheld from output. The final TS gate fully decoded all
+7,231 output frames and audio. This is VERIFIED_FOR_SUBSET, not a long-run
+claim. The exact-candidate 2-hour run is in fixture generation; 6-hour,
+extended sync and controlled live recovery remain NOT_TESTED. Stable: NO-GO.
+
+## Exact-candidate live/endurance status — 2026-11-05
+
+This supersedes the “2 h RUN IN PROGRESS” status above. Both captures
+completed on bundle SHA-256
+`c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297` before
+the user requested offline-only follow-up.
+
+| Gate | 2-hour own broadcast | 6-hour own broadcast |
+|---|---|---|
+| Capture/publisher/receiver exit | PASS, exit 0 | PASS, exit 0 |
+| Full TS scan and H.264/AAC decode | PASS; 432,146 H.264 frames, 337,680 AAC AUs | PASS; 1,296,034 H.264 frames, 1,012,584 AAC AUs |
+| TS continuity / PSI CRC / PCR regression | 0 errors; max PCR delta 17 ms | 0 errors; max PCR delta 17 ms |
+| Source-to-Grid VCL/AAC identity | PASS, exact contiguous intervals | PASS, exact contiguous intervals; SPS/PPS equal |
+| Independent raw Grid parser and composition timestamps | PASS | INCOMPLETE: diagnostic close event missing after bounded log cap; dependent timestamp check lacked report |
+| Source-relative marker sync | PASS over common 7,189.05 s; edge censoring noted | NOT COMPLETED within offline analysis limit |
+| EOF/drain accounting | PASS in run report | PASS from final `diagnostics/summary.json`: drain complete, accepted/read/emitted/mux bytes equal, discarded/unaccepted bytes 0; close event absent from capped event log |
+| Controlled Parent/Cache fault | NOT TESTED | NOT TESTED |
+
+The 6-hour result verifies output transport structure, complete decode, a
+contiguous byte-identical media interval, and final EOF/drain accounting from
+the diagnostics summary. It does not complete the 6-hour endurance gate
+because source-relative A/V drift and the independent Grid timestamp
+comparison remain unverified. Overall campaign is PARTIAL; Stable is NO-GO.
