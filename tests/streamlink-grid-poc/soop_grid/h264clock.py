@@ -1066,6 +1066,23 @@ class H264Clock:
                 result = self._preroll(grid_timestamp, len(payload))
                 commit_parameter_sets()
                 return result
+            # A live Grid source may end with a standalone repeat of its
+            # active SPS/PPS. It is configuration, not a coded picture: accept
+            # only a non-empty parameter-set-only unit whose RBSP definitions
+            # are already active, and emit no media timestamp for it.
+            if (
+                units
+                and all((nal[0] & 31) in (7, 8) for nal in units)
+                and in_band_parameter_keys
+                and any(key[0] == 7 for key in in_band_parameter_keys)
+                and any(key[0] == 8 for key in in_band_parameter_keys)
+                and all(
+                    key in self.parameter_definitions
+                    and candidate_definitions.get(key) == self.parameter_definitions[key]
+                    for key in in_band_parameter_keys
+                )
+            ):
+                return None
             raise GridError("h264_vcl_missing")
         if len(vcl) > 8:
             raise GridError("h264_slice_count_limit")

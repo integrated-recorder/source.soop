@@ -1,5 +1,17 @@
 # Release readiness
 
+## 2026-11-05 candidate update
+
+Candidate bundle `12f1fac8ad1ab3e7634ec37ef28ff88fb0c84ee78ae0a9c165ff1b61ac534fe1`
+passes source pytest (816) and bundled parity (807), with zero skips, plus
+static checks and deterministic packaging. A permitted 150-second synthetic
+self-broadcast was run on its predecessor bundle and exposed a trailing
+identical active SPS/PPS-only unit that caused `h264_vcl_missing` at shutdown.
+The narrow fix is offline-tested but has not been live-retested. The previous
+2-hour/6-hour evidence is also for the predecessor bundle. Current-bundle
+EOF/drain, controlled Parent/Cache recovery, and endurance remain unverified;
+campaign status is **PARTIAL** and Stable remains **NO-GO**.
+
 ## Latest verification — 2026-11-03, offline only
 
 Production runtime source baseline: `2e88360eebe860c7208e86e99845b938dbe005c4`

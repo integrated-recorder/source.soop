@@ -1,5 +1,40 @@
 # Current offline candidate supplement — 2026-11-03
 
+## 2026-11-05 live pilot and end-of-source fix
+
+The user authorized one 150-second synthetic self-broadcast pilot. It ran on
+the prior bundle `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+The publisher completed, but the receiver exited with
+`media_timestamp_invalid` / `h264_vcl_missing` at 144.867 seconds. The final
+Grid media unit contained only a repeat of the already-active SPS and PPS,
+with no coded picture. The recording itself passed the independent TS scan
+and full FFmpeg decode: 258,123 TS packets, zero continuity/PSI CRC/PCR
+regression errors, 8,880 decoded 1080p video frames (147.9997 s), and 7,008
+AAC AUs (149.504 s). Source/Grid identity matched one contiguous interval of
+8,955 VCL units and 7,008 AAC AUs; SPS/PPS sets matched. The 56 common
+flash/click events over 144.066 s measured added offset median 0.333 ms,
+max/p95 0.667 ms and drift 1.6096 ppm. Because receiver EOF/drain failed,
+this pilot is not an end-to-end shutdown PASS.
+
+The current source now treats a nonempty post-start unit containing only
+byte-identical active SPS and PPS definitions as configuration and emits no
+picture or timestamp. SPS-only, PPS-only, changed parameter sets, AUD-only,
+and other no-VCL post-start units remain fail-closed. Targeted tests passed
+(6 passed, 97 deselected). The complete current regressions passed: source
+**816 passed, 0 skipped** and bundled parity **807 passed, 0 skipped**.
+Ruff, compileall, Streamlink 8.6.2 discovery, deterministic bundle check and
+SHA manifest verification passed. Current candidate bundle SHA-256:
+`12f1fac8ad1ab3e7634ec37ef28ff88fb0c84ee78ae0a9c165ff1b61ac534fe1`.
+
+The fix has not been live-retested. The 2-hour and 6-hour runs remain evidence
+for the old `c75fa14…` bundle only. A timestamp-only source/output
+reconciliation on the 6-hour capture matched 1,296,034 video and 1,012,584
+audio timestamp pairs; relative A/V timestamp shift stayed at 0.333 ms from
+start to end (0.0 ppm fitted change). This is not decoded flash/click
+perceptual sync. Controlled Parent/Cache failures remain untested. Campaign
+**PARTIAL**; current-candidate live shutdown and Stable remain
+**UNVERIFIED / NO-GO**.
+
 ## Exact-candidate regression rerun — 2026-11-03
 
 * Code under test: source commit `51a5a157a1269c00a2a952d5ad0dacefed35ef7e`; bundle SHA-256 `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`. Later commits in this run were documentation-only; no code or bundle changed.

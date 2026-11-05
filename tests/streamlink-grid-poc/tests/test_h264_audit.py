@@ -779,6 +779,22 @@ def test_single_grid_composition_idr_is_emitted_at_eof(tmp_path):
     assert "stream_output_drain_complete" not in facts
 
 
+def test_media_sink_ignores_trailing_duplicate_parameter_set_packet():
+    seq = sps(mode=2, fixed=False, hrd=False)
+    active_pps = pps()
+    output = []
+    sink = MediaSink(output.append)
+    sink.add(Frame(0xC748, media_body(annex(seq, active_pps, picture(idr=True, mode=2)), "I", 1, 50_000_000)))
+    before = b"".join(output)
+    sink.add(Frame(0xC748, media_body(annex(seq, active_pps), "P", 2, 50_166_667)))
+
+    assert b"".join(output) == before
+    assert sink.stats["video_frames"] == 2
+    assert sink.stats["video_output_frames"] == 1
+    sink.close()
+    assert output
+
+
 @pytest.mark.parametrize("nal_hrd,vcl_hrd", [(True, False), (False, True)])
 def test_hrd_idr_without_required_buffering_period_is_rejected_transactionally(nal_hrd, vcl_hrd):
     clock = H264Clock()
@@ -1290,6 +1306,34 @@ def test_header_only_chunk_is_preroll_before_start_but_fatal_after_start(payload
     with pytest.raises(GridError, match="h264_vcl_missing"):
         clock.inspect(payload, 50_666_666, 0)
     assert clock.preroll_frames == count
+
+
+def test_duplicate_active_sps_pps_only_chunk_after_start_is_non_media():
+    clock = H264Clock()
+    active_sps = sps(mode=2, fixed=False, reorder=0)
+    active_pps = pps()
+    first = clock.inspect(annex(active_sps, active_pps, picture(mode=2, idr=True)), 50_000_000, 0)
+    assert first is not None
+    state = (
+        clock.origin_dts,
+        clock.prev_frame_num,
+        clock.prev_frame_num_offset,
+        clock.prev_msb,
+        clock.prev_lsb,
+        clock.picture_times.copy(),
+        clock.parameter_definitions.copy(),
+    )
+
+    assert clock.inspect(annex(active_sps, active_pps), 50_333_333, 0) is None
+    assert (
+        clock.origin_dts,
+        clock.prev_frame_num,
+        clock.prev_frame_num_offset,
+        clock.prev_msb,
+        clock.prev_lsb,
+        clock.picture_times.copy(),
+        clock.parameter_definitions.copy(),
+    ) == state
 
 
 def test_missing_parameter_set_is_fatal_after_start_not_more_preroll():

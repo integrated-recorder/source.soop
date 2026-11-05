@@ -1497,7 +1497,7 @@ class _sg_mpegts_TSMux:
         return out + self._pes(video, pts, payload, pcr=pts if video else None)
 
 
-# Module: h264clock; source SHA-256: a9a20cb2538f54502abad4d6e6e1079cda1bcb806b6b8156ac305db983b1d93d
+# Module: h264clock; source SHA-256: c7e9d3c155b6fbacb10b7143bceb3f101467820a3c544aaa6eecf9871238308c
 from collections import deque as _sg_h264clock_deque
 from copy import copy as _sg_h264clock_copy
 from dataclasses import dataclass as _sg_h264clock_dataclass
@@ -2340,6 +2340,8 @@ class _sg_h264clock_H264Clock:
                 result = self._preroll(grid_timestamp, len(payload))
                 commit_parameter_sets()
                 return result
+            if units and all((nal[0] & 31 in (7, 8) for nal in units)) and in_band_parameter_keys and any((key[0] == 7 for key in in_band_parameter_keys)) and any((key[0] == 8 for key in in_band_parameter_keys)) and all((key in self.parameter_definitions and candidate_definitions.get(key) == self.parameter_definitions[key] for key in in_band_parameter_keys)):
+                return None
             raise _sg_h264clock_GridError('h264_vcl_missing')
         if len(vcl) > 8:
             raise _sg_h264clock_GridError('h264_slice_count_limit')

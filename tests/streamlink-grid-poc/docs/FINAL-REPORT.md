@@ -1,5 +1,27 @@
 # Current offline compatibility update — 2026-11-03
 
+## 2026-11-05 follow-up: authorized live pilot and shutdown boundary
+
+One 150-second synthetic self-broadcast was authorized and performed on
+pre-fix bundle `c75fa14b537582f91cf64527a68d21d0914562ae07e60002a637ec7dfd519297`.
+The receiver failed at 144.867 seconds on a trailing configuration-only
+repeat containing the already-active SPS and PPS (`h264_vcl_missing`). The
+recording produced before the failure independently passed TS validation and
+full FFmpeg decode, and source/Grid coded-unit comparison found contiguous
+matching VCL/AAC intervals with identical SPS/PPS. This does not count as a
+successful EOF/drain run.
+
+A focused fix accepts only a nonempty post-start unit composed of unchanged
+active SPS and PPS, with no VCL output or timestamp. Other no-VCL cases remain
+fail-closed. Targeted tests passed; full source and bundle suites pass **816**
+and **807** tests respectively, zero skipped. New bundle SHA-256 is
+`12f1fac8ad1ab3e7634ec37ef28ff88fb0c84ee78ae0a9c165ff1b61ac534fe1`.
+This bundle has not yet been live-tested. Prior 2-hour and 6-hour evidence
+belongs to the old bundle; the six-hour timestamp-only comparison shows a
+constant 0.333 ms relative A/V shift, but does not establish perceptual sync.
+Current-candidate live EOF/drain, controlled recovery, and 2-hour/6-hour
+endurance remain outstanding. Overall campaign **PARTIAL**; Stable **NO-GO**.
+
 ## ITU-T H.264 V16 SEI boundary review
 
 Reviewed the in-force H.264 V16 (06/2026) public change summary and Annex D

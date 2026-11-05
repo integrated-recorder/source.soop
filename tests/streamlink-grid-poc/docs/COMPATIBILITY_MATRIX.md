@@ -1,5 +1,19 @@
 # Current Native Grid compatibility matrix
 
+## 2026-11-05 update
+
+The authorized 150-second self-broadcast pilot used the previous bundle
+`c75fa14…`; receive ended on a repeated active SPS+PPS-only Grid unit with
+`h264_vcl_missing`. Media recorded before that boundary passed TS scanning,
+full FFmpeg decode, contiguous coded-unit comparison, and short-window
+marker timing. EOF/drain did not pass. The current candidate adds a narrow
+non-media handling rule for a packet containing both unchanged active SPS
+and PPS. Its offline source/bundle suites pass (816/807, zero skips), but this
+new candidate has no live evidence yet. Therefore its Grid E2E, EOF/drain,
+2-hour and 6-hour cells remain unverified. Historical 2-hour and 6-hour
+captures apply only to bundle `c75fa14…`; the latter has timestamp-only
+source/output reconciliation, not a six-hour perceptual sync result.
+
 Evidence is scoped to code/tests and explicitly named artifact hashes. `VERIFIED` means evidence exists at that scope, not universal service compatibility.
 
 Latest offline follow-up (2026-11-03): POC 0/1/2 valid and malformed local

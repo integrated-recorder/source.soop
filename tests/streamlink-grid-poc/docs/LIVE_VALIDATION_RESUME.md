@@ -1,5 +1,21 @@
 # Live validation resume point — 2026-11-04
 
+## 2026-11-05 status correction
+
+The user authorized a single 150-second own-broadcast pilot. It was performed
+using the then-current predecessor bundle `c75fa14…`. The synthetic publisher
+finished; the receiver stopped at 144.867 seconds on a trailing packet with
+only the already-active SPS and PPS, reporting `h264_vcl_missing`. The
+captured recording passed TS scan, FFmpeg full decode, coded-media identity,
+and short-window marker timing, but EOF/drain failed. A narrowly scoped fix
+now accepts only a nonempty SPS+PPS-only unit whose definitions exactly match
+the active sets, returning no media timestamp. All other no-VCL post-start
+cases still fail closed. Offline tests pass on bundle
+`12f1fac8ad1ab3e7634ec37ef28ff88fb0c84ee78ae0a9c165ff1b61ac534fe1`;
+this fixed bundle has not been live-tested. No further live run was authorized
+by the 150-second approval. Historical 2-hour/6-hour runs used `c75fa14…`,
+not the fixed bundle.
+
 ## Current exact candidate
 
 * Repository branch: `fix/grid-startup-readiness`
@@ -80,32 +96,33 @@ Expected values for this resume point are the source and bundle identities liste
 
 Campaign status: **PARTIAL — LIVE SMOKE VERIFIED FOR THIS SUBSET; 2 h RUN IN PROGRESS**. Stable status: **NO-GO** until the exact candidate passes the 2 h, 6 h, source-relative synchronization, and controlled recovery gates. Historical live or endurance results from other bundle hashes do not satisfy these gates.
 
-## Latest status — 2026-11-05 (supersedes the pending-run notes above)
+## Latest status — 2026-11-05 (supersedes earlier availability notes)
 
-The user currently cannot provide a test broadcast and directed offline-only
-work. Do not start another live capture unless availability/authorization is
-later changed.
+The user first requested offline-only work, then authorized one synthetic
+150-second self-broadcast. That bounded pilot was performed on bundle
+`c75fa14…` and exposed a shutdown-boundary case: a trailing Grid unit repeated
+the active SPS and PPS without VCL, and the receiver failed with
+`h264_vcl_missing` at 144.867 seconds. The output before that point passed TS
+scan, full FFmpeg decode, coded-unit identity and short-window marker checks;
+EOF/drain did not pass.
 
-* The 2-hour exact-candidate own-broadcast run completed on the same bundle
-  hash and passed all five post-validation checks. Its A/V marker result covers
-  common overlap and has censored edges; it is not a perceptual-latency test.
-* The 6-hour exact-candidate capture already completed before the offline-only
-  instruction. Its 21,600-second output passed the recording TS scan and full
-  FFmpeg H.264/AAC decode; VCL/AAC comparison matched exact contiguous source
-  intervals and SPS/PPS sets. The independent raw Grid validator failed at
-  `reader_closed_not_seen` because the bounded diagnostics event log reached
-  its cap. Its timestamp-dependent check then failed because the report was
-  absent. The final `diagnostics/summary.json` does verify closed state, EOF,
-  duration-limit stop, no error, complete drain, and equal accepted/read/
-  emitted/mux byte totals with zero discarded/unaccepted bytes. The offline
-  6-hour marker analysis did not finish within 15 minutes and was stopped; do
-  not mark 6-hour source-relative A/V sync or the independent timestamp
-  comparison as verified.
-* No Parent/Cache fault was injected in these clean runs. Controlled recovery
-  remains NOT TESTED.
+A narrow source fix now ignores only a nonempty SPS+PPS-only unit whose parsed
+definitions are already active and identical. It emits no picture/timestamp;
+SPS-only, PPS-only, changed definitions, AUD-only and all other post-start
+no-VCL cases remain rejected. Targeted regression and full source/bundle
+tests pass. The rebuilt bundle is
+`12f1fac8ad1ab3e7634ec37ef28ff88fb0c84ee78ae0a9c165ff1b61ac534fe1`.
+This fixed bundle has not been live-retested; the approval covered one 150s
+pilot, which has already been used.
 
-Current campaign: **PARTIAL**. Stable: **NO-GO**. Further work is offline-only:
-repair or replace the private bounded-log completion evidence path and, if
-feasible, complete source-relative marker analysis on the already captured
-files. Production source and bundle remain unchanged at the candidate identity
-listed above.
+The prior 2-hour and 6-hour captures belong to bundle `c75fa14…`, not this
+candidate. A post-hoc timestamp-only reconciliation of the 6-hour source and
+output matched 1,296,034 video and 1,012,584 AAC timestamp pairs; relative
+A/V timestamp shift was 0.333 ms at start and end, with zero fitted drift.
+This is not a decoded six-hour flash/click perceptual-sync result. The 6-hour
+event-marker analysis did not complete. Controlled Parent/Cache fault
+recovery remains NOT TESTED.
+
+Current campaign: **PARTIAL**. Stable: **NO-GO**. The next live step is a
+separately authorized short retest of the fixed bundle, followed by endurance
+only after its EOF/drain and media-integrity gates pass.
