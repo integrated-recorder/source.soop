@@ -12,7 +12,7 @@ $type live
 """
 
 
-# Module: protocol; source SHA-256: b12ffa9722f43d83ffa30cdef21077671e567feebb9c4710b0d49604ad4b3239
+# Module: protocol; source SHA-256: 0b95fdb268e401c5ec3c71243cba96902b15074d30f52aeff9e5dd414d8bbc6d
 import ipaddress as _sg_protocol_ipaddress
 import socket as _sg_protocol_socket
 import struct as _sg_protocol_struct
@@ -91,10 +91,13 @@ def _sg_protocol_read_frame(sock, family, timeout=4):
     else:
         command, result, size = _sg_protocol_struct.unpack_from('<IiI', header)
         check = _sg_protocol_struct.unpack_from('<I', header, len(header) - 4)[0]
-        if check != command ^ size:
+        expected_check = command ^ size
+        if family == 'center' and result < 0:
+            expected_check ^= result & 4294967295
+        if check != expected_check:
             if family == 'gateway' and result == -1 and (check == command ^ size ^ 4294967295):
                 raise _sg_protocol_GridError('gateway_negative_reply')
-            raise _sg_protocol_GridError('control_checksum_invalid', safe_facts={'family': family, 'command': command, 'result': result, 'declared_body_bytes': size, 'checksum_received': check, 'checksum_expected': command ^ size})
+            raise _sg_protocol_GridError('control_checksum_invalid', safe_facts={'family': family, 'command': command, 'result': result, 'declared_body_bytes': size, 'checksum_received': check, 'checksum_expected': expected_check})
         limit = 64 << 10 if family == 'gateway' else 1 << 20
     if size > limit:
         raise _sg_protocol_GridError('incoming_body_limit')

@@ -1,3 +1,9 @@
+## Latest exact-candidate result — 2026-11-05
+
+A Center negative reply observed during a bounded pilot used `command XOR body_size XOR unsigned(result)` for its header checksum. The parser had assumed `command XOR body_size`, misreporting the negative reply as checksum corruption. It now validates the result-inclusive checksum only for negative Center replies; the existing Center policy still rejects them as `center_access_denied`. Two tests verify acceptance of the observed form and rejection of an invalid checksum.
+
+The rebuilt bundle (`361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794`) passed 120-second synthetic live receive, independent TS/media identity checks, and EOF/drain. Offline Source/Bundle tests: 818/809 passed, zero skips. This does not meet 2-hour/6-hour endurance; the available authorization was limited to a 150-second self-broadcast. Stable remains NO-GO.
+
 # Current offline compatibility update — 2026-11-03
 
 ## 2026-11-05 follow-up: authorized live pilot and shutdown boundary

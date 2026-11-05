@@ -1,3 +1,9 @@
+## 2026-11-05 latest exact-candidate verification
+
+The current source fix for repeated active SPS+PPS and the Center negative-response checksum fix were tested together in bundle `361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794`. A 150-second synthetic self-broadcast fixture ran while the receiver captured 120 seconds; both processes exited 0 and the receiver observed its duration limit, close, EOF, and completed drain. Independent validation found exact H.264/AAC PES payload identity, no Grid sequence gaps or TS continuity/PSI/PCR/DTS-PTS errors, 47 marker pairs with added offset 0.333 ms median / 0.667 ms p95/max, and 1.80 ppm fitted drift. The initial 78 non-IDR preroll chunks were withheld.
+
+The user authorization was limited to a 150-second own broadcast. Do not treat this as 2-hour/6-hour evidence or run longer stages without authorization. Current campaign remains PARTIAL / Stable NO-GO; next required evidence is exact-candidate 2-hour and 6-hour endurance plus controlled live Parent/Cache failure tests.
+
 # Live validation resume point — 2026-11-04
 
 ## 2026-11-05 status correction

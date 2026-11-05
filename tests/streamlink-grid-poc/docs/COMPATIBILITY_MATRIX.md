@@ -1,3 +1,7 @@
+## 2026-11-05 exact-bundle smoke
+
+Bundle `361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794` passed a 120-second synthetic self-broadcast receive (150-second source), including EOF/drain, H.264/AAC payload identity, 1920×1080 H.264 High with B-frames, AAC-LC 48 kHz stereo, 0 Grid sequence discontinuities, 244 valid PSI sections, and 0 TS continuity/PSI/PCR/DTS-PTS errors. The 78 leading pre-IDR chunks were withheld; no interior/suffix exclusions. 47 flash/click events measured added offset median 0.333 ms, p95/max 0.667 ms and drift 1.80 ppm. This is smoke evidence only; 2-hour/6-hour and controlled live recovery remain not tested.
+
 # Current Native Grid compatibility matrix
 
 ## 2026-11-05 update

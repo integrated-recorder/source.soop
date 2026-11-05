@@ -89,7 +89,13 @@ def read_frame(sock, family, timeout=4):
     else:
         command, result, size = struct.unpack_from("<IiI", header)
         check = struct.unpack_from("<I", header, len(header) - 4)[0]
-        if check != command ^ size:
+        expected_check = command ^ size
+        if family == "center" and result < 0:
+            # Center negative replies include the signed result word in the
+            # checksum. A bounded live observation confirmed this form; the
+            # body is still parsed and Center.receive() rejects the result.
+            expected_check ^= result & 0xFFFFFFFF
+        if check != expected_check:
             if family == "gateway" and result == -1 and check == ((command ^ size) ^ 0xFFFFFFFF):
                 raise GridError("gateway_negative_reply")
             raise GridError(
@@ -100,7 +106,7 @@ def read_frame(sock, family, timeout=4):
                     "result": result,
                     "declared_body_bytes": size,
                     "checksum_received": check,
-                    "checksum_expected": command ^ size,
+                    "checksum_expected": expected_check,
                 },
             )
         limit = (64 << 10) if family == "gateway" else (1 << 20)

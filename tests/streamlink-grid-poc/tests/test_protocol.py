@@ -67,6 +67,36 @@ def test_negative_gateway_frame():
         right.close()
 
 
+def test_negative_center_frame_checksum_includes_result_word():
+    left, right = socket.socketpair()
+    try:
+        command, result, body = 0x46, -1989, b"x" * 27
+        size = len(body)
+        checksum = command ^ size ^ (result & 0xFFFFFFFF)
+        right.sendall(struct.pack("<IIIII", command, result & 0xFFFFFFFF, size, 0, checksum) + body)
+        frame = read_frame(left, "center")
+        assert frame.command == command
+        assert frame.result == result
+        assert frame.body == body
+    finally:
+        left.close()
+        right.close()
+
+
+def test_negative_center_frame_rejects_bad_result_checksum():
+    left, right = socket.socketpair()
+    try:
+        command, result, size = 0x46, -1989, 27
+        checksum = command ^ size
+        right.sendall(struct.pack("<IIIII", command, result & 0xFFFFFFFF, size, 0, checksum))
+        with pytest.raises(GridError, match="control_checksum_invalid") as caught:
+            read_frame(left, "center")
+        assert caught.value.safe_facts["checksum_expected"] == command ^ size ^ (result & 0xFFFFFFFF)
+    finally:
+        left.close()
+        right.close()
+
+
 def test_control_checksum_error_has_only_safe_header_facts():
     left, right = socket.socketpair()
     try:

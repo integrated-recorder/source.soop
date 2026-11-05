@@ -1,3 +1,9 @@
+## Latest release gate — 2026-11-05
+
+The exact bundle `361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794` passed Source 818/0 skipped, Bundle 809/0 skipped, Ruff, compileall, deterministic bundle/SHA checks, Streamlink 8.6.2 plugin discovery, and a 120-second synthetic self-broadcast receive with payload identity and EOF/drain. Added AV offset was 0.333 ms median / 0.667 ms p95/max over 120.7 seconds.
+
+Release remains **Beta only / Stable NO-GO**. The 150-second self-broadcast authorization does not cover required 2-hour and 6-hour endurance or controlled live recovery tests.
+
 # Release readiness
 
 ## 2026-11-05 candidate update

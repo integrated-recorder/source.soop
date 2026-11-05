@@ -1,3 +1,47 @@
+## 2026-11-05 — current bundle live verification and Center negative reply fix
+
+The 150-second authorization was used for a synthetic self-broadcast fixture;
+the receiver was capped at 120 seconds so it closed before the source ended.
+The exact bundle SHA-256 was
+`361b63eb6969e9a8fc2f21506294041a356d03d94e1353084fcdfe58ad195794`.
+Publisher and receiver both exited 0, with `duration_limit`, reader close, and
+EOF/drain complete.
+
+Independent validation status was `pass_with_measured_exclusions`: the first
+78 non-IDR preroll video chunks (500,534 bytes) preceded the first decodable
+IDR and were withheld. There were no interior or suffix exclusions. The
+120-second receive contained 7,618 Grid units, zero sequence discontinuities,
+H.264 High 1920x1080 with B-frames, AAC-LC 48 kHz stereo, and 212,199 TS
+packets. All 244 PSI sections passed CRC. TS continuity, PSI CRC, PCR
+regression, DTS/PTS mismatch, duplicate video PTS, and non-increasing DTS
+counts were zero. Output PES H.264/AAC bytes matched the captured Grid payload
+byte-for-byte; matched source intervals contained 7,378 VCL units and 5,760
+AAC AUs, with identical SPS/PPS sets.
+
+Across 47 matched flash/click events over 120.7 seconds, added A/V offset had
+0.333 ms median, 0.667 ms p95/max, and fitted drift 1.80 ppm. Some edge events
+were unmatched because the capture was shorter than the fixture. This is a
+short synthetic run, not 2-hour/6-hour endurance or production-stream proof.
+
+The preceding 150-second attempt on the prior bundle ended when its reused
+source fixture ended early. Its Center negative response had result `-1989`
+and checksum equal to `command XOR body_size XOR unsigned(result)`, while the
+parser only accepted `command XOR body_size`; it was therefore mislabeled
+`control_checksum_invalid`. The parser now applies the result-inclusive form
+only to negative Center responses. Existing Center logic then rejects the
+negative result as `center_access_denied`; bad checksums remain fail-closed.
+Two focused protocol regressions cover valid and invalid result-inclusive
+checksums.
+
+Exact candidate offline tests: Source **818 passed, 0 skipped**; bundled parity
+**809 passed, 0 skipped**. Ruff check/format, compileall, deterministic bundle
+build/check, and SHA manifest verification passed. The pre-existing untracked
+`tests/test_suffix_latejoin.py` was excluded and left untouched. The user
+authorized a 150-second self-broadcast only, so 2-hour/6-hour endurance and
+live Parent/Cache fault injection were not run. Stable remains **NO-GO**.
+
+---
+
 # Current offline candidate supplement — 2026-11-03
 
 ## 2026-11-05 live pilot and end-of-source fix
