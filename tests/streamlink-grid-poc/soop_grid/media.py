@@ -195,8 +195,8 @@ def sps_info(payload):
     return info
 
 
-def adts_info(payload):
-    parsed = parse_adts(payload)
+def adts_info(payload, *, _parsed=None):
+    parsed = parse_adts(payload) if _parsed is None else _parsed
     if parsed.config_changed:
         raise GridError("aac_configuration_changed")
     return {"codec": "aac", "sample_rate": parsed.config.sample_rate, "channels": parsed.config.channels}
@@ -500,7 +500,7 @@ class MediaSink:
             self.stats["audio_access_units"] += audio.access_unit_count
             self.stats["audio_core_samples"] += audio.core_samples
             if "audio" not in self.stats:
-                self.stats["audio"] = adts_info(chunk.payload)
+                self.stats["audio"] = adts_info(chunk.payload, _parsed=audio)
         ts = b""
         video_for_emit = None
         audio_for_emit = []
@@ -518,20 +518,20 @@ class MediaSink:
                 self.stats["h264_fixed_vui_timing"] = int(timing["sps"]["timing_fixed"])
                 self.stats["video_timing_model"] = timing["timing_model"]
                 if ts and self.pending_audio:
-                    for timestamp, payload, units, samples in self.pending_audio:
+                    for timestamp, payload, units, samples, parsed in self.pending_audio:
                         audio_pts = self.video_clock.audio_pts(timestamp)
-                        ts += self.mux.add_audio(audio_pts, payload)
+                        ts += self.mux.add_audio(audio_pts, payload, _parsed=parsed)
                         audio_for_emit.append((payload, units, samples, audio_pts))
         elif not self.mux.started:
             if self.pending_audio_bytes + len(chunk.payload) > 1 << 20 or len(self.pending_audio) >= 64:
                 raise GridError("audio_preroll_limit")
             self.pending_audio.append(
-                (sample_clock_timestamp, chunk.payload, audio.access_unit_count, audio.core_samples)
+                (sample_clock_timestamp, chunk.payload, audio.access_unit_count, audio.core_samples, audio)
             )
             self.pending_audio_bytes += len(chunk.payload)
         else:
             audio_pts = self.video_clock.audio_pts(sample_clock_timestamp)
-            ts = self.mux.add_audio(audio_pts, chunk.payload)
+            ts = self.mux.add_audio(audio_pts, chunk.payload, _parsed=audio)
             audio_for_emit.append((chunk.payload, audio.access_unit_count, audio.core_samples, audio_pts))
         if ts:
             self._record_output(
@@ -542,24 +542,25 @@ class MediaSink:
             if self.pending_audio and audio_for_emit:
                 self.pending_audio.clear()
                 self.pending_audio_bytes = 0
-        record = {
-            "frame": chunk.frame,
-            "type": chunk.kind,
-            "timestamp_raw": chunk.timestamp,
-            "payload_bytes": len(chunk.payload),
-            **(
-                {
-                    "pts_90k": timing["pts"],
-                    "dts_90k": timing["dts"],
-                    "poc": timing["poc"],
-                    "slice_type": timing["slice_type"],
-                    "timing_model": timing["timing_model"],
-                }
-                if chunk.kind in ("I", "P", "B") and timing is not None
-                else {}
-            ),
-        }
-        self.write("frames.jsonl", (json.dumps(record, sort_keys=True) + "\n").encode())
+        if "frames.jsonl" in self.files:
+            record = {
+                "frame": chunk.frame,
+                "type": chunk.kind,
+                "timestamp_raw": chunk.timestamp,
+                "payload_bytes": len(chunk.payload),
+                **(
+                    {
+                        "pts_90k": timing["pts"],
+                        "dts_90k": timing["dts"],
+                        "poc": timing["poc"],
+                        "slice_type": timing["slice_type"],
+                        "timing_model": timing["timing_model"],
+                    }
+                    if chunk.kind in ("I", "P", "B") and timing is not None
+                    else {}
+                ),
+            }
+            self.write("frames.jsonl", (json.dumps(record, sort_keys=True) + "\n").encode())
         return chunk
 
     def _output_steps(self):

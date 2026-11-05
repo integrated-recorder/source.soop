@@ -610,6 +610,40 @@ def test_production_rejects_multiple_raw_blocks_but_parser_counts_them(blocks):
         sink.close()
 
 
+def test_media_sink_reuses_validated_adts_result_in_mux(monkeypatch):
+    import soop_grid.media as media_module
+    import soop_grid.mpegts as mpegts_module
+
+    media_calls = 0
+    mux_calls = 0
+    media_parser = media_module.parse_adts
+    mux_parser = mpegts_module.parse_adts
+
+    def parse_media_audio(payload):
+        nonlocal media_calls
+        media_calls += 1
+        return media_parser(payload)
+
+    def parse_mux_audio(payload):
+        nonlocal mux_calls
+        mux_calls += 1
+        return mux_parser(payload)
+
+    monkeypatch.setattr(media_module, "parse_adts", parse_media_audio)
+    monkeypatch.setattr(mpegts_module, "parse_adts", parse_mux_audio)
+    sink = MediaSink(lambda _data: None)
+    sink.mux.started = True
+    try:
+        add_audio(sink, header(8) + b"x")
+        assert media_calls == 1
+        assert mux_calls == 0
+        # Direct Muxer callers still take the full validating parser path.
+        sink.mux.add_audio(90_000 + 1920, header(8) + b"x")
+        assert mux_calls == 1
+    finally:
+        sink.close()
+
+
 @pytest.mark.parametrize("profile", [0, 2, 3])
 def test_production_rejects_unverified_non_lc_profiles(profile):
     payload = header(8, profile=profile) + b"x"

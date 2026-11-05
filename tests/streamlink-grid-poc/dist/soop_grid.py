@@ -1277,7 +1277,7 @@ def _sg_bootstrap_bootstrap(config, report, http_factory=_sg_bootstrap_HTTP):
             http.close()
 
 
-# Module: mpegts; source SHA-256: 9ac16b8413376b83fc27ffd91bd261c1a0c968370553b9fc1067c8314191ad6e
+# Module: mpegts; source SHA-256: 9dbc51f4a5394983ac0b3e4dc0df16f3437cf1c4cea58e8f0403f195369a29fb
 import struct as _sg_mpegts_struct
 from fractions import Fraction as _sg_mpegts_Fraction
 _sg_mpegts_parse_adts = _sg_aac_parse_adts
@@ -1329,32 +1329,40 @@ class _sg_mpegts_TSMux:
 
     def packetize(self, pid, data, start=True, pcr=None):
         data = memoryview(data)
-        packets = []
-        while data:
-            b = bytearray(b'\xff' * 188)
-            b[:4] = bytes((71, pid >> 8 & 31 | (64 if start else 0), pid & 255, 16 | self.cc.get(pid, 0)))
-            self.cc[pid] = self.cc.get(pid, 0) + 1 & 15
+        length = len(data)
+        if not length:
+            return b''
+        first_capacity = 176 if pcr is not None else 184
+        packet_count = 1 + max(0, (length - first_capacity + 183) // 184)
+        output = bytearray(b'\xff' * (packet_count * 188))
+        offset = 0
+        for packet_index in range(packet_count):
+            base = packet_index * 188
             capacity = 176 if pcr is not None else 184
+            n = min(length - offset, capacity)
             adapt = 8 if pcr is not None else 0
-            n = min(len(data), capacity)
             if n < capacity:
                 adapt = 184 - n
-            pos = 4
+            output[base] = 71
+            output[base + 1] = pid >> 8 & 31 | (64 if start else 0)
+            output[base + 2] = pid & 255
+            output[base + 3] = 16 | self.cc.get(pid, 0)
+            self.cc[pid] = self.cc.get(pid, 0) + 1 & 15
+            pos = base + 4
             if adapt:
-                b[3] |= 32
-                b[pos] = adapt - 1
+                output[base + 3] |= 32
+                output[pos] = adapt - 1
                 if adapt >= 2:
-                    b[pos + 1] = 0
+                    output[pos + 1] = 0
                 if pcr is not None:
                     v = pcr & (1 << 33) - 1
-                    b[pos + 1:pos + 8] = bytes((16, v >> 25 & 255, v >> 17 & 255, v >> 9 & 255, v >> 1 & 255, v << 7 & 255 | 126, 0))
+                    output[pos + 1:pos + 8] = bytes((16, v >> 25 & 255, v >> 17 & 255, v >> 9 & 255, v >> 1 & 255, v << 7 & 255 | 126, 0))
                 pos += adapt
-            b[pos:pos + n] = data[:n]
-            packets.append(bytes(b))
-            data = data[n:]
+            output[pos:pos + n] = data[offset:offset + n]
+            offset += n
             start = False
             pcr = None
-        return b''.join(packets)
+        return bytes(output)
 
     def _validate_pcr_time(self, dts):
         if self.last_pcr_dts is None:
@@ -1440,10 +1448,10 @@ class _sg_mpegts_TSMux:
             out = b''
         return out + self._pes(True, pts, payload, dts)
 
-    def add_audio(self, pts, payload):
+    def add_audio(self, pts, payload, *, _parsed=None):
         if not self.started or pts is None:
             return b''
-        parsed = _sg_mpegts_parse_adts(payload)
+        parsed = _sg_mpegts_parse_adts(payload) if _parsed is None else _parsed
         if parsed.config_changed:
             raise _sg_mpegts_GridError('aac_configuration_changed')
         if parsed.config.audio_object_type != 2:
@@ -2497,7 +2505,7 @@ class _sg_h264clock_H264Clock:
         return self._rescale(timestamp_100ns - self.origin_dts) + 90000
 
 
-# Module: media; source SHA-256: 52c2659550197c80d91d58cc6e3e6f15ba5e403021b66e48748206a1a9acf0d6
+# Module: media; source SHA-256: f9c70e13fc3d70ce7033c8f12604b946f1a0d887484f03bfa9eb3021f9a89419
 import hashlib as _sg_media_hashlib
 import json as _sg_media_json
 import os as _sg_media_os
@@ -2670,8 +2678,8 @@ def _sg_media_sps_info(payload):
                 info.update(fps_numerator=scale, fps_denominator=2 * units)
     return info
 
-def _sg_media_adts_info(payload):
-    parsed = _sg_media_parse_adts(payload)
+def _sg_media_adts_info(payload, *, _parsed=None):
+    parsed = _sg_media_parse_adts(payload) if _parsed is None else _parsed
     if parsed.config_changed:
         raise _sg_media_GridError('aac_configuration_changed')
     return {'codec': 'aac', 'sample_rate': parsed.config.sample_rate, 'channels': parsed.config.channels}
@@ -2892,7 +2900,7 @@ class _sg_media_MediaSink:
             self.stats['audio_access_units'] += audio.access_unit_count
             self.stats['audio_core_samples'] += audio.core_samples
             if 'audio' not in self.stats:
-                self.stats['audio'] = _sg_media_adts_info(chunk.payload)
+                self.stats['audio'] = _sg_media_adts_info(chunk.payload, _parsed=audio)
         ts = b''
         video_for_emit = None
         audio_for_emit = []
@@ -2910,26 +2918,27 @@ class _sg_media_MediaSink:
                 self.stats['h264_fixed_vui_timing'] = int(timing['sps']['timing_fixed'])
                 self.stats['video_timing_model'] = timing['timing_model']
                 if ts and self.pending_audio:
-                    for timestamp, payload, units, samples in self.pending_audio:
+                    for timestamp, payload, units, samples, parsed in self.pending_audio:
                         audio_pts = self.video_clock.audio_pts(timestamp)
-                        ts += self.mux.add_audio(audio_pts, payload)
+                        ts += self.mux.add_audio(audio_pts, payload, _parsed=parsed)
                         audio_for_emit.append((payload, units, samples, audio_pts))
         elif not self.mux.started:
             if self.pending_audio_bytes + len(chunk.payload) > 1 << 20 or len(self.pending_audio) >= 64:
                 raise _sg_media_GridError('audio_preroll_limit')
-            self.pending_audio.append((sample_clock_timestamp, chunk.payload, audio.access_unit_count, audio.core_samples))
+            self.pending_audio.append((sample_clock_timestamp, chunk.payload, audio.access_unit_count, audio.core_samples, audio))
             self.pending_audio_bytes += len(chunk.payload)
         else:
             audio_pts = self.video_clock.audio_pts(sample_clock_timestamp)
-            ts = self.mux.add_audio(audio_pts, chunk.payload)
+            ts = self.mux.add_audio(audio_pts, chunk.payload, _parsed=audio)
             audio_for_emit.append((chunk.payload, audio.access_unit_count, audio.core_samples, audio_pts))
         if ts:
             self._record_output(ts, video=(video_for_emit, timing) if video_for_emit is not None else None, audio=audio_for_emit)
             if self.pending_audio and audio_for_emit:
                 self.pending_audio.clear()
                 self.pending_audio_bytes = 0
-        record = {'frame': chunk.frame, 'type': chunk.kind, 'timestamp_raw': chunk.timestamp, 'payload_bytes': len(chunk.payload), **({'pts_90k': timing['pts'], 'dts_90k': timing['dts'], 'poc': timing['poc'], 'slice_type': timing['slice_type'], 'timing_model': timing['timing_model']} if chunk.kind in ('I', 'P', 'B') and timing is not None else {})}
-        self.write('frames.jsonl', (_sg_media_json.dumps(record, sort_keys=True) + '\n').encode())
+        if 'frames.jsonl' in self.files:
+            record = {'frame': chunk.frame, 'type': chunk.kind, 'timestamp_raw': chunk.timestamp, 'payload_bytes': len(chunk.payload), **({'pts_90k': timing['pts'], 'dts_90k': timing['dts'], 'poc': timing['poc'], 'slice_type': timing['slice_type'], 'timing_model': timing['timing_model']} if chunk.kind in ('I', 'P', 'B') and timing is not None else {})}
+            self.write('frames.jsonl', (_sg_media_json.dumps(record, sort_keys=True) + '\n').encode())
         return chunk
 
     def _output_steps(self):

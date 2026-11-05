@@ -72,27 +72,35 @@ class TSMux:
 
     def packetize(self, pid, data, start=True, pcr=None):
         data = memoryview(data)
-        packets = []
-        while data:
-            b = bytearray(b"\xff" * 188)
-            b[:4] = bytes(
-                (0x47, ((pid >> 8) & 31) | (0x40 if start else 0), pid & 255, 0x10 | self.cc.get(pid, 0))
-            )
-            self.cc[pid] = (self.cc.get(pid, 0) + 1) & 15
+        length = len(data)
+        if not length:
+            return b""
+        first_capacity = 176 if pcr is not None else 184
+        packet_count = 1 + max(0, (length - first_capacity + 183) // 184)
+        output = bytearray(b"\xff" * (packet_count * 188))
+        offset = 0
+        for packet_index in range(packet_count):
+            base = packet_index * 188
             capacity = 176 if pcr is not None else 184
+            n = min(length - offset, capacity)
             adapt = 8 if pcr is not None else 0
-            n = min(len(data), capacity)
             if n < capacity:
                 adapt = 184 - n
-            pos = 4
+
+            output[base] = 0x47
+            output[base + 1] = ((pid >> 8) & 31) | (0x40 if start else 0)
+            output[base + 2] = pid & 255
+            output[base + 3] = 0x10 | self.cc.get(pid, 0)
+            self.cc[pid] = (self.cc.get(pid, 0) + 1) & 15
+            pos = base + 4
             if adapt:
-                b[3] |= 0x20
-                b[pos] = adapt - 1
+                output[base + 3] |= 0x20
+                output[pos] = adapt - 1
                 if adapt >= 2:
-                    b[pos + 1] = 0
+                    output[pos + 1] = 0
                 if pcr is not None:
                     v = pcr & ((1 << 33) - 1)
-                    b[pos + 1 : pos + 8] = bytes(
+                    output[pos + 1 : pos + 8] = bytes(
                         (
                             0x10,
                             (v >> 25) & 255,
@@ -104,12 +112,11 @@ class TSMux:
                         )
                     )
                 pos += adapt
-            b[pos : pos + n] = data[:n]
-            packets.append(bytes(b))
-            data = data[n:]
+            output[pos : pos + n] = data[offset : offset + n]
+            offset += n
             start = False
             pcr = None
-        return b"".join(packets)
+        return bytes(output)
 
     def _validate_pcr_time(self, dts):
         if self.last_pcr_dts is None:
@@ -226,10 +233,10 @@ class TSMux:
             out = b""
         return out + self._pes(True, pts, payload, dts)
 
-    def add_audio(self, pts, payload):
+    def add_audio(self, pts, payload, *, _parsed=None):
         if not self.started or pts is None:
             return b""
-        parsed = parse_adts(payload)
+        parsed = parse_adts(payload) if _parsed is None else _parsed
         if parsed.config_changed:
             raise GridError("aac_configuration_changed")
         if parsed.config.audio_object_type != 2:

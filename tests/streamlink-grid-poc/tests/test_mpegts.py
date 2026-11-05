@@ -1,12 +1,85 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (c) 2026 source.soop contributors
 import hashlib
+import random
 import pytest
 
 from conftest import synthetic_sps
 from soop_grid.media import adts_info, parse_adts, sps_info
 from soop_grid.mpegts import PCR_INTERVAL_90K, PCR_MAX_RECOVERY_GAP_90K, TSMux, crc_mpeg, pts_bytes
 from soop_grid.protocol import GridError
+
+
+def _packetize_reference(mux, pid, data, start=True, pcr=None):
+    """Pre-optimization packetizer retained as a byte-exact test oracle."""
+    data = memoryview(data)
+    packets = []
+    while data:
+        packet = bytearray(b"\xff" * 188)
+        packet[:4] = bytes(
+            (0x47, ((pid >> 8) & 31) | (0x40 if start else 0), pid & 255, 0x10 | mux.cc.get(pid, 0))
+        )
+        mux.cc[pid] = (mux.cc.get(pid, 0) + 1) & 15
+        capacity = 176 if pcr is not None else 184
+        n = min(len(data), capacity)
+        adapt = 8 if pcr is not None else 0
+        if n < capacity:
+            adapt = 184 - n
+        pos = 4
+        if adapt:
+            packet[3] |= 0x20
+            packet[pos] = adapt - 1
+            if adapt >= 2:
+                packet[pos + 1] = 0
+            if pcr is not None:
+                value = pcr & ((1 << 33) - 1)
+                packet[pos + 1 : pos + 8] = bytes(
+                    (
+                        0x10,
+                        (value >> 25) & 255,
+                        (value >> 17) & 255,
+                        (value >> 9) & 255,
+                        (value >> 1) & 255,
+                        ((value << 7) & 255) | 0x7E,
+                        0,
+                    )
+                )
+            pos += adapt
+        packet[pos : pos + n] = data[:n]
+        packets.append(bytes(packet))
+        data = data[n:]
+        start = False
+        pcr = None
+    return b"".join(packets)
+
+
+@pytest.mark.parametrize(
+    "size", [0, 1, 2, 7, 8, 175, 176, 177, 183, 184, 185, 359, 360, 361, 367, 368, 369, 4097, 65536, 1048576]
+)
+@pytest.mark.parametrize("pcr", [None, 0, 123456789, (1 << 33) - 1])
+@pytest.mark.parametrize("start", [False, True])
+def test_preallocated_packetizer_matches_reference(size, pcr, start):
+    data = bytes((i * 29 + 7) & 255 for i in range(size))
+    expected_mux, actual_mux = TSMux(), TSMux()
+    expected = _packetize_reference(expected_mux, 0x123, data, start=start, pcr=pcr)
+    actual = actual_mux.packetize(0x123, data, start=start, pcr=pcr)
+    assert actual == expected
+    assert actual_mux.cc == expected_mux.cc
+
+
+def test_preallocated_packetizer_matches_reference_for_deterministic_random_inputs():
+    randomizer = random.Random(0x5017)
+    for _ in range(250):
+        size = randomizer.randrange(0, 24_000)
+        data = randomizer.randbytes(size)
+        pid = randomizer.randrange(0x2000)
+        pcr = randomizer.choice((None, 0, randomizer.randrange(1 << 40)))
+        start = bool(randomizer.getrandbits(1))
+        expected_mux, actual_mux = TSMux(), TSMux()
+        expected = _packetize_reference(expected_mux, pid, data, start=start, pcr=pcr)
+        actual = actual_mux.packetize(pid, data, start=start, pcr=pcr)
+        assert actual == expected
+        assert actual_mux.cc == expected_mux.cc
 
 
 def test_go_ts_golden_and_preroll(golden):

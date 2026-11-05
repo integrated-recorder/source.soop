@@ -779,6 +779,48 @@ def test_single_grid_composition_idr_is_emitted_at_eof(tmp_path):
     assert "stream_output_drain_complete" not in facts
 
 
+def test_frame_diagnostic_json_is_not_built_when_capture_is_disabled(monkeypatch):
+    import soop_grid.media as media_module
+
+    payload = annex(sps(mode=2, fixed=False, hrd=False), pps(), picture(mode=2, idr=True))
+    sink = MediaSink(lambda _data: None)
+
+    def unexpected_json_dumps(*_args, **_kwargs):
+        raise AssertionError("disabled per-frame diagnostics must not serialize JSON")
+
+    monkeypatch.setattr(media_module.json, "dumps", unexpected_json_dumps)
+    sink.add(Frame(0xC748, media_body(payload, "I", 1, 50_000_000)))
+    sink.close()
+
+
+def test_frame_diagnostic_capture_keeps_jsonl_schema_and_order(tmp_path):
+    payload = annex(sps(mode=2, fixed=False, hrd=False), pps(), picture(mode=2, idr=True))
+    capture_dir = tmp_path / "capture-frame-json"
+    sink = MediaSink(lambda _data: None, capture_dir=capture_dir)
+    sink.add(Frame(0xC748, media_body(payload, "I", 7, 50_000_000)))
+    sink.close()
+
+    frame_log = (capture_dir / "frames.jsonl").read_bytes()
+    assert frame_log == (
+        b'{"dts_90k": 90000, "frame": 7, "payload_bytes": 27, "poc": 0, "pts_90k": 90000, '
+        b'"slice_type": "I", "timestamp_raw": 50000000, "timing_model": "grid_composition", "type": "I"}\n'
+    )
+    rows = [json.loads(line) for line in frame_log.decode().splitlines()]
+    assert rows == [
+        {
+            "dts_90k": 90000,
+            "frame": 7,
+            "payload_bytes": len(payload),
+            "poc": 0,
+            "pts_90k": 90000,
+            "slice_type": "I",
+            "timing_model": "grid_composition",
+            "timestamp_raw": 50_000_000,
+            "type": "I",
+        }
+    ]
+
+
 def test_media_sink_ignores_trailing_duplicate_parameter_set_packet():
     seq = sps(mode=2, fixed=False, hrd=False)
     active_pps = pps()
